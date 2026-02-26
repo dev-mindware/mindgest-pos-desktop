@@ -1,0 +1,315 @@
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { CreditNoteSchema, CreditNoteFormData } from "@/schemas";
+import { useCreateCreditNote, useAnnulationNote } from "@/hooks";
+import { InvoiceDetails, ReceiptDetails } from "@/types/credit-note";
+import { isInvoice, isReceipt } from "@/types/credit-notes-guards";
+import { mapDocumentToCreditNoteDefaults } from "@/utils/credit-notes";
+import { formatCurrency, parseCurrency } from "@/utils";
+import { ButtonSubmit, Input, Textarea, Button, RHFSelect } from "@/components";
+import { ErrorMessage } from "@/utils/messages";
+import { Trash2, Plus } from "lucide-react";
+
+type Props = {
+  invoice: InvoiceDetails | ReceiptDetails;
+};
+
+export function CreditNoteForm({ invoice }: Props) {
+  const router = useRouter();
+  const { mutateAsync: annulationNote } = useAnnulationNote();
+  const { mutateAsync: createCreditNote } = useCreateCreditNote();
+  const isInvoiceDoc = isInvoice(invoice);
+  const isReceiptDoc = isReceipt(invoice);
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<CreditNoteFormData>({
+    resolver: zodResolver(CreditNoteSchema),
+    mode: "onChange",
+    defaultValues: mapDocumentToCreditNoteDefaults(invoice),
+  });
+
+  const reason = useWatch({ control, name: "reason" });
+  const watchedItems = useWatch({ control, name: "invoiceBody.items" });
+  const watchedTax = useWatch({ control, name: "invoiceBody.taxAmount" });
+  const watchedDiscount = useWatch({
+    control,
+    name: "invoiceBody.discountAmount",
+  });
+
+  useEffect(() => {
+    if (!isInvoiceDoc) return;
+    if (reason === "ANNULATION") return;
+
+    const subtotal =
+      watchedItems?.reduce(
+        (acc, item) =>
+          acc + (Number(item.quantity) || 0) * (Number(item.price) || 0),
+        0
+      ) ?? 0;
+
+    setValue("invoiceBody.subtotal", +subtotal.toFixed(2));
+  }, [watchedItems, reason, isInvoiceDoc, setValue]);
+
+  useEffect(() => {
+    if (!isInvoiceDoc) return;
+    if (reason === "ANNULATION") return;
+
+    const subtotal =
+      watchedItems?.reduce(
+        (acc, item) =>
+          acc + (Number(item.quantity) || 0) * (Number(item.price) || 0),
+        0
+      ) ?? 0;
+
+    const tax = Number(watchedTax) || 0;
+    const discount = Number(watchedDiscount) || 0;
+    const total = subtotal + tax - discount;
+
+    setValue("invoiceBody.total", +total.toFixed(2));
+  }, [
+    watchedItems,
+    watchedTax,
+    watchedDiscount,
+    reason,
+    isInvoiceDoc,
+    setValue,
+  ]);
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "invoiceBody.items",
+  });
+
+  function handleAddItem() {
+    append({
+      quantity: 1,
+      price: 0,
+    });
+  }
+
+  function handleRemoveItem(index: number) {
+    if (fields.length > 1) {
+      remove(index);
+    } else {
+      ErrorMessage("A nota de crédito deve ter pelo menos 1 item");
+    }
+  }
+
+  async function onSubmit(data: CreditNoteFormData) {
+    try {
+      if (data.reason === "ANNULATION") {
+        await annulationNote({
+          id: invoice.id,
+          reason: data.reason,
+          notes: data.notes ?? "",
+        });
+      } else {
+        await createCreditNote({
+          id: invoice.id,
+          data,
+        });
+      }
+
+      router.replace("/documents?tab=credit-notes");
+    } catch (error: any) {
+      ErrorMessage(
+        error?.response?.data?.message || "Erro ao emitir nota de crédito"
+      );
+    }
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="p-8 space-y-8 border rounded-lg"
+    >
+      <RHFSelect
+        label="Motivo"
+        name="reason"
+        control={control}
+        options={[
+          ...(isInvoiceDoc ? [{ value: "CORRECTION", label: "Correção" }] : []),
+          { value: "ANNULATION", label: "Anulação Total" },
+        ]}
+      />
+
+      <Textarea
+        label="Notas"
+        {...register("notes")}
+        error={errors?.notes?.message}
+        placeholder="Descreva a nota aqui..."
+      />
+
+      {isInvoiceDoc && reason === "CORRECTION" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Itens da Nota de Crédito</h3>
+            <Button
+              type="button"
+              onClick={handleAddItem}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Adicionar Item
+            </Button>
+          </div>
+          {fields.map((field, index) => {
+            return (
+              <div key={field.id} className="space-y-2 rounded-lg relative">
+                <div className="flex items-center justify-between mb-2">
+                  <Button
+                    type="button"
+                    onClick={() => handleRemoveItem(index)}
+                    variant="ghost"
+                    size="icon"
+                    className="ml-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <Input
+                    type="number"
+                    label="Quantidade"
+                    {...register(`invoiceBody.items.${index}.quantity`, {
+                      valueAsNumber: true,
+                    })}
+                  />
+
+                  <Controller
+                    control={control}
+                    name={`invoiceBody.items.${index}.price`}
+                    render={({ field }) => (
+                      <Input
+                        label="Preço Unit."
+                        value={formatCurrency(field.value)}
+                        onChange={(e) =>
+                          field.onChange(parseCurrency(e.target.value))
+                        }
+                      />
+                    )}
+                  />
+
+                  <div className="flex items-end">
+                    <Input
+                      label="Total Item"
+                      value={formatCurrency(
+                        (Number(watchedItems?.[index]?.quantity) || 0) *
+                          (Number(watchedItems?.[index]?.price) || 0)
+                      )}
+                      disabled
+                      className="bg-muted"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          <div className=" pt-6 space-y-4">
+            <h3 className="text-lg font-semibold">Valores Adicionais</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <RHFSelect
+                control={control}
+                name="invoiceBody.taxAmount"
+                label="Imposto (IVA)"
+                placeholder="Selecione uma opção"
+                options={[
+                  { label: "Isento (0%)", value: 0 },
+                  { label: "5%", value: 5 },
+                  { label: "7%", value: 7 },
+                  { label: "14%", value: 14 },
+                  { label: "20%", value: 20 },
+                ]}
+              />
+
+              <Controller
+                control={control}
+                name="invoiceBody.discountAmount"
+                render={({ field }) => (
+                  <Input
+                    min={0}
+                    max={100}
+                    type="number"
+                    label="Desconto (%)"
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                  />
+                )}
+              />
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-6 bg-muted/30 space-y-3">
+            <h3 className="text-lg font-semibold mb-4">
+              Resumo da Nota de Crédito
+            </h3>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal:</span>
+                <span className="font-medium">
+                  {formatCurrency(
+                    watchedItems?.reduce(
+                      (acc, item) =>
+                        acc +
+                        (Number(item.quantity) || 0) *
+                          (Number(item.price) || 0),
+                      0
+                    ) ?? 0
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Taxa (Imposto):</span>
+                <span className="font-medium text-green-600">
+                  + {formatCurrency(Number(watchedTax) || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Desconto:</span>
+                <span className="font-medium text-red-600">
+                  - {formatCurrency(Number(watchedDiscount) || 0)}
+                </span>
+              </div>
+              <div className="border-t pt-2 mt-2">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total:</span>
+                  <span className="text-primary">
+                    {formatCurrency(
+                      (watchedItems?.reduce(
+                        (acc, item) =>
+                          acc +
+                          (Number(item.quantity) || 0) *
+                            (Number(item.price) || 0),
+                        0
+                      ) ?? 0) +
+                        (Number(watchedTax) || 0) -
+                        (Number(watchedDiscount) || 0)
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="flex justify-end">
+        <ButtonSubmit className="w-max" isLoading={isSubmitting}>
+          {reason === "ANNULATION"
+            ? "Confirmar Anulação"
+            : "Emitir Nota de Crédito"}
+        </ButtonSubmit>
+      </div>
+    </form>
+  );
+}
