@@ -5,6 +5,10 @@ import { Separator, SidebarTrigger } from "@/components/ui";
 import { useQueryState } from "nuqs";
 import { Icon, Input, Avatar, AvatarFallback, AvatarImage } from "@/components";
 import { useAuth } from "@/hooks/auth";
+import { useNetworkStatus } from "@/hooks/common/use-network-status";
+import { useOfflineSync } from "@/hooks/offline/use-offline-sync";
+import { useEffect } from "react";
+import { useOfflineStore } from "@/stores/offline/offline-store";
 
 type Props = {
   routePath?: string;
@@ -24,10 +28,18 @@ export function PageWrapper({
   variant = "default",
 }: Props) {
   const { user } = useAuth();
+  const { isOnline } = useNetworkStatus();
+  const { isSyncing, pendingCount } = useOfflineSync();
   const [search, setSearch] = useQueryState("search", {
     defaultValue: "",
     shallow: true,
   });
+
+  const { initialize } = useOfflineStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   return (
     <div className="bg-background">
@@ -65,6 +77,19 @@ export function PageWrapper({
         )}
 
         <div className="flex items-center mr-4 space-x-2 md:space-x-4">
+          <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-muted/30 border">
+            <div className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mr-1">
+              {isOnline ? 'Online' : 'Offline'}
+            </span>
+            {pendingCount > 0 && (
+              <div className="flex items-center gap-1 ml-1 border-l pl-2 border-muted-foreground/30">
+                <Icon name={isSyncing ? "RefreshCcw" : "CloudUpload"} className={`h-3 w-3 ${isSyncing ? 'animate-spin text-amber-500' : 'text-blue-500'}`} />
+                <span className="text-[10px] font-bold text-foreground">{pendingCount}</span>
+              </div>
+            )}
+          </div>
+
           <NotificationDropdown />
           {variant === "counter" && (
             <div className="flex items-center gap-4">

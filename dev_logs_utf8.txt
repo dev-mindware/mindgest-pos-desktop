@@ -1,0 +1,31 @@
+﻿
+> mindgest-pos-desktop@1.0.0 dev C:\Users\JonataoCardoso\Documents\GitHub\mindgest-pos-desktop
+> nextron
+
+[nextron] Run renderer process: next -p 8888 renderer
+node.exe : Γ¿» Failed to start server
+At C:\Program Files\nodejs\pnpm.ps1:16 
+char:5
++     & "$basedir/node$exe"  "$basedir/n
+ode_modules/corepack/dist/pnpm. ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecif 
+   ied: (Γ¿» Failed to start server:St  
+  ring) [], RemoteException
+    + FullyQualifiedErrorId : NativeCom 
+   mandError
+ 
+Error: listen EADDRINUSE: address 
+already in use :::8888
+    at <unknown> (Error: listen 
+EADDRINUSE: address already in use 
+:::8888)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 8888
+}
+[?25h

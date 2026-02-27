@@ -1,6 +1,36 @@
 import path from "path";
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import serve from "electron-serve";
+import { database } from "./database";
+
+// Register SQLite Handlers
+ipcMain.handle("db:save-document", async (_, doc) => {
+  return database.saveDocument(doc.id, doc.type, doc.payload);
+});
+
+ipcMain.handle("db:get-all-documents", async () => {
+  return database.getAllDocuments();
+});
+
+ipcMain.handle("db:delete-document", async (_, id) => {
+  return database.deleteDocument(id);
+});
+
+ipcMain.handle("db:update-products-cache", async (_, products) => {
+  return database.updateProductsCache(products);
+});
+
+ipcMain.handle("db:update-clients-cache", async (_, clients) => {
+  return database.updateClientsCache(clients);
+});
+
+ipcMain.handle("db:get-cached-products", async () => {
+  return database.getCachedProducts();
+});
+
+ipcMain.handle("db:get-cached-clients", async () => {
+  return database.getCachedClients();
+});
 
 const isProd: boolean = process.env.NODE_ENV === "production";
 

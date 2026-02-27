@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import CreatableSelect from "react-select/creatable";
 import { api } from "@/services/api";
 import { useDebounce } from "use-debounce";
+import { useOfflineStore } from "@/stores/offline/offline-store";
 import { components, MenuListProps } from "react-select";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,38 @@ export function AsyncCreatableSelectField({
         return;
       }
 
+      const isOffline = typeof window !== "undefined" && !window.navigator.onLine;
+
+      if (isOffline) {
+        console.log("Offline mode: searching in local cache...");
+        const offlineStore = useOfflineStore.getState();
+        const cache = endpoint.includes("clients") ? offlineStore.clients : offlineStore.products;
+
+        const fields = displayFieldsKey.split(",");
+        const filtered = (cache as any[]).filter(item => {
+          if (!search) return true;
+          return fields.some(field => {
+            const val = getNestedValue(item, field);
+            return val?.toString().toLowerCase().includes(search.toLowerCase());
+          });
+        });
+
+        const mappedOptions = filtered.map((item: any) => ({
+          value: item.id,
+          label: fields
+            .map((field) => getNestedValue(item, field))
+            .filter(Boolean)
+            .join(" - "),
+          data: item,
+        }));
+
+        setOptions(mappedOptions.slice((currentPage - 1) * 5, currentPage * 5));
+        setTotalPages(Math.ceil(mappedOptions.length / 5));
+        setTotal(mappedOptions.length);
+        setIsSearching(false);
+        return;
+      }
+
       setIsSearching(true);
       try {
         const response = await api.get(endpoint, {
@@ -77,6 +110,15 @@ export function AsyncCreatableSelectField({
           : Array.isArray(raw)
             ? raw
             : [];
+
+        // Update local cache if this is an initial search (no search term)
+        if (!search && currentPage === 1) {
+          if (endpoint.includes("clients")) {
+            useOfflineStore.getState().updateClientsCache(data);
+          } else if (endpoint.includes("items") || endpoint.includes("products")) {
+            useOfflineStore.getState().updateProductsCache(data);
+          }
+        }
 
         const meta = raw?.meta || {};
         const totalCount = meta.total ?? raw?.total ?? 0;

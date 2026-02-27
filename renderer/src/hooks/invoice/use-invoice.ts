@@ -5,6 +5,8 @@ import { CreditNoteFormData } from "@/schemas";
 import { ReceiptData } from "@/types/receipt";
 import { DownloadType, InvoicePayload } from "@/types";
 import { triggerBrowserDownload } from "@/utils/donwload.file";
+import { useNetworkStatus } from "../common/use-network-status";
+import { useOfflineStore } from "@/stores/offline/offline-store";
 
 type DownloadInvoiceProps = {
   id: string;
@@ -39,11 +41,28 @@ export function useCancelInvoice() {
 
 export function useCreateInvoice() {
   const queryClient = useQueryClient();
+  const { isOnline } = useNetworkStatus();
+  const { addDocument } = useOfflineStore();
 
   return useMutation({
-    mutationFn: (data: InvoicePayload) => invoiceService.createInvoice(data),
+    mutationFn: async (data: InvoicePayload) => {
+      if (!isOnline) {
+        // Document creation is now async due to SQLite IPC bridge
+        const internalId = await addDocument({
+          type: "invoice",
+          payload: data as any,
+        });
+
+        // Return mock response for offline
+        return { data: { id: internalId, offline: true } };
+      }
+      return invoiceService.createInvoice(data);
+    },
     onSuccess: (response) => {
-      SucessMessage("Fatura criada com sucesso!");
+      const isOffline = (response as any)?.offline;
+      SucessMessage(
+        isOffline ? "Fatura salva localmente!" : "Fatura criada com sucesso!",
+      );
       queryClient.invalidateQueries({ queryKey: ["invoice-normal"] });
       return response.data;
     },

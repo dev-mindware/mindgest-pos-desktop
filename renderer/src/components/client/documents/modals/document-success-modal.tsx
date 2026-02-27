@@ -7,6 +7,8 @@ import { DocumentType } from "@/types/documents";
 import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
+import { useOfflineStore } from "@/stores/offline/offline-store";
+import axios from "axios";
 
 interface DocumentSuccessModalData {
     id: string;
@@ -26,16 +28,67 @@ export function DocumentSuccessModal() {
 
     useEffect(() => {
         let url: string | null = null;
+        const offlineQueue = useOfflineStore.getState().queue;
 
         async function fetchDocument() {
             if (isOpen && data?.id) {
                 setIsLoading(true);
                 setError(null);
                 try {
-                    const response = await downloadDocument(data.id, data.type, format);
-                    const blob = new Blob([response.data], { type: "application/pdf" });
-                    url = window.URL.createObjectURL(blob);
-                    setBlobUrl(url);
+                    // Check if document is offline
+                    const offlineDoc = offlineQueue.find(doc => doc.internalId === data.id);
+
+                    if (offlineDoc) {
+                        console.log("Generating offline document PDF...");
+                        // Call local python-microservice
+                        const mappedPayload = {
+                            format: "pdf",
+                            documentType: data.type === "invoice-receipt" ? "INVOICE_RECEIPT" : data.type === "proforma" ? "PROFORMA_INVOICE" : "NORMAL_INVOICE",
+                            invoiceNumber: "PENDENTE OFFLINE",
+                            invoiceDate: offlineDoc.payload.issueDate || new Date().toISOString(),
+                            dueDate: (offlineDoc.payload as any).dueDate,
+                            company: {
+                                name: "A Minha Empresa", // Ideally from store, fallback for offline demo
+                                taxNumber: "000000000",
+                                address: "Endereço da Empresa",
+                                email: "geral@empresa.com",
+                                phone: "900000000"
+                            },
+                            client: {
+                                name: (offlineDoc.payload as any).client?.name || "Consumidor Final",
+                                taxNumber: (offlineDoc.payload as any).client?.taxNumber || "999999999",
+                                address: (offlineDoc.payload as any).client?.address,
+                                phone: (offlineDoc.payload as any).client?.phone,
+                            },
+                            items: (offlineDoc.payload as any).items?.map((item: any) => ({
+                                description: item.name || item.description || "Item",
+                                quantity: item.quantity || 1,
+                                unitPrice: item.price || item.unitPrice || 0,
+                                totalPrice: (item.quantity || 1) * (item.price || item.unitPrice || 0),
+                                tax: 0
+                            })) || [],
+                            taxDetails: [],
+                            subtotal: (offlineDoc.payload as any).subtotal || 0,
+                            tax: (offlineDoc.payload as any).taxAmount || 0,
+                            total: (offlineDoc.payload as any).total || 0,
+                            retentionAmount: (offlineDoc.payload as any).retentionAmount || 0,
+                            discountAmount: (offlineDoc.payload as any).discountAmount || 0,
+                            notes: (offlineDoc.payload as any).notes,
+                            metadata: { layout: format }
+                        };
+
+                        const response = await axios.post("http://localhost:3002/generate-document/download", mappedPayload, { responseType: 'blob' });
+
+                        const blob = new Blob([response.data], { type: "application/pdf" });
+                        url = window.URL.createObjectURL(blob);
+                        setBlobUrl(url);
+                    } else {
+                        // Standard online behavior
+                        const response = await downloadDocument(data.id, data.type, format);
+                        const blob = new Blob([response.data], { type: "application/pdf" });
+                        url = window.URL.createObjectURL(blob);
+                        setBlobUrl(url);
+                    }
                 } catch (err) {
                     console.error("Erro ao carregar documento para visualização:", err);
                     setError("Não foi possível carregar a visualização do documento.");

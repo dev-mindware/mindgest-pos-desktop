@@ -1,0 +1,675 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\johns\AppData\Local\Programs\Python\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Projects\Github\MINDGEST-API\python-microservice
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.12.1, asyncio-1.3.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 10 items
+
+tests/test_api.py::test_health_check PASSED                              [ 10%]
+tests/test_api.py::test_root_endpoint PASSED                             [ 20%]
+tests/test_api.py::test_generate_document_pdf FAILED                     [ 30%]
+tests/test_api.py::test_generate_document_xml FAILED                     [ 40%]
+tests/test_api.py::test_generate_document_invalid_format FAILED          [ 50%]
+tests/test_api.py::test_generate_saft PASSED                             [ 60%]
+tests/test_pdf_generator.py::test_pdf_generator_a4 FAILED                [ 70%]
+tests/test_pdf_generator.py::test_thermal_pdf_generator FAILED           [ 80%]
+tests/test_thermal.py::test_thermal_generation PASSED                    [ 90%]
+tests/test_xml_generator.py::test_xml_generator FAILED                   [100%]
+
+================================== FAILURES ===================================
+_________________________ test_generate_document_pdf __________________________
+
+client = <httpx.AsyncClient object at 0x000001BAF3ACF890>
+sample_invoice_payload = {'client': {'address': 'Av. Secundaria 456, Luanda', 'email': 'cliente@email.com', 'id': 'client_456', 'name': 'Client...d': 'comp_123', 'name': 'MindGest Demo', ...}, 'documentType': 'NORMAL_INVOICE', 'dueDate': '2024-02-20T10:00:00', ...}
+
+    @pytest.mark.asyncio
+    async def test_generate_document_pdf(client: AsyncClient, sample_invoice_payload):
+        response = await client.post("/generate-document", json=sample_invoice_payload)
+>       assert response.status_code == 200
+E       assert 500 == 200
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests\test_api.py:27: AssertionError
+---------------------------- Captured stdout call -----------------------------
+2026-02-02 20:43:10,375 - app.main - INFO - Generating pdf for invoice FT 2024/001
+DEBUG: Layout detected in generate: None
+DEBUG: Standard PDFGenerator.generate called for FT 2024/001
+2026-02-02 20:43:10,377 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT 2024/001
+2026-02-02 20:43:10,676 - app.modules.pdf.generator - ERROR - Error generating PDF: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204310.pdf'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 345, in generate
+    filepath = await self._generate_invoice_pdf(request, context)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 413, in _generate_invoice_pdf
+    doc.build(
+    ~~~~~~~~~^
+        story,
+        ^^^^^^
+        onFirstPage=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        onLaterPages=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1322, in build
+    BaseDocTemplate.build(self,flowables, canvasmaker=canvasmaker)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1109, in build
+    self._endBuild()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1044, in _endBuild
+    if getattr(self,'_doSave',1): self.canv.save()
+                                  ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfgen\canvas.py", line 1302, in save
+    self._doc.SaveToFile(self._filename, self)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfbase\pdfdoc.py", line 208, in SaveToFile
+    f = open(filename, "wb")
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204310.pdf'
+2026-02-02 20:43:10,691 - app.main - ERROR - Error generating document: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204310.pdf'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\main.py", line 119, in generate_document
+    filepath = await pdf_generator.generate(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 345, in generate
+    filepath = await self._generate_invoice_pdf(request, context)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 413, in _generate_invoice_pdf
+    doc.build(
+    ~~~~~~~~~^
+        story,
+        ^^^^^^
+        onFirstPage=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        onLaterPages=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1322, in build
+    BaseDocTemplate.build(self,flowables, canvasmaker=canvasmaker)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1109, in build
+    self._endBuild()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1044, in _endBuild
+    if getattr(self,'_doSave',1): self.canv.save()
+                                  ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfgen\canvas.py", line 1302, in save
+    self._doc.SaveToFile(self._filename, self)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfbase\pdfdoc.py", line 208, in SaveToFile
+    f = open(filename, "wb")
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204310.pdf'
+2026-02-02 20:43:10,697 - httpx - INFO - HTTP Request: POST http://test/generate-document "HTTP/1.1 500 Internal Server Error"
+---------------------------- Captured stderr call -----------------------------
+[WARNING] No logo found for company_id=comp_123
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\company\comp_123.png
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\mindware_logo_black.png
+  Using fallback (company initial box)
+[WARNING] No logo found for company_id=comp_123
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\company\comp_123.png
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\mindware_logo_black.png
+  Using fallback (company initial box)
+------------------------------ Captured log call ------------------------------
+INFO     app.main:main.py:101 Generating pdf for invoice FT 2024/001
+INFO     app.modules.pdf.generator:generator.py:340 Generating PDF for NORMAL_INVOICE: FT 2024/001
+ERROR    app.modules.pdf.generator:generator.py:351 Error generating PDF: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204310.pdf'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 345, in generate
+    filepath = await self._generate_invoice_pdf(request, context)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 413, in _generate_invoice_pdf
+    doc.build(
+    ~~~~~~~~~^
+        story,
+        ^^^^^^
+        onFirstPage=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        onLaterPages=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1322, in build
+    BaseDocTemplate.build(self,flowables, canvasmaker=canvasmaker)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1109, in build
+    self._endBuild()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1044, in _endBuild
+    if getattr(self,'_doSave',1): self.canv.save()
+                                  ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfgen\canvas.py", line 1302, in save
+    self._doc.SaveToFile(self._filename, self)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfbase\pdfdoc.py", line 208, in SaveToFile
+    f = open(filename, "wb")
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204310.pdf'
+ERROR    app.main:main.py:144 Error generating document: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204310.pdf'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\main.py", line 119, in generate_document
+    filepath = await pdf_generator.generate(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 345, in generate
+    filepath = await self._generate_invoice_pdf(request, context)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 413, in _generate_invoice_pdf
+    doc.build(
+    ~~~~~~~~~^
+        story,
+        ^^^^^^
+        onFirstPage=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        onLaterPages=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1322, in build
+    BaseDocTemplate.build(self,flowables, canvasmaker=canvasmaker)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1109, in build
+    self._endBuild()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1044, in _endBuild
+    if getattr(self,'_doSave',1): self.canv.save()
+                                  ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfgen\canvas.py", line 1302, in save
+    self._doc.SaveToFile(self._filename, self)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfbase\pdfdoc.py", line 208, in SaveToFile
+    f = open(filename, "wb")
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204310.pdf'
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/generate-document "HTTP/1.1 500 Internal Server Error"
+_________________________ test_generate_document_xml __________________________
+
+client = <httpx.AsyncClient object at 0x000001BAF3B70E90>
+sample_invoice_payload = {'client': {'address': 'Av. Secundaria 456, Luanda', 'email': 'cliente@email.com', 'id': 'client_456', 'name': 'Client...d': 'comp_123', 'name': 'MindGest Demo', ...}, 'documentType': 'NORMAL_INVOICE', 'dueDate': '2024-02-20T10:00:00', ...}
+
+    @pytest.mark.asyncio
+    async def test_generate_document_xml(client: AsyncClient, sample_invoice_payload):
+        sample_invoice_payload["format"] = DocumentFormat.XML.value
+        response = await client.post("/generate-document", json=sample_invoice_payload)
+    
+        # XML generation might fail if not all fields satisfy the schema, so we check basic success or strict error
+        # Assuming success for valid payload
+>       assert response.status_code == 200
+E       assert 500 == 200
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests\test_api.py:41: AssertionError
+---------------------------- Captured stdout call -----------------------------
+2026-02-02 20:43:11,673 - app.main - INFO - Generating xml for invoice FT 2024/001
+2026-02-02 20:43:11,674 - app.modules.xml.generator - INFO - Generating XML for invoice FT 2024/001
+2026-02-02 20:43:11,694 - app.modules.xml.generator - ERROR - Error generating XML: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.xml'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\xml\generator.py", line 28, in generate
+    with open(filepath, 'w', encoding='utf-8') as f:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.xml'
+2026-02-02 20:43:11,698 - app.main - ERROR - Error generating document: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.xml'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\main.py", line 121, in generate_document
+    filepath = await xml_generator.generate(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\xml\generator.py", line 28, in generate
+    with open(filepath, 'w', encoding='utf-8') as f:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.xml'
+2026-02-02 20:43:11,702 - httpx - INFO - HTTP Request: POST http://test/generate-document "HTTP/1.1 500 Internal Server Error"
+------------------------------ Captured log call ------------------------------
+INFO     app.main:main.py:101 Generating xml for invoice FT 2024/001
+INFO     app.modules.xml.generator:generator.py:20 Generating XML for invoice FT 2024/001
+ERROR    app.modules.xml.generator:generator.py:35 Error generating XML: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.xml'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\xml\generator.py", line 28, in generate
+    with open(filepath, 'w', encoding='utf-8') as f:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.xml'
+ERROR    app.main:main.py:144 Error generating document: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.xml'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\main.py", line 121, in generate_document
+    filepath = await xml_generator.generate(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\xml\generator.py", line 28, in generate
+    with open(filepath, 'w', encoding='utf-8') as f:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.xml'
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/generate-document "HTTP/1.1 500 Internal Server Error"
+____________________ test_generate_document_invalid_format ____________________
+
+client = <httpx.AsyncClient object at 0x000001BAF3C65480>
+sample_invoice_payload = {'client': {'address': 'Av. Secundaria 456, Luanda', 'email': 'cliente@email.com', 'id': 'client_456', 'name': 'Client...d': 'comp_123', 'name': 'MindGest Demo', ...}, 'documentType': 'NORMAL_INVOICE', 'dueDate': '2024-02-20T10:00:00', ...}
+
+    @pytest.mark.asyncio
+    async def test_generate_document_invalid_format(
+        client: AsyncClient, sample_invoice_payload
+    ):
+        sample_invoice_payload["format"] = "invalid_format"
+        response = await client.post("/generate-document", json=sample_invoice_payload)
+>       assert response.status_code == 400
+E       assert 422 == 400
+E        +  where 422 = <Response [422 Unprocessable Entity]>.status_code
+
+tests\test_api.py:53: AssertionError
+---------------------------- Captured stdout call -----------------------------
+2026-02-02 20:43:11,734 - httpx - INFO - HTTP Request: POST http://test/generate-document "HTTP/1.1 422 Unprocessable Entity"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/generate-document "HTTP/1.1 422 Unprocessable Entity"
+____________________________ test_pdf_generator_a4 ____________________________
+
+sample_invoice_payload = {'client': {'address': 'Av. Secundaria 456, Luanda', 'email': 'cliente@email.com', 'id': 'client_456', 'name': 'Client...d': 'comp_123', 'name': 'MindGest Demo', ...}, 'documentType': 'NORMAL_INVOICE', 'dueDate': '2024-02-20T10:00:00', ...}
+
+    @pytest.mark.asyncio
+    async def test_pdf_generator_a4(sample_invoice_payload):
+        request = GenerateDocumentRequest(**sample_invoice_payload)
+        generator = PDFGenerator()
+        try:
+>           filepath = await generator.generate(request)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pdf_generator.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+app\modules\pdf\generator.py:345: in generate
+    filepath = await self._generate_invoice_pdf(request, context)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\modules\pdf\generator.py:413: in _generate_invoice_pdf
+    doc.build(
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py:1322: in build
+    BaseDocTemplate.build(self,flowables, canvasmaker=canvasmaker)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py:1109: in build
+    self._endBuild()
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py:1044: in _endBuild
+    if getattr(self,'_doSave',1): self.canv.save()
+                                  ^^^^^^^^^^^^^^^^
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfgen\canvas.py:1302: in save
+    self._doc.SaveToFile(self._filename, self)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <reportlab.pdfbase.pdfdoc.PDFDocument object at 0x000001BAF3EF4E10>
+filename = 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.pdf'
+canvas = <reportlab.pdfgen.canvas.Canvas object at 0x000001BAF3B9B8C0>
+
+    def SaveToFile(self, filename, canvas):
+        if getattr(self,'_savedToFile',False):
+            raise RuntimeError("class %s instances can only be saved once" % self.__class__.__name__)
+        self._savedToFile = True
+        if hasattr(getattr(filename, "write",None),'__call__'):
+            myfile = 0
+            f = filename
+            filename = getattr(f,'name',None)
+            if isinstance(filename,int):
+                filename = '<os fd:%d>'% filename
+            elif not isStr(filename): #try to fix bug reported by Robert Schroll <rschroll at gmail.com>
+                filename = '<%s@0X%8.8X>' % (f.__class__.__name__,id(f))
+            filename = makeFileName(filename)
+        elif isStr(filename):
+            myfile = 1
+            filename = makeFileName(filename)
+>           f = open(filename, "wb")
+                ^^^^^^^^^^^^^^^^^^^^
+E           FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.pdf'
+
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfbase\pdfdoc.py:208: FileNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+sample_invoice_payload = {'client': {'address': 'Av. Secundaria 456, Luanda', 'email': 'cliente@email.com', 'id': 'client_456', 'name': 'Client...d': 'comp_123', 'name': 'MindGest Demo', ...}, 'documentType': 'NORMAL_INVOICE', 'dueDate': '2024-02-20T10:00:00', ...}
+
+    @pytest.mark.asyncio
+    async def test_pdf_generator_a4(sample_invoice_payload):
+        request = GenerateDocumentRequest(**sample_invoice_payload)
+        generator = PDFGenerator()
+        try:
+            filepath = await generator.generate(request)
+            assert os.path.exists(filepath)
+            assert str(filepath).endswith(".pdf")
+            assert os.path.getsize(filepath) > 0
+        except Exception as e:
+>           pytest.fail(f"PDF Generation failed: {e}")
+E           Failed: PDF Generation failed: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.pdf'
+
+tests\test_pdf_generator.py:18: Failed
+---------------------------- Captured stdout call -----------------------------
+DEBUG: Standard PDFGenerator.generate called for FT 2024/001
+2026-02-02 20:43:11,800 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT 2024/001
+2026-02-02 20:43:11,997 - app.modules.pdf.generator - ERROR - Error generating PDF: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.pdf'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 345, in generate
+    filepath = await self._generate_invoice_pdf(request, context)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 413, in _generate_invoice_pdf
+    doc.build(
+    ~~~~~~~~~^
+        story,
+        ^^^^^^
+        onFirstPage=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        onLaterPages=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1322, in build
+    BaseDocTemplate.build(self,flowables, canvasmaker=canvasmaker)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1109, in build
+    self._endBuild()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1044, in _endBuild
+    if getattr(self,'_doSave',1): self.canv.save()
+                                  ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfgen\canvas.py", line 1302, in save
+    self._doc.SaveToFile(self._filename, self)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfbase\pdfdoc.py", line 208, in SaveToFile
+    f = open(filename, "wb")
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.pdf'
+---------------------------- Captured stderr call -----------------------------
+[WARNING] No logo found for company_id=comp_123
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\company\comp_123.png
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\mindware_logo_black.png
+  Using fallback (company initial box)
+[WARNING] No logo found for company_id=comp_123
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\company\comp_123.png
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\mindware_logo_black.png
+  Using fallback (company initial box)
+------------------------------ Captured log call ------------------------------
+INFO     app.modules.pdf.generator:generator.py:340 Generating PDF for NORMAL_INVOICE: FT 2024/001
+ERROR    app.modules.pdf.generator:generator.py:351 Error generating PDF: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.pdf'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 345, in generate
+    filepath = await self._generate_invoice_pdf(request, context)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\pdf\generator.py", line 413, in _generate_invoice_pdf
+    doc.build(
+    ~~~~~~~~~^
+        story,
+        ^^^^^^
+        onFirstPage=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        onLaterPages=self._draw_footer_brand,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1322, in build
+    BaseDocTemplate.build(self,flowables, canvasmaker=canvasmaker)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1109, in build
+    self._endBuild()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\platypus\doctemplate.py", line 1044, in _endBuild
+    if getattr(self,'_doSave',1): self.canv.save()
+                                  ~~~~~~~~~~~~~~^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfgen\canvas.py", line 1302, in save
+    self._doc.SaveToFile(self._filename, self)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\reportlab\pdfbase\pdfdoc.py", line 208, in SaveToFile
+    f = open(filename, "wb")
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204311.pdf'
+_________________________ test_thermal_pdf_generator __________________________
+
+sample_invoice_payload = {'client': {'address': 'Av. Secundaria 456, Luanda', 'email': 'cliente@email.com', 'id': 'client_456', 'name': 'Client...d': 'comp_123', 'name': 'MindGest Demo', ...}, 'documentType': 'NORMAL_INVOICE', 'dueDate': '2024-02-20T10:00:00', ...}
+
+    @pytest.mark.asyncio
+    async def test_thermal_pdf_generator(sample_invoice_payload):
+        request = GenerateDocumentRequest(**sample_invoice_payload)
+        generator = ThermalPDFGenerator()
+        try:
+>           filepath = await generator.generate(request)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pdf_generator.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+app\modules\pdf\thermal_generator.py:89: in generate
+    img_qr.save(qr_path)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <PIL.Image.Image image mode=RGB size=290x290 at 0x1BAF3DB2C50>
+fp = 'temp_qr_FT 2024/001.png', format = 'PNG', params = {}
+filename = 'temp_qr_FT 2024/001.png', open_fp = True, filename_ext = '.png'
+ext = '.png'
+ImageFile = <module 'PIL.ImageFile' from 'C:\\Users\\johns\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PIL\\ImageFile.py'>
+
+    def save(
+        self, fp: StrOrBytesPath | IO[bytes], format: str | None = None, **params: Any
+    ) -> None:
+        """
+        Saves this image under the given filename.  If no format is
+        specified, the format to use is determined from the filename
+        extension, if possible.
+    
+        Keyword options can be used to provide additional instructions
+        to the writer. If a writer doesn't recognise an option, it is
+        silently ignored. The available options are described in the
+        :doc:`image format documentation
+        <../handbook/image-file-formats>` for each writer.
+    
+        You can use a file object instead of a filename. In this case,
+        you must always specify the format. The file object must
+        implement the ``seek``, ``tell``, and ``write``
+        methods, and be opened in binary mode.
+    
+        :param fp: A filename (string), os.PathLike object or file object.
+        :param format: Optional format override.  If omitted, the
+           format to use is determined from the filename extension.
+           If a file object was used instead of a filename, this
+           parameter should always be used.
+        :param params: Extra parameters to the image writer. These can also be
+           set on the image itself through ``encoderinfo``. This is useful when
+           saving multiple images::
+    
+             # Saving XMP data to a single image
+             from PIL import Image
+             red = Image.new("RGB", (1, 1), "#f00")
+             red.save("out.mpo", xmp=b"test")
+    
+             # Saving XMP data to the second frame of an image
+             from PIL import Image
+             black = Image.new("RGB", (1, 1))
+             red = Image.new("RGB", (1, 1), "#f00")
+             red.encoderinfo = {"xmp": b"test"}
+             black.save("out.mpo", save_all=True, append_images=[red])
+        :returns: None
+        :exception ValueError: If the output format could not be determined
+           from the file name.  Use the format option to solve this.
+        :exception OSError: If the file could not be written.  The file
+           may have been created, and may contain partial data.
+        """
+    
+        filename: str | bytes = ""
+        open_fp = False
+        if is_path(fp):
+            filename = os.fspath(fp)
+            open_fp = True
+        elif fp == sys.stdout:
+            try:
+                fp = sys.stdout.buffer
+            except AttributeError:
+                pass
+        if not filename and hasattr(fp, "name") and is_path(fp.name):
+            # only set the name for metadata purposes
+            filename = os.fspath(fp.name)
+    
+        preinit()
+    
+        filename_ext = os.path.splitext(filename)[1].lower()
+        ext = filename_ext.decode() if isinstance(filename_ext, bytes) else filename_ext
+    
+        if not format:
+            if ext not in EXTENSION:
+                init()
+            try:
+                format = EXTENSION[ext]
+            except KeyError as e:
+                msg = f"unknown file extension: {ext}"
+                raise ValueError(msg) from e
+    
+        from . import ImageFile
+    
+        # may mutate self!
+        if isinstance(self, ImageFile.ImageFile) and os.path.abspath(
+            filename
+        ) == os.path.abspath(self.filename):
+            self._ensure_mutable()
+        else:
+            self.load()
+    
+        save_all = params.pop("save_all", None)
+        self._default_encoderinfo = params
+        encoderinfo = getattr(self, "encoderinfo", {})
+        self._attach_default_encoderinfo(self)
+        self.encoderconfig: tuple[Any, ...] = ()
+    
+        if format.upper() not in SAVE:
+            init()
+        if save_all or (
+            save_all is None
+            and params.get("append_images")
+            and format.upper() in SAVE_ALL
+        ):
+            save_handler = SAVE_ALL[format.upper()]
+        else:
+            save_handler = SAVE[format.upper()]
+    
+        created = False
+        if open_fp:
+            created = not os.path.exists(filename)
+            if params.get("append", False):
+                # Open also for reading ("+"), because TIFF save_all
+                # writer needs to go back and edit the written data.
+                fp = builtins.open(filename, "r+b")
+            else:
+>               fp = builtins.open(filename, "w+b")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               FileNotFoundError: [Errno 2] No such file or directory: 'temp_qr_FT 2024/001.png'
+
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\PIL\Image.py:2585: FileNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+sample_invoice_payload = {'client': {'address': 'Av. Secundaria 456, Luanda', 'email': 'cliente@email.com', 'id': 'client_456', 'name': 'Client...d': 'comp_123', 'name': 'MindGest Demo', ...}, 'documentType': 'NORMAL_INVOICE', 'dueDate': '2024-02-20T10:00:00', ...}
+
+    @pytest.mark.asyncio
+    async def test_thermal_pdf_generator(sample_invoice_payload):
+        request = GenerateDocumentRequest(**sample_invoice_payload)
+        generator = ThermalPDFGenerator()
+        try:
+            filepath = await generator.generate(request)
+            assert os.path.exists(filepath)
+            assert str(filepath).endswith(".pdf")
+            assert os.path.getsize(filepath) > 0
+        except Exception as e:
+>           pytest.fail(f"Thermal PDF Generation failed: {e}")
+E           Failed: Thermal PDF Generation failed: [Errno 2] No such file or directory: 'temp_qr_FT 2024/001.png'
+
+tests\test_pdf_generator.py:31: Failed
+---------------------------- Captured stderr call -----------------------------
+[WARNING] No logo found for company_id=comp_123
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\company\comp_123.png
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\mindware_logo_black.png
+  Using fallback (company initial box)
+_____________________________ test_xml_generator ______________________________
+
+sample_invoice_payload = {'client': {'address': 'Av. Secundaria 456, Luanda', 'email': 'cliente@email.com', 'id': 'client_456', 'name': 'Client...d': 'comp_123', 'name': 'MindGest Demo', ...}, 'documentType': 'NORMAL_INVOICE', 'dueDate': '2024-02-20T10:00:00', ...}
+
+    @pytest.mark.asyncio
+    async def test_xml_generator(sample_invoice_payload):
+        sample_invoice_payload["format"] = DocumentFormat.XML.value
+        request = GenerateDocumentRequest(**sample_invoice_payload)
+        generator = XMLGenerator()
+        try:
+>           filepath = await generator.generate(request)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_xml_generator.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <app.modules.xml.generator.XMLGenerator object at 0x000001BAF3BCFD90>
+request = GenerateDocumentRequest(documentType=<DocumentType.NORMAL_INVOICE: 'NORMAL_INVOICE'>, format=<DocumentFormat.XML: 'xml...cia.', paymentTerms='Pronto Pagamento', retentionAmount=None, discountAmount=None, metadata={}, verificationToken=None)
+
+    async def generate(self, request: GenerateDocumentRequest) -> Path:
+        """Generate an XML document."""
+        try:
+            filename = generate_filename(request.documentType.value, request.invoiceNumber, "xml")
+            filepath = get_temp_file_path(filename)
+    
+            logger.info(f"Generating XML for invoice {request.invoiceNumber}")
+    
+            root = self._build_document(request)
+    
+            # Pretty print
+            xml_str = minidom.parseString(ET.tostring(root)).toprettyxml(indent="  ")
+    
+            # Write to file
+>           with open(filepath, 'w', encoding='utf-8') as f:
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204313.xml'
+
+app\modules\xml\generator.py:28: FileNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+sample_invoice_payload = {'client': {'address': 'Av. Secundaria 456, Luanda', 'email': 'cliente@email.com', 'id': 'client_456', 'name': 'Client...d': 'comp_123', 'name': 'MindGest Demo', ...}, 'documentType': 'NORMAL_INVOICE', 'dueDate': '2024-02-20T10:00:00', ...}
+
+    @pytest.mark.asyncio
+    async def test_xml_generator(sample_invoice_payload):
+        sample_invoice_payload["format"] = DocumentFormat.XML.value
+        request = GenerateDocumentRequest(**sample_invoice_payload)
+        generator = XMLGenerator()
+        try:
+            filepath = await generator.generate(request)
+            assert os.path.exists(filepath)
+            assert str(filepath).endswith(".xml")
+            assert os.path.getsize(filepath) > 0
+    
+            # specific content check
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+                assert "AuditFile" in content or "Invoice" in content
+    
+        except Exception as e:
+>           pytest.fail(f"XML Generation failed: {e}")
+E           Failed: XML Generation failed: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204313.xml'
+
+tests\test_xml_generator.py:24: Failed
+---------------------------- Captured stdout call -----------------------------
+2026-02-02 20:43:13,412 - app.modules.xml.generator - INFO - Generating XML for invoice FT 2024/001
+2026-02-02 20:43:13,414 - app.modules.xml.generator - ERROR - Error generating XML: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204313.xml'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\xml\generator.py", line 28, in generate
+    with open(filepath, 'w', encoding='utf-8') as f:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204313.xml'
+------------------------------ Captured log call ------------------------------
+INFO     app.modules.xml.generator:generator.py:20 Generating XML for invoice FT 2024/001
+ERROR    app.modules.xml.generator:generator.py:35 Error generating XML: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204313.xml'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\xml\generator.py", line 28, in generate
+    with open(filepath, 'w', encoding='utf-8') as f:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Projects\\Github\\MINDGEST-API\\python-microservice\\temp\\NORMAL_INVOICE_FT 2024\\001_20260202_204313.xml'
+============================== warnings summary ===============================
+tests/test_api.py::test_health_check
+  C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\pydantic\main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+tests/test_api.py::test_generate_document_pdf
+tests/test_pdf_generator.py::test_pdf_generator_a4
+  C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\common\builders.py:30: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "generatedAt": datetime.utcnow().isoformat(),
+
+tests/test_api.py::test_generate_document_pdf
+tests/test_pdf_generator.py::test_pdf_generator_a4
+  C:\Projects\Github\MINDGEST-API\python-microservice\app\modules\common\builders.py:126: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "generatedDate": datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S"),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_api.py::test_generate_document_pdf - assert 500 == 200
+FAILED tests/test_api.py::test_generate_document_xml - assert 500 == 200
+FAILED tests/test_api.py::test_generate_document_invalid_format - assert 422 ...
+FAILED tests/test_pdf_generator.py::test_pdf_generator_a4 - Failed: PDF Gener...
+FAILED tests/test_pdf_generator.py::test_thermal_pdf_generator - Failed: Ther...
+FAILED tests/test_xml_generator.py::test_xml_generator - Failed: XML Generati...
+=================== 6 failed, 4 passed, 5 warnings in 3.27s ===================

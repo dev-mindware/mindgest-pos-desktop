@@ -1,0 +1,9 @@
+2026-02-27 10:50:32,870 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-02-27 10:51:09,753 - app.main - INFO - Generating and downloading pdf for invoice PENDENTE OFFLINE
+2026-02-27 10:51:09,753 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-02-27 10:51:09,754 - app.main - INFO - PDF Download Layout requested: thermal
+2026-02-27 10:51:09,755 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-02-27 10:52:04,201 - app.main - INFO - Generating and downloading pdf for invoice PENDENTE OFFLINE
+2026-02-27 10:52:04,202 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-02-27 10:52:04,202 - app.main - INFO - PDF Download Layout requested: thermal
+2026-02-27 10:52:04,202 - app.main - INFO - Using ThermalPDFGenerator for download

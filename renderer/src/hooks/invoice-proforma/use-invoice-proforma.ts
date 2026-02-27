@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { proformaService } from "@/services";
 import { EditProformaFormData, ProformaFormData } from "@/schemas";
 import { ProformData } from "@/types";
+import { useNetworkStatus } from "../common/use-network-status";
+import { useOfflineStore } from "@/stores/offline/offline-store";
 
 export function useDeleteProforma() {
   const queryClient = useQueryClient();
@@ -18,11 +20,30 @@ export function useDeleteProforma() {
 
 export function useCreateProforma() {
   const queryClient = useQueryClient();
+  const { isOnline } = useNetworkStatus();
+  const { addDocument } = useOfflineStore();
 
   return useMutation({
-    mutationFn: (data: ProformData) => proformaService.createProforma(data),
+    mutationFn: async (data: ProformData) => {
+      if (!isOnline) {
+        // Document creation is now async due to SQLite IPC bridge
+        const internalId = await addDocument({
+          type: "proforma",
+          payload: data as any,
+        });
+
+        // Return mock response for offline
+        return { data: { id: internalId, offline: true } };
+      }
+      return proformaService.createProforma(data);
+    },
     onSuccess: (response) => {
-      SucessMessage("Proforma criada com sucesso!");
+      const isOffline = (response as any)?.offline;
+      SucessMessage(
+        isOffline
+          ? "Proforma salva localmente!"
+          : "Proforma criada com sucesso!",
+      );
       queryClient.invalidateQueries({ queryKey: ["invoice-proforma"] });
       return response.data;
     },

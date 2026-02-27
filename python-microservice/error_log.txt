@@ -1,0 +1,225 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\johns\AppData\Local\Programs\Python\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Projects\Github\MINDGEST-API\python-microservice
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.12.1, asyncio-1.3.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 10 items
+
+tests/test_api.py::test_health_check FAILED                              [ 10%]
+tests/test_api.py::test_root_endpoint PASSED                             [ 20%]
+tests/test_api.py::test_generate_document_pdf FAILED                     [ 30%]
+tests/test_api.py::test_generate_document_xml FAILED                     [ 40%]
+tests/test_api.py::test_generate_document_invalid_format PASSED          [ 50%]
+tests/test_api.py::test_generate_saft PASSED                             [ 60%]
+tests/test_pdf_generator.py::test_pdf_generator_a4 PASSED                [ 70%]
+tests/test_pdf_generator.py::test_thermal_pdf_generator PASSED           [ 80%]
+tests/test_thermal.py::test_thermal_generation PASSED                    [ 90%]
+tests/test_xml_generator.py::test_xml_generator PASSED                   [100%]
+
+================================== FAILURES ===================================
+______________________________ test_health_check ______________________________
+
+client = <httpx.AsyncClient object at 0x000002236B422510>
+
+    @pytest.mark.asyncio
+    async def test_health_check(client: AsyncClient):
+>       response = await client.get("/health")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_api.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\httpx\_client.py:1768: in get
+    return await self.request(
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\applications.py:1135: in __call__
+    await super().__call__(scope, receive, send)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\applications.py:107: in __call__
+    await self.middleware_stack(scope, receive, send)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\cors.py:85: in __call__
+    await self.app(scope, receive, send)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py:716: in __call__
+    await self.middleware_stack(scope, receive, send)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py:736: in app
+    await route.handle(scope, receive, send)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\routing.py:290: in handle
+    await self.app(scope, receive, send)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py:115: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py:101: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py:355: in app
+    raw_response = await run_endpoint_function(
+C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\fastapi\routing.py:243: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\main.py:90: in health_check
+    return HealthCheckResponse(status="healthy", version=APP_VERSION)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def utc_now():
+>       return datetime.now(datetime.UTC)
+                            ^^^^^^^^^^^^
+E       AttributeError: type object 'datetime.datetime' has no attribute 'UTC'
+
+app\schemas.py:71: AttributeError
+_________________________ test_generate_document_pdf __________________________
+
+client = <httpx.AsyncClient object at 0x000002236B48CCD0>
+sample_invoice_payload = {'client': {'address': 'Av. Secundaria 456, Luanda', 'email': 'cliente@email.com', 'id': 'client_456', 'name': 'Client...d': 'comp_123', 'name': 'MindGest Demo', ...}, 'documentType': 'NORMAL_INVOICE', 'dueDate': '2024-02-20T10:00:00', ...}
+
+    @pytest.mark.asyncio
+    async def test_generate_document_pdf(client: AsyncClient, sample_invoice_payload):
+        response = await client.post("/generate-document", json=sample_invoice_payload)
+>       assert response.status_code == 200
+E       assert 500 == 200
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests\test_api.py:27: AssertionError
+---------------------------- Captured stdout call -----------------------------
+2026-02-02 20:54:47,196 - app.main - INFO - Generating pdf for invoice FT 2024/001
+DEBUG: Layout detected in generate: None
+DEBUG: Standard PDFGenerator.generate called for FT 2024/001
+2026-02-02 20:54:47,197 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT 2024/001
+2026-02-02 20:54:47,307 - app.modules.pdf.generator - INFO - PDF generated successfully: C:\Projects\Github\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT 2024_001_20260202_205447.pdf
+2026-02-02 20:54:47,308 - app.main - INFO - Document generated successfully: C:\Projects\Github\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT 2024_001_20260202_205447.pdf
+2026-02-02 20:54:47,310 - app.main - ERROR - Error generating document: type object 'datetime.datetime' has no attribute 'UTC'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\main.py", line 132, in generate_document
+    return GenerateDocumentResponse(
+        success=True,
+    ...<4 lines>...
+        format=request.format.value,
+    )
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\schemas.py", line 71, in utc_now
+    return datetime.now(datetime.UTC)
+                        ^^^^^^^^^^^^
+AttributeError: type object 'datetime.datetime' has no attribute 'UTC'
+2026-02-02 20:54:47,313 - httpx - INFO - HTTP Request: POST http://test/generate-document "HTTP/1.1 500 Internal Server Error"
+---------------------------- Captured stderr call -----------------------------
+[WARNING] No logo found for company_id=comp_123
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\company\comp_123.png
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\mindware_logo_black.png
+  Using fallback (company initial box)
+[WARNING] No logo found for company_id=comp_123
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\company\comp_123.png
+  Checked: C:\Projects\Github\MINDGEST-API\python-microservice\assets\logos\mindware_logo_black.png
+  Using fallback (company initial box)
+------------------------------ Captured log call ------------------------------
+INFO     app.main:main.py:101 Generating pdf for invoice FT 2024/001
+INFO     app.modules.pdf.generator:generator.py:340 Generating PDF for NORMAL_INVOICE: FT 2024/001
+INFO     app.modules.pdf.generator:generator.py:347 PDF generated successfully: C:\Projects\Github\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT 2024_001_20260202_205447.pdf
+INFO     app.main:main.py:130 Document generated successfully: C:\Projects\Github\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT 2024_001_20260202_205447.pdf
+ERROR    app.main:main.py:144 Error generating document: type object 'datetime.datetime' has no attribute 'UTC'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\main.py", line 132, in generate_document
+    return GenerateDocumentResponse(
+        success=True,
+    ...<4 lines>...
+        format=request.format.value,
+    )
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\schemas.py", line 71, in utc_now
+    return datetime.now(datetime.UTC)
+                        ^^^^^^^^^^^^
+AttributeError: type object 'datetime.datetime' has no attribute 'UTC'
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/generate-document "HTTP/1.1 500 Internal Server Error"
+_________________________ test_generate_document_xml __________________________
+
+client = <httpx.AsyncClient object at 0x000002236B461940>
+sample_invoice_payload = {'client': {'address': 'Av. Secundaria 456, Luanda', 'email': 'cliente@email.com', 'id': 'client_456', 'name': 'Client...d': 'comp_123', 'name': 'MindGest Demo', ...}, 'documentType': 'NORMAL_INVOICE', 'dueDate': '2024-02-20T10:00:00', ...}
+
+    @pytest.mark.asyncio
+    async def test_generate_document_xml(client: AsyncClient, sample_invoice_payload):
+        sample_invoice_payload["format"] = DocumentFormat.XML.value
+        response = await client.post("/generate-document", json=sample_invoice_payload)
+    
+        # XML generation might fail if not all fields satisfy the schema, so we check basic success or strict error
+        # Assuming success for valid payload
+>       assert response.status_code == 200
+E       assert 500 == 200
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests\test_api.py:41: AssertionError
+---------------------------- Captured stdout call -----------------------------
+2026-02-02 20:54:47,323 - app.main - INFO - Generating xml for invoice FT 2024/001
+2026-02-02 20:54:47,323 - app.modules.xml.generator - INFO - Generating XML for invoice FT 2024/001
+2026-02-02 20:54:47,332 - app.modules.xml.generator - INFO - XML generated successfully: C:\Projects\Github\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT 2024_001_20260202_205447.xml
+2026-02-02 20:54:47,332 - app.main - INFO - Document generated successfully: C:\Projects\Github\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT 2024_001_20260202_205447.xml
+2026-02-02 20:54:47,332 - app.main - ERROR - Error generating document: type object 'datetime.datetime' has no attribute 'UTC'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\main.py", line 132, in generate_document
+    return GenerateDocumentResponse(
+        success=True,
+    ...<4 lines>...
+        format=request.format.value,
+    )
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\schemas.py", line 71, in utc_now
+    return datetime.now(datetime.UTC)
+                        ^^^^^^^^^^^^
+AttributeError: type object 'datetime.datetime' has no attribute 'UTC'
+2026-02-02 20:54:47,334 - httpx - INFO - HTTP Request: POST http://test/generate-document "HTTP/1.1 500 Internal Server Error"
+------------------------------ Captured log call ------------------------------
+INFO     app.main:main.py:101 Generating xml for invoice FT 2024/001
+INFO     app.modules.xml.generator:generator.py:20 Generating XML for invoice FT 2024/001
+INFO     app.modules.xml.generator:generator.py:31 XML generated successfully: C:\Projects\Github\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT 2024_001_20260202_205447.xml
+INFO     app.main:main.py:130 Document generated successfully: C:\Projects\Github\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT 2024_001_20260202_205447.xml
+ERROR    app.main:main.py:144 Error generating document: type object 'datetime.datetime' has no attribute 'UTC'
+Traceback (most recent call last):
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\main.py", line 132, in generate_document
+    return GenerateDocumentResponse(
+        success=True,
+    ...<4 lines>...
+        format=request.format.value,
+    )
+  File "C:\Users\johns\AppData\Local\Programs\Python\Python314\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+  File "C:\Projects\Github\MINDGEST-API\python-microservice\app\schemas.py", line 71, in utc_now
+    return datetime.now(datetime.UTC)
+                        ^^^^^^^^^^^^
+AttributeError: type object 'datetime.datetime' has no attribute 'UTC'
+INFO     httpx:_client.py:1740 HTTP Request: POST http://test/generate-document "HTTP/1.1 500 Internal Server Error"
+=========================== short test summary info ===========================
+FAILED tests/test_api.py::test_health_check - AttributeError: type object 'da...
+FAILED tests/test_api.py::test_generate_document_pdf - assert 500 == 200
+FAILED tests/test_api.py::test_generate_document_xml - assert 500 == 200
+========================= 3 failed, 7 passed in 1.15s =========================

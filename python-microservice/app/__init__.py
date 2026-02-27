@@ -1,0 +1,1 @@
+# MindGest Document Generator App
