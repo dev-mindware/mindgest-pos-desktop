@@ -14,7 +14,7 @@ export function CancelInvoiceModal() {
 
   async function handleCancelInvoice(e: FormEvent) {
     e.preventDefault();
-    
+
     if (!currentInvoice?.id) {
       ErrorMessage("Fatura não selecionada");
       return;
@@ -54,7 +54,7 @@ export function CancelInvoiceModal() {
             <strong>#{currentInvoice?.number}</strong>?
           </p>
 
-          <div className="p-4 border rounded-lg bg-muted/50">
+          <div className="p-4 border rounded-test-lg bg-muted/50">
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Cliente:</span>

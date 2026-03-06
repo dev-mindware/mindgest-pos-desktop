@@ -21,7 +21,7 @@ export function DefaultBankCard() {
 
     if (isLoading) {
         return (
-            <div className="rounded-lg border bg-card p-4 space-y-3">
+            <div className="rounded-test-lg border bg-card p-4 space-y-3">
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-3 w-full" />
                 <Skeleton className="h-3 w-3/4" />
@@ -32,7 +32,7 @@ export function DefaultBankCard() {
     if (!defaultBank) return null;
 
     return (
-        <div className="rounded-lg border bg-card p-4 space-y-3">
+        <div className="rounded-test-lg border bg-card p-4 space-y-3">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Dados Bancários
             </p>

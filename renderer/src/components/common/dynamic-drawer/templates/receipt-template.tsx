@@ -3,7 +3,7 @@ import { formatCurrency, formatDateTime } from "@/utils";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { paymentMethodMap } from "@/constants";
-import { DownloadDocumentButton } from "@/components/client";
+import { DownloadDocumentButton } from "@/components/client/documents/common";
 
 interface ReceiptTemplateProps {
   data: ReceiptResponse;
@@ -40,7 +40,7 @@ export function ReceiptTemplate({ data }: ReceiptTemplateProps) {
         </div>
       </div>
 
-      <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+      <div className="bg-muted/50 p-4 rounded-test-lg space-y-2">
         <div className="flex justify-between">
           <span className="font-medium">Referência Fatura:</span>
           <span>{data.originalInvoiceId || "N/A"}</span>

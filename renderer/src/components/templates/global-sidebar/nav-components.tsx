@@ -77,8 +77,8 @@ export function NavMenu({ items }: { items: MenuItem[] }) {
                     >
                       {item.icon}
                       <span>{item.name}</span>
-                     {/*  {item.showUpgrade && (
-                        <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                      {/*  {item.showUpgrade && (
+                        <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-test">
                           Pro
                         </span>
                       )} */}
@@ -137,7 +137,7 @@ export function NavMenu({ items }: { items: MenuItem[] }) {
                         <div className="flex items-center gap-2 cursor-pointer">
                           {item.icon}
                           <span>{item.name}</span>
-                     {/*      <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                          {/*      <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-test">
                             Pro
                           </span> */}
                         </div>

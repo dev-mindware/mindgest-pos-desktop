@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export function MarketingCtaSection() {
     return (
-        <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-8 text-white">
+        <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-test-2xl p-8 text-white">
             <p className="text-sm italic mb-4 opacity-90">
                 "Tecnologia a favor do seu crescimento."
             </p>

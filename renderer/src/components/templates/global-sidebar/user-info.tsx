@@ -1,5 +1,3 @@
-"use client";
-import { logoutAction } from "@/actions/login";
 import {
   Icon,
   Avatar,
@@ -21,15 +19,13 @@ import { useAuth } from "@/hooks/auth";
 import Link from "next/link";
 
 export function UserInfo() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { isMobile } = useSidebar();
 
   if (!user) return null;
 
   async function onLogout() {
-    try {
-      await logoutAction();
-    } catch (error) {}
+    await logout();
   }
 
   return (
@@ -41,9 +37,9 @@ export function UserInfo() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-muted-foreground"
             >
-              <Avatar className="w-8 h-8 rounded-lg">
+              <Avatar className="w-8 h-8 rounded-test-lg">
                 <AvatarImage src={user.name} alt={user.name} />
-                <AvatarFallback className="rounded-lg">
+                <AvatarFallback className="rounded-test-lg">
                   {user.name[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -55,16 +51,16 @@ export function UserInfo() {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-test-lg"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="w-8 h-8 rounded-lg">
+                <Avatar className="w-8 h-8 rounded-test-lg">
                   <AvatarImage src={user.name} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">
+                  <AvatarFallback className="rounded-test-lg">
                     {user.name[0].toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -86,10 +82,10 @@ export function UserInfo() {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <Link href="/settings?tab=appearance">
-              <DropdownMenuItem>
-                <Icon name="SquarePen" />
-                Aparência
-              </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Icon name="SquarePen" />
+                  Aparência
+                </DropdownMenuItem>
               </Link>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

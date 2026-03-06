@@ -7,14 +7,14 @@ export function ListSkeleton({ cols = 4, rows = 4 }: Props) {
   return (
     <div className="space-y-4 mt-4">
 
-      <div className="rounded-lg border-border bg-card p-4">
+      <div className="rounded-test-lg border-border bg-card p-4">
         <div className="w-full overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr>
                 {Array.from({ length: cols }).map((_, index) => (
                   <th key={index} className="py-2 px-4">
-                    <div className="h-6 w-40 rounded animate-pulse bg-muted" />
+                    <div className="h-6 w-40 rounded-test animate-pulse bg-muted" />
                   </th>
                 ))}
               </tr>
@@ -24,7 +24,7 @@ export function ListSkeleton({ cols = 4, rows = 4 }: Props) {
                 <tr key={rowIndex} className="border-b border-border">
                   {Array.from({ length: cols }).map((_, colIndex) => (
                     <td key={colIndex} className="py-4 px-4">
-                      <div className="h-6 w-full rounded animate-pulse bg-muted" />
+                      <div className="h-6 w-full rounded-test animate-pulse bg-muted" />
                     </td>
                   ))}
                 </tr>

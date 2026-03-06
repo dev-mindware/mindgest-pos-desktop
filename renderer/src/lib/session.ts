@@ -1,15 +1,8 @@
 import { SignJWT, jwtVerify, JWTPayload } from "jose";
-import { cookies } from "next/headers";
 import { User } from "@/types";
 import { SESSION_COOKIE_KEY } from "@/constants";
 
-const secretKey = process.env.SESSION_SECRET;
-
-if (!secretKey) {
-  throw new Error("SESSION_SECRET is not defined in environment variables");
-}
-
-const HOURS = 24;
+const secretKey = process.env.SESSION_SECRET || "default_secret";
 export const encodedKey = new TextEncoder().encode(secretKey);
 
 export interface SessionPayload extends JWTPayload {
@@ -19,8 +12,7 @@ export interface SessionPayload extends JWTPayload {
 }
 
 export async function createSession(payload: SessionPayload) {
-  const expiresAt = new Date(Date.now() + HOURS * 60 * 60 * 1000);
-  // const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   const session = await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
@@ -28,19 +20,25 @@ export async function createSession(payload: SessionPayload) {
     .setExpirationTime(expiresAt)
     .sign(encodedKey);
 
-  const authCookies = await cookies();
-  authCookies.set(SESSION_COOKIE_KEY, session, {
-    httpOnly: true,
-    secure: true,
-    expires: expiresAt,
-    sameSite: "lax",
-    path: "/",
-  });
+  if (typeof window !== "undefined") {
+    localStorage.setItem(SESSION_COOKIE_KEY, session);
+    localStorage.setItem(
+      `${SESSION_COOKIE_KEY}_expires`,
+      expiresAt.toISOString(),
+    );
+    // For backward compatibility with existing code reading tokens directly
+    localStorage.setItem("session-accessToken", payload.accessToken);
+    localStorage.setItem("session-refreshToken", payload.refreshToken);
+  }
 }
 
 export async function destroySession() {
-  const authCookies = await cookies();
-  authCookies.delete("session");
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(SESSION_COOKIE_KEY);
+    localStorage.removeItem(`${SESSION_COOKIE_KEY}_expires`);
+    localStorage.removeItem("session-accessToken");
+    localStorage.removeItem("session-refreshToken");
+  }
 }
 
 export async function decrypt(session: string): Promise<SessionPayload | null> {
@@ -53,4 +51,11 @@ export async function decrypt(session: string): Promise<SessionPayload | null> {
     console.error("Falha ao decifrar sessão:", error);
     return null;
   }
+}
+
+export async function getSession(): Promise<SessionPayload | null> {
+  if (typeof window === "undefined") return null;
+  const session = localStorage.getItem(SESSION_COOKIE_KEY);
+  if (!session) return null;
+  return decrypt(session);
 }

@@ -29,14 +29,14 @@ export function CashStats() {
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-center w-full mx-auto mb-4 border-2 rounded-full border-primary/60">
+      <div className="flex items-center justify-center w-full mx-auto mb-4 border-2 rounded-test-full border-primary/60">
         <div>
           <p className="text-lg font-semibold">Receitas</p>
           <p className="text-xl font-bold text-primary">121.000 Kz</p>
         </div>
       </div>
 
-      <div className="flex items-center justify-center w-full mx-auto mb-4 border-2 rounded-full border-primary/60">
+      <div className="flex items-center justify-center w-full mx-auto mb-4 border-2 rounded-test-full border-primary/60">
         <div>
           <p className="text-lg font-semibold">Despesas</p>
           <p className="text-xl font-bold text-primary">13.100 Kz</p>

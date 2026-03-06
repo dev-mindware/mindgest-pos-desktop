@@ -238,7 +238,7 @@ export const InputFetch = forwardRef<HTMLInputElement, InputFetchProps>(({
               <div
                 key={option.id}
                 onClick={() => handleSelectOption(option)}
-                className="px-4 py-3 hover:bg-accent hover:text-accent-foreground cursor-pointer transition border-b border-border last:border-b-0 first:rounded-t-lg last:rounded-b-lg"
+                className="px-4 py-3 hover:bg-accent hover:text-accent-foreground cursor-pointer transition border-b border-border last:border-b-0 first:rounded-test-t-lg last:rounded-test-b-lg"
               >
                 {renderOptionContent(option)}
               </div>

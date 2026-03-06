@@ -43,7 +43,7 @@ export function SidebarCompanyInfo() {
       <SidebarMenu className="group-data-[collapsible=icon]:items-center">
         <SidebarMenuItem>
           <SidebarMenuButton size="lg">
-            <div className="flex items-center justify-center rounded-lg bg-primary text-sidebar-primary-foreground aspect-square size-8">
+            <div className="flex items-center justify-center rounded-test-lg bg-primary text-sidebar-primary-foreground aspect-square size-8">
               <Icon name="Building2" className="size-4" />
             </div>
             <div className="grid flex-1 text-sm leading-tight text-left">
@@ -69,7 +69,7 @@ export function SidebarCompanyInfo() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="flex items-center justify-center rounded-lg bg-primary text-sidebar-primary-foreground aspect-square size-8">
+              <div className="flex items-center justify-center rounded-test-lg bg-primary text-sidebar-primary-foreground aspect-square size-8">
                 <Icon name="Building2" className="size-4" />
               </div>
               <div className="grid flex-1 text-sm leading-tight text-left">
@@ -85,7 +85,7 @@ export function SidebarCompanyInfo() {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-test-lg"
             align="start"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
@@ -100,7 +100,7 @@ export function SidebarCompanyInfo() {
                 onClick={() => switchStore(store)}
                 className="gap-2 p-2"
               >
-                <div className="flex items-center justify-center border rounded-md size-6">
+                <div className="flex items-center justify-center border rounded-test-md size-6">
                   <Icon name="Building2" className="size-3.5 shrink-0" />
                 </div>
                 {store.name}
@@ -116,7 +116,7 @@ export function SidebarCompanyInfo() {
 
 function StoresErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="p-4 border border-destructive rounded-lg text-sm text-destructive space-y-2">
+    <div className="p-4 border border-destructive rounded-test-lg text-sm text-destructive space-y-2">
       <p>Erro ao carregar lojas.</p>
       <button onClick={onRetry} className="text-xs underline hover:opacity-80">
         Tentar novamente

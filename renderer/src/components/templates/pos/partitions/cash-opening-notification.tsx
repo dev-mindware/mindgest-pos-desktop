@@ -50,9 +50,9 @@ export function CashOpeningNotification() {
         {notifications.map((notification) => (
           <div
             key={notification.id}
-            className="flex items-start gap-3 p-3 rounded-lg bg-background"
+            className="flex items-start gap-3 p-3 rounded-test-lg bg-background"
           >
-            <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-full bg-accent">
+            <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-test-full bg-accent">
               <Icon name="Bell" className="w-4 h-4 text-primary" />
             </div>
             <div className="flex-1">

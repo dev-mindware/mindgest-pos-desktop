@@ -117,7 +117,7 @@ export function DataTableToolbar<TData>({
               </div>
               {Boolean(searchColumnObj.getFilterValue()) && (
                 <button
-                  className="text-muted-foreground/80 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-md transition-[color,box-shadow] outline-none focus:z-10 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="text-muted-foreground/80 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-test-e-md transition-[color,box-shadow] outline-none focus:z-10 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label="Clear filter"
                   onClick={() => {
                     searchColumnObj.setFilterValue("")
@@ -186,7 +186,7 @@ export function DataTableToolbar<TData>({
                     aria-hidden="true"
                   />
                   <span>Delete</span>
-                  <span className="bg-background text-muted-foreground/70 -me-1 inline-flex h-5 max-h-full items-center rounded border px-1 font-[inherit] text-[0.625rem] font-medium">
+                  <span className="bg-background text-muted-foreground/70 -me-1 inline-flex h-5 max-h-full items-center rounded-test border px-1 font-[inherit] text-[0.625rem] font-medium">
                     {table.getSelectedRowModel().rows.length}
                   </span>
                 </Button>
@@ -194,7 +194,7 @@ export function DataTableToolbar<TData>({
               <AlertDialogContent className="max-w-lg mx-4">
                 <div className="flex flex-col gap-2 max-sm:items-center sm:flex-row sm:gap-4">
                   <div
-                    className="flex items-center justify-center border rounded-full size-9 shrink-0"
+                    className="flex items-center justify-center border rounded-test-full size-9 shrink-0"
                     aria-hidden="true"
                   >
                     <CircleAlertIcon className="opacity-80" size={16} />
@@ -250,7 +250,7 @@ function FilterDropdown<TData>({
 
   const uniqueValues = useMemo(() => {
     if (!column) return []
-    
+
     if (filterConfig.options) {
       return filterConfig.options
     }
@@ -293,7 +293,7 @@ function FilterDropdown<TData>({
           <FilterIcon className="-ms-1 opacity-60" size={16} aria-hidden="true" />
           <span>{filterConfig.title}</span>
           {selectedValues.length > 0 && (
-            <span className="bg-background text-muted-foreground/70 -me-1 inline-flex h-5 max-h-full items-center rounded border px-1 font-[inherit] text-[0.625rem] font-medium">
+            <span className="bg-background text-muted-foreground/70 -me-1 inline-flex h-5 max-h-full items-center rounded-test border px-1 font-[inherit] text-[0.625rem] font-medium">
               {selectedValues.length}
             </span>
           )}

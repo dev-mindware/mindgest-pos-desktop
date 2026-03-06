@@ -206,7 +206,7 @@ export function VirtualKeyboard() {
             <div
                 id="virtual-keyboard"
                 className={cn(
-                    "bg-card border border-primary/20 rounded-md p-4 overflow-hidden shadow-2xl pointer-events-auto",
+                    "bg-card border border-primary/20 rounded-test-md p-4 overflow-hidden shadow-2xl pointer-events-auto",
                     layout === "numeric" ? "w-[440px]" : "w-[960px] max-w-[95vw]"
                 )}
             >
@@ -217,7 +217,7 @@ export function VirtualKeyboard() {
                     onPointerUp={onPointerUp}
                     className="flex justify-center mb-4 relative cursor-grab active:cursor-grabbing group p-2 -mt-2"
                 >
-                    <div className="w-24 h-2 bg-muted-foreground/30 rounded-full group-hover:bg-muted-foreground/50 transition-colors" />
+                    <div className="w-24 h-2 bg-muted-foreground/30 rounded-test-full group-hover:bg-muted-foreground/50 transition-colors" />
                     <button
                         onClick={closeKeyboard}
                         className="absolute right-0 top-0 p-1 text-muted-foreground hover:text-foreground transition-colors"

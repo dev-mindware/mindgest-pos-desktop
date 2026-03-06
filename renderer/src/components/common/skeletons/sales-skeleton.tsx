@@ -9,7 +9,7 @@ export function SalesSkeleton() {
         title="Relatórios de Vendas"
         suTitle="Análise de Vendas por Período"
       />
-  
+
       <div className="p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3].map((i) => (
@@ -28,7 +28,7 @@ export function SalesSkeleton() {
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-4 rounded-full" />
+              <Skeleton className="h-4 w-4 rounded-test-full" />
             </CardHeader>
             <CardContent>
               <Skeleton className="h-8 w-32 mb-1" />
@@ -63,7 +63,7 @@ export function SalesSkeleton() {
       </div>
 
       {/* Chart Skeleton */}
-      <div className="border rounded-lg bg-card">
+      <div className="border rounded-test-lg bg-card">
         <div className="p-6 border-b">
           <Skeleton className="h-6 w-48 mb-2" />
           <Skeleton className="h-4 w-64" />

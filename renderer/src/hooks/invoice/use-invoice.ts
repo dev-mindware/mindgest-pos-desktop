@@ -7,6 +7,7 @@ import { DownloadType, InvoicePayload } from "@/types";
 import { triggerBrowserDownload } from "@/utils/donwload.file";
 import { useNetworkStatus } from "../common/use-network-status";
 import { useOfflineStore } from "@/stores/offline/offline-store";
+import { useAuth } from "../auth/use-auth";
 
 type DownloadInvoiceProps = {
   id: string;
@@ -43,15 +44,19 @@ export function useCreateInvoice() {
   const queryClient = useQueryClient();
   const { isOnline } = useNetworkStatus();
   const { addDocument } = useOfflineStore();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (data: InvoicePayload) => {
       if (!isOnline) {
         // Document creation is now async due to SQLite IPC bridge
-        const internalId = await addDocument({
-          type: "invoice",
-          payload: data as any,
-        });
+        const internalId = await addDocument(
+          {
+            type: "invoice",
+            payload: data as any,
+          },
+          user?.id || "unknown",
+        );
 
         // Return mock response for offline
         return { data: { id: internalId, offline: true } };

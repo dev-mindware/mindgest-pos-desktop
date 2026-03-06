@@ -46,7 +46,7 @@ export function RouteProtector({
     return (
       fallback || (
         <div className="flex items-center justify-center bg-red-600 min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+          <div className="animate-spin rounded-test-full h-8 w-8 border-b-2 border-gray-900" />
         </div>
       )
     );
@@ -65,7 +65,7 @@ export function RouteProtector({
   if (
     subscriptionStatus === SubscriptionStatus.PENDING &&
     !pathname.startsWith("/settings") &&
-    !pathname.startsWith("/plans") 
+    !pathname.startsWith("/plans")
   ) {
     return null;
   }

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Product, CartItem, CartType } from "@/types";
+import { useFraudDetection } from "./use-fraud-detection";
 
 interface UseCounterStateProps {
   apiProducts: Product[];
@@ -23,6 +24,8 @@ export function useCounterState({
   // Barcode Scanner Logic
   const [barcodeBuffer, setBarcodeBuffer] = useState("");
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
+
+  const { checkFraud } = useFraudDetection();
 
   useEffect(() => {
     const handleGlobalKeyDown = async (e: KeyboardEvent) => {
@@ -123,6 +126,9 @@ export function useCounterState({
   };
 
   const handleDeleteItem = (productId: string) => {
+    // Fire fraud detection event asynchronously when an item is cancelled
+    checkFraud("Cancelamento de Artigo", 2);
+
     setCarts((prev) => {
       const { [productId]: _, ...rest } = prev[activeCart];
       return { ...prev, [activeCart]: rest };

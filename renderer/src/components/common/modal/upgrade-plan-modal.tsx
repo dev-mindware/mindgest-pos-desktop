@@ -29,7 +29,7 @@ export function UpgradePlanModal() {
       className="sm:max-w-md"
     >
       <div className="space-y-4 pt-2">
-        <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-3">
+        <div className="p-4 rounded-test-lg bg-primary/5 border border-primary/10 space-y-3">
           <div className="space-y-2 text-sm text-foreground/80">
             <p>
               Você tentou acessar um recurso que não está disponível no seu

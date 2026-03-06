@@ -60,6 +60,40 @@ A aplicação POS _precisa_ deste serviço rodando localmente para emitir docume
    .\start.bat
    ```
 
+### 3. Microserviço MIND (Inteligência & Prevenção)
+
+A aplicação comunica com este serviço na porta 5001 para gerar recomendações, checar fraudes e comunicar com a IA do Chat.
+
+1. Abra uma **nova janela** no terminal e acesse a pasta do microserviço:
+   ```bash
+   cd mind-microservice
+   ```
+2. Ative o ambiente virtual e instale as dependências:
+
+   ```bash
+   # No Windows (PowerShell/CMD):
+   .\venv\Scripts\activate
+
+   # Em seguida, instale os pacotes:
+   pip install -r requirements.txt
+   ```
+
+3. Inicie o servidor localmente (Porta 5001):
+   ```bash
+   uvicorn main:app --port 5001 --reload
+   ```
+
+### 4. Motor de IA Local (Ollama)
+
+O Assistente MIND AI no frontend precisa que o Ollama esteja ativado na máquina como motor _LLM_.
+
+1. Baixe e instale do site oficial [Ollama](https://ollama.com/).
+2. Abra um terminal e inicie o modelo base escolhido (ex: `llama3`):
+   ```bash
+   ollama run llama3
+   ```
+3. A API do Ollama deve ficar a escutar automaticamente na porta (11434) onde o `mind-microservice` se conectará em background.
+
 ---
 
 ## ⚡ Fluxo de Modo Offline (Resiliência)

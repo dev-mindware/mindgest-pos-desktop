@@ -96,7 +96,7 @@ export function InvoiceTotalsSummary({
   retentionAmount = 0,
 }: InvoiceTotalsSummaryProps) {
   return (
-    <div className="w-full space-y-3 border border-dashed rounded-lg p-6 bg-card">
+    <div className="w-full space-y-3 border border-dashed rounded-test-lg p-6 bg-card">
       {/* Subtotal */}
       <div className="flex justify-between items-center text-gray-600">
         <span className="text-sm">Subtotal</span>

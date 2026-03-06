@@ -90,12 +90,12 @@ export function PosCloseSessionModal({ currentSession }: PosCloseSessionModalPro
             className="!w-max"
         >
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 min-w-[350px]">
-                <div className="p-4 bg-muted/30 rounded-lg border border-primary/5 flex justify-between items-center">
+                <div className="p-4 bg-muted/30 rounded-test-lg border border-primary/5 flex justify-between items-center">
                     <div>
                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total de Vendas</p>
                         <p className="text-xl font-bold text-primary">{formatCurrency(currentSession?.totalSales || 0)}</p>
                     </div>
-                    <div className="p-2 bg-primary/10 rounded-full">
+                    <div className="p-2 bg-primary/10 rounded-test-full">
                         <Icon name="TrendingUp" className="h-5 w-5 text-primary" />
                     </div>
                 </div>

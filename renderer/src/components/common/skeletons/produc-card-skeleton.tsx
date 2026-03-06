@@ -6,16 +6,16 @@ export function ProductCardSkeleton() {
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <Skeleton className="w-10 h-10 rounded-lg" />
+            <Skeleton className="w-10 h-10 rounded-test-lg" />
             <div className="flex-1 min-w-0 space-y-2">
               <Skeleton className="h-4 w-32" />
               <div className="flex items-center gap-2">
                 <Skeleton className="h-3 w-12" />
-                <Skeleton className="h-3 w-10 rounded-lg" />
+                <Skeleton className="h-3 w-10 rounded-test-lg" />
               </div>
             </div>
           </div>
-          <Skeleton className="h-6 w-6 rounded-md" />
+          <Skeleton className="h-6 w-6 rounded-test-md" />
         </div>
       </CardHeader>
 

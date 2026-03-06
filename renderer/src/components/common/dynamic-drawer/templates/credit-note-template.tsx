@@ -50,7 +50,7 @@ export function CreditNoteTemplate({ data }: Props) {
         <p>{data.reason === "CORRECTION" ? "Correção" : "Cancelamento"}</p>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-test-lg overflow-hidden">
         <table className="w-full">
           <thead className="bg-muted">
             <tr>

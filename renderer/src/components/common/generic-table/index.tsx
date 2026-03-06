@@ -73,7 +73,7 @@ export function GenericTable<T extends { id: string }>({
 
   return (
     <div className={cn("w-full", className)}>
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="rounded-test-lg border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>

@@ -1,6 +1,4 @@
 import axios from "axios";
-import { getAccessToken } from "@/actions/token";
-import { reauthenticate } from "@/actions/auth";
 
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -22,7 +20,8 @@ const processQueue = (error: any, token: string | null = null) => {
 
 export const api = axios.create({
   baseURL:
-    process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api",
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://mindgest.mindware-vps.cloud/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -31,7 +30,12 @@ export const api = axios.create({
 import { currentStoreStore } from "@/stores";
 
 api.interceptors.request.use(async (config) => {
-  const token = await getAccessToken();
+  // Use localStorage directly instead of Next.js server actions
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("session-accessToken")
+      : null;
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -53,7 +57,6 @@ api.interceptors.request.use(async (config) => {
     { path: "categories", methods: ["get", "post"] },
   ];
 
-  // Specific routes or patterns to exclude from injection
   const EXCLUDED_ROUTES = [
     "/expenses",
     "receipt",
@@ -82,15 +85,12 @@ api.interceptors.request.use(async (config) => {
   if (shouldInject) {
     const currentStore = currentStoreStore.getState().currentStore;
     if (currentStore?.id) {
-      // For GET requests, add to params
       if (currentMethod === "get") {
         config.params = {
           ...config.params,
           storeId: config.params?.storeId || currentStore.id,
         };
-      }
-      // For other requests, add to data if it's an object
-      else if (
+      } else if (
         config.data &&
         typeof config.data === "object" &&
         !config.data.storeId
@@ -99,9 +99,7 @@ api.interceptors.request.use(async (config) => {
           ...config.data,
           storeId: currentStore.id,
         };
-      }
-      // If no data is present but it's a POST/PUT/PATCH, we might want to add storeId
-      else if (
+      } else if (
         !config.data &&
         ["post", "put", "patch"].includes(currentMethod)
       ) {
@@ -122,7 +120,7 @@ api.interceptors.response.use(
       return Promise.reject(err);
     }
 
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 && typeof window !== "undefined") {
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
@@ -140,17 +138,35 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await reauthenticate();
-        const newToken = await getAccessToken();
+        const refreshToken = localStorage.getItem("session-refreshToken");
+        if (!refreshToken) throw new Error("No refresh token");
 
-        if (newToken) {
-          processQueue(null, newToken);
-          original.headers.Authorization = `Bearer ${newToken}`;
-          return api(original);
-        }
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"}/auth/refresh`,
+          {
+            method: "POST",
+            body: JSON.stringify({ refreshToken }),
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+
+        if (!response.ok) throw new Error("Falha ao renovar o token");
+
+        const data = await response.json();
+        const newToken = data.accessToken;
+        const newRefreshToken = data.refreshToken;
+
+        localStorage.setItem("session-accessToken", newToken);
+        localStorage.setItem("session-refreshToken", newRefreshToken);
+
+        processQueue(null, newToken);
+        original.headers.Authorization = `Bearer ${newToken}`;
+        return api(original);
       } catch (refreshError) {
         processQueue(refreshError, null);
         console.error("Erro ao renovar token:", refreshError);
+        localStorage.removeItem("session-accessToken");
+        localStorage.removeItem("session-refreshToken");
         window.location.replace("/auth/login");
         return Promise.reject(refreshError);
       } finally {

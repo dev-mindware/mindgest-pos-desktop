@@ -1,0 +1,1 @@
+[{"antecedents": ["item1"], "consequents": ["item2"], "confidence": 1.0, "lift": 1.0}, {"antecedents": ["item2"], "consequents": ["item1"], "confidence": 1.0, "lift": 1.0}]

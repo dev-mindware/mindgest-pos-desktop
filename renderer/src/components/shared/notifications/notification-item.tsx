@@ -42,7 +42,7 @@ export function NotificationItem({
     >
       <div
         className={cn(
-          "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
+          "flex-shrink-0 w-10 h-10 rounded-test-full flex items-center justify-center",
           style.colorClass
         )}
       >
@@ -60,7 +60,7 @@ export function NotificationItem({
             {notification.title}
           </h4>
           {!notification.isRead && (
-            <div className="flex-shrink-0 w-2 h-2 bg-primary-500 rounded-full mt-1" />
+            <div className="flex-shrink-0 w-2 h-2 bg-primary-500 rounded-test-full mt-1" />
           )}
         </div>
 
@@ -75,7 +75,7 @@ export function NotificationItem({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-full hover:bg-red-600/15 hover:text-red-600"
+          className="h-8 w-8 rounded-test-full hover:bg-red-600/15 hover:text-red-600"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();

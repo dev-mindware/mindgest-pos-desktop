@@ -8,9 +8,9 @@ import {
   ListSkeleton,
   EmptyState,
   ButtonOnlyAction,
-  ReceiptPreviewDrawer,
   InvoiceFiltersSkeleton,
 } from "@/components";
+import { ReceiptPreviewDrawer } from "@/components/common/dynamic-drawer/receipt-preview-drawer";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { useDebounce } from "use-debounce";
 import { paymentMethodMap } from "@/constants";

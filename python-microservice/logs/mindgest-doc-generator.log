@@ -7,3 +7,34 @@
 2026-02-27 10:52:04,202 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
 2026-02-27 10:52:04,202 - app.main - INFO - PDF Download Layout requested: thermal
 2026-02-27 10:52:04,202 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-02-27 11:50:32,945 - app.main - INFO - Cleanup task completed
+2026-02-27 12:50:32,980 - app.main - INFO - Cleanup task completed
+2026-02-27 23:33:20,617 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-02-27 23:33:55,163 - app.main - INFO - Generating and downloading pdf for invoice PENDENTE OFFLINE
+2026-02-27 23:33:55,164 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-02-27 23:33:55,165 - app.main - INFO - PDF Download Layout requested: thermal
+2026-02-27 23:33:55,166 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-02-27 23:57:32,949 - app.main - INFO - MindGest Document Generator shutting down...
+2026-02-28 00:34:12,436 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-02-28 01:34:12,459 - app.main - INFO - Cleanup task completed
+2026-02-28 02:34:12,474 - app.main - INFO - Cleanup task completed
+2026-02-28 03:34:12,480 - app.main - INFO - Cleanup task completed
+2026-03-02 10:19:07,434 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-02 11:19:07,445 - app.main - INFO - Cleanup task completed
+2026-03-02 12:19:07,456 - app.main - INFO - Cleanup task completed
+2026-03-02 13:19:07,222 - app.main - INFO - Cleanup task completed
+2026-03-02 15:19:44,412 - app.main - INFO - Cleanup task completed
+2026-03-02 16:28:14,198 - app.main - INFO - Cleanup task completed
+2026-03-02 17:55:32,094 - app.main - INFO - Cleanup task completed
+2026-03-02 18:55:32,204 - app.main - INFO - Cleanup task completed
+2026-03-02 21:44:07,894 - app.main - INFO - Cleanup task completed
+2026-03-02 22:44:07,815 - app.main - INFO - Cleanup task completed
+2026-03-02 23:44:07,756 - app.main - INFO - Cleanup task completed
+2026-03-03 03:11:06,214 - app.main - INFO - Cleanup task completed
+2026-03-03 05:55:32,717 - app.main - INFO - Cleanup task completed
+2026-03-03 09:41:25,366 - app.main - INFO - Cleanup task completed
+2026-03-03 10:53:59,284 - app.main - INFO - Cleanup task completed
+2026-03-03 11:53:59,434 - app.main - INFO - Cleanup task completed
+2026-03-06 10:44:19,344 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-06 11:44:19,386 - app.main - INFO - Cleanup task completed
+2026-03-06 12:44:19,406 - app.main - INFO - Cleanup task completed

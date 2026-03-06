@@ -47,7 +47,7 @@ export function CartCheckoutForm({
 
     return (
         <>
-            <div className="mt-4 p-4 border border-dashed rounded-md bg-muted/30">
+            <div className="mt-4 p-4 border border-dashed rounded-test-md bg-muted/30">
                 <PaymentSummary
                     subtotal={totals.subtotal}
                     taxAmount={totals.taxAmount}

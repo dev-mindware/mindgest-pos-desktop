@@ -134,7 +134,7 @@ export function PosManagement() {
                   <ChevronDown className="w-4 h-4" />
                 </Button>
                 {showStatusDropdown && (
-                  <div className="absolute right-0 z-10 w-48 mt-1 border rounded-md shadow-lg bg-background">
+                  <div className="absolute right-0 z-10 w-48 mt-1 border rounded-test-md shadow-lg bg-background">
                     {statusOptions.map((status) => (
                       <button
                         key={status}

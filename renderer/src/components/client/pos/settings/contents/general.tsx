@@ -8,7 +8,6 @@ import {
     PosRegisterExpenseModal,
     PosCloseSessionModal
 } from "../../modal";
-import { PosOpeningModal } from "@/components/client/management/pos/modal/pos-opening-modal";
 import { useAuth } from "@/hooks/auth/use-auth";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { CashSession } from "@/types/cash-session";
@@ -73,7 +72,7 @@ export function PosGeneralSettings({ currentSession }: PosGeneralSettingsProps) 
             value: (
                 <div className="flex items-center gap-2">
                     <span className={cn(
-                        "flex h-2 w-2 rounded-full",
+                        "flex h-2 w-2 rounded-test-full",
                         isOpen ? "bg-green-500 animate-pulse" : "bg-red-500"
                     )} />
                     <span className="font-outfit font-semibold">{isOpen ? "Em Operação" : "Finalizada"}</span>
@@ -137,7 +136,7 @@ export function PosGeneralSettings({ currentSession }: PosGeneralSettingsProps) 
                     <div className="bg-muted/30 px-6 py-4 border-b border-primary/5 flex justify-between items-center">
                         <div className="flex items-center gap-3">
                             <div className={cn(
-                                "p-2 rounded-full",
+                                "p-2 rounded-test-full",
                                 isOpen ? "bg-green-500/10" : "bg-red-500/10"
                             )}>
                                 <Icon
@@ -157,7 +156,7 @@ export function PosGeneralSettings({ currentSession }: PosGeneralSettingsProps) 
                                 <MetricItem key={index} {...metric} />
                             ))}
 
-                            <div className="col-span-2 md:col-span-4 mt-2 p-3 bg-muted/50 rounded-lg border border-primary/5">
+                            <div className="col-span-2 md:col-span-4 mt-2 p-3 bg-muted/50 rounded-test-lg border border-primary/5">
                                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Notas da Sessão</p>
                                 <p className="text-sm italic">{currentSession.notes || "Nenhuma observação registada para esta sessão."}</p>
                             </div>
@@ -166,7 +165,6 @@ export function PosGeneralSettings({ currentSession }: PosGeneralSettingsProps) 
                 </Card>
             )}
 
-            <PosOpeningModal />
             <PosOpeningCashierModal onSuccess={() => {
                 queryClient.invalidateQueries({
                     queryKey: ["current-cash-session", currentStore?.id]

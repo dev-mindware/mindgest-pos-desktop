@@ -21,17 +21,18 @@ interface OfflineState {
   lastCacheUpdate: string | null;
 
   // Actions
-  initialize: () => Promise<void>;
+  initialize: (userId: string) => Promise<void>;
   addDocument: (
     doc: Omit<OfflineDocument, "internalId" | "createdAt">,
+    userId: string,
   ) => Promise<string>;
-  removeFromQueue: (internalId: string) => Promise<void>;
+  removeFromQueue: (internalId: string, userId: string) => Promise<void>;
   setSyncing: (isSyncing: boolean) => void;
 
   // Cache Actions
   updateProductsCache: (products: Product[]) => Promise<void>;
   updateClientsCache: (clients: Client[]) => Promise<void>;
-  clearQueue: () => void;
+  clearQueue: (userId: string) => Promise<void>;
 }
 
 export const useOfflineStore = create<OfflineState>((set) => ({
@@ -41,10 +42,10 @@ export const useOfflineStore = create<OfflineState>((set) => ({
   clients: [],
   lastCacheUpdate: null,
 
-  initialize: async () => {
+  initialize: async (userId: string) => {
     if (typeof window === "undefined" || !window.ipc?.db) return;
     const [queue, products, clients] = await Promise.all([
-      window.ipc.db.getAllDocuments(),
+      window.ipc.db.getAllDocuments(userId),
       window.ipc.db.getCachedProducts(),
       window.ipc.db.getCachedClients(),
     ]);
@@ -61,7 +62,7 @@ export const useOfflineStore = create<OfflineState>((set) => ({
     });
   },
 
-  addDocument: async (doc) => {
+  addDocument: async (doc, userId) => {
     const internalId = crypto.randomUUID();
     const newDoc: OfflineDocument = {
       ...doc,
@@ -73,10 +74,11 @@ export const useOfflineStore = create<OfflineState>((set) => ({
       queue: [...state.queue, newDoc],
     }));
 
-    // Persist to SQLite
+    // Persist to SQLite with userId for isolation
     if (window.ipc?.db) {
       await window.ipc.db.saveDocument({
         id: internalId,
+        userId,
         type: doc.type,
         payload: doc.payload,
       });
@@ -85,14 +87,14 @@ export const useOfflineStore = create<OfflineState>((set) => ({
     return internalId;
   },
 
-  removeFromQueue: async (internalId) => {
+  removeFromQueue: async (internalId, userId) => {
     set((state) => ({
       queue: state.queue.filter((d) => d.internalId !== internalId),
     }));
 
-    // Delete from SQLite
+    // Delete only this user's document
     if (window.ipc?.db) {
-      await window.ipc.db.deleteDocument(internalId);
+      await window.ipc.db.deleteDocument(internalId, userId);
     }
   },
 
@@ -120,5 +122,10 @@ export const useOfflineStore = create<OfflineState>((set) => ({
     }
   },
 
-  clearQueue: () => set({ queue: [] }),
+  clearQueue: async (userId) => {
+    set({ queue: [] });
+    if (window.ipc?.db) {
+      await window.ipc.db.clearDocuments(userId);
+    }
+  },
 }));

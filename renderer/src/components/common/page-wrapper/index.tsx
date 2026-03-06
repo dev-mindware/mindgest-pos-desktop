@@ -9,6 +9,7 @@ import { useNetworkStatus } from "@/hooks/common/use-network-status";
 import { useOfflineSync } from "@/hooks/offline/use-offline-sync";
 import { useEffect } from "react";
 import { useOfflineStore } from "@/stores/offline/offline-store";
+import { MindAssistantChat } from "@/components/mind-ai/mind-assistant-chat";
 
 type Props = {
   routePath?: string;
@@ -38,8 +39,10 @@ export function PageWrapper({
   const { initialize } = useOfflineStore();
 
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    if (user?.id) {
+      initialize(user.id);
+    }
+  }, [initialize, user?.id]);
 
   return (
     <div className="bg-background">
@@ -77,8 +80,8 @@ export function PageWrapper({
         )}
 
         <div className="flex items-center mr-4 space-x-2 md:space-x-4">
-          <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-muted/30 border">
-            <div className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
+          <div className="flex items-center gap-2 px-2 py-1 rounded-test-full bg-muted/30 border">
+            <div className={`h-2.5 w-2.5 rounded-test-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
             <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mr-1">
               {isOnline ? 'Online' : 'Offline'}
             </span>
@@ -90,31 +93,8 @@ export function PageWrapper({
             )}
           </div>
 
+          <MindAssistantChat />
           <NotificationDropdown />
-          {variant === "counter" && (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.name} />
-                  <AvatarFallback className="text-xs">{user?.name?.[0]}</AvatarFallback>
-                </Avatar>
-                <div className="hidden md:flex flex-col text-start overflow-hidden">
-                  <span
-                    className="text-xs font-semibold truncate max-w-[120px]"
-                    title={user?.name}
-                  >
-                    {user?.name}
-                  </span>
-                  <span
-                    className="text-[10px] text-muted-foreground truncate"
-                    title={user?.role}
-                  >
-                    {user?.role}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </header>
       <div className={`flex flex-col flex-1 ${variant === "counter" ? "w-full max-w-[98%]" : "w-full"} mx-auto space-y-4 md:space-y-6`}>

@@ -1,0 +1,23 @@
+2026-03-06 09:53:44,119 - app.modules.ai.assistant - ERROR - Failed to connect to Ollama at http://localhost:11434. Make sure Ollama is running.
+2026-03-06 10:08:29,609 - app.modules.ai.assistant - ERROR - Failed to connect to Ollama at http://localhost:11434. Make sure Ollama is running.
+2026-03-06 10:10:20,633 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/generate "HTTP/1.1 404 Not Found"
+2026-03-06 10:10:20,639 - app.modules.ai.assistant - ERROR - Error communicating with AI Assistant: Client error '404 Not Found' for url 'http://localhost:11434/api/generate'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+Traceback (most recent call last):
+  File "C:\Users\JonataoCardoso\Documents\GitHub\mindgest-pos-desktop\mind-microservice\app\modules\ai\assistant.py", line 48, in get_response
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\JonataoCardoso\Documents\GitHub\mindgest-pos-desktop\mind-microservice\venv\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '404 Not Found' for url 'http://localhost:11434/api/generate'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+2026-03-06 10:35:39,824 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2026-03-06 10:35:42,155 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-03-06 10:51:30,401 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2026-03-06 10:51:35,206 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-03-06 11:12:08,650 - app.modules.ai.recommender - INFO - Starting Apriori training for Recommendation Engine...
+2026-03-06 11:12:08,651 - app.modules.ai.recommender - ERROR - Error training recommendation model: Execution failed on sql 'SELECT payload FROM offline_documents WHERE type IN ('invoice', 'invoice-receipt', 'receipt')': no such table: offline_documents
+2026-03-06 11:12:08,652 - main - INFO - Background model training finished, but no rules were generated or an error occurred.
+2026-03-06 11:27:33,495 - app.modules.ai.recommender - INFO - Starting Apriori training for Recommendation Engine from provided payload...
+2026-03-06 11:27:40,745 - app.modules.ai.recommender - INFO - Successfully trained model. Generated 2 rules.
+2026-03-06 11:27:40,746 - main - INFO - Background model training completed successfully.

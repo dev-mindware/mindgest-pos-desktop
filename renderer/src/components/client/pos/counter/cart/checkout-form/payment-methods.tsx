@@ -25,13 +25,13 @@ export function PaymentMethods({
     return (
         <div className="mb-4">
             <div className="flex items-center gap-2 mb-3">
-                <div className="flex-1 flex p-1 gap-2 bg-muted/50 rounded-md">
+                <div className="flex-1 flex p-1 gap-2 bg-muted/50 rounded-test-md">
                     {(["Credit Card", "Cash"] as PaymentMethod[]).map((method) => (
                         <button
                             key={method}
                             onClick={() => onMethodChange(method)}
                             className={cn(
-                                "flex-1 flex flex-col items-center gap-2 py-2 rounded-md text-xs font-medium transition-all",
+                                "flex-1 flex flex-col items-center gap-2 py-2 rounded-test-md text-xs font-medium transition-all",
                                 paymentMethod === method
                                     ? "bg-primary/15 shadow text-primary"
                                     : "text-muted-foreground hover:bg-accent",
@@ -48,7 +48,7 @@ export function PaymentMethods({
                 </div>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <div className="h-full aspect-square rounded-md bg-muted flex items-center justify-center cursor-help hover:bg-muted/80 transition-colors">
+                        <div className="h-full aspect-square rounded-test-md bg-muted flex items-center justify-center cursor-help hover:bg-muted/80 transition-colors">
                             <Icon
                                 name="Info"
                                 size={16}
@@ -66,7 +66,7 @@ export function PaymentMethods({
             </div>
 
             {paymentMethod === "Cash" && (
-                <div className="space-y-3 bg-muted/30 p-3 rounded-xl border border-dashed mb-3">
+                <div className="space-y-3 bg-muted/30 p-3 rounded-test-xl border border-dashed mb-3">
                     <div className="grid grid-cols-4 gap-2">
                         {[200, 500, 1000, 5000].map((amt) => (
                             <Button
@@ -93,7 +93,7 @@ export function PaymentMethods({
                     </div>
                     <div
                         className={cn(
-                            "flex justify-between bg-muted text-sm font-bold p-2 rounded-md",
+                            "flex justify-between bg-muted text-sm font-bold p-2 rounded-test-md",
                             change >= 0 ? "text-green-700" : "text-red-700",
                         )}
                     >

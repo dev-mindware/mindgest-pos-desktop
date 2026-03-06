@@ -65,7 +65,7 @@ export function BarcodeProductScanner({
       <div className="grid gap-4 py-4">
         <div className="flex flex-col items-center gap-4">
           {scannedProduct.image ? (
-            <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
+            <div className="relative w-32 h-32 rounded-test-lg overflow-hidden border">
               <Image
                 src={scannedProduct.image}
                 alt={scannedProduct.name}
@@ -74,7 +74,7 @@ export function BarcodeProductScanner({
               />
             </div>
           ) : (
-            <div className="w-32 h-32 rounded-lg bg-muted flex items-center justify-center border">
+            <div className="w-32 h-32 rounded-test-lg bg-muted flex items-center justify-center border">
               <Icon name="Package" size={48} className="text-muted-foreground" />
             </div>
           )}
@@ -85,7 +85,7 @@ export function BarcodeProductScanner({
               {formatCurrency(scannedProduct.price || 0)}
             </p>
             {scannedProduct.barcode && (
-              <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full w-fit mx-auto mt-2">
+              <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-test-full w-fit mx-auto mt-2">
                 <Icon name="ScanBarcode" size={12} />
                 <span>{scannedProduct.barcode}</span>
               </div>

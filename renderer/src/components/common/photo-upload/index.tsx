@@ -111,7 +111,7 @@ const DropzoneContent = ({
         <div
           {...getRootProps()}
           className={cn(
-            "border-2 border-dashed rounded-lg transition-all",
+            "border-2 border-dashed rounded-test-lg transition-all",
             isDragActive
               ? "border-primary bg-primary/10"
               : "border-border bg-muted/30 hover:bg-muted/50",
@@ -122,7 +122,7 @@ const DropzoneContent = ({
         >
           <input {...getInputProps()} />
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="p-4 bg-muted rounded-full">
+            <div className="p-4 bg-muted rounded-test-full">
               <Icon
                 name={isImage ? "ImagePlus" : "CloudUpload"}
                 className="h-8 w-8 text-muted-foreground"
@@ -143,7 +143,7 @@ const DropzoneContent = ({
           </div>
         </div>
       ) : (
-        <div className="border border-border rounded-lg overflow-hidden bg-card shadow-sm">
+        <div className="border border-border rounded-test-lg overflow-hidden bg-card shadow-sm">
           {isImage && value.url ? (
             <div className="relative aspect-video w-full bg-muted">
               <Image
@@ -156,7 +156,7 @@ const DropzoneContent = ({
           ) : null}
 
           <div className="p-4 flex items-center gap-4 border-b border-border bg-muted/30">
-            <div className="p-3 bg-primary/10 rounded-lg">
+            <div className="p-3 bg-primary/10 rounded-test-lg">
               <Icon
                 name={isImage ? "Image" : "FileText"}
                 className="h-6 w-6 text-primary"
@@ -181,7 +181,7 @@ const DropzoneContent = ({
                 href={value.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-sm font-medium rounded-md transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-sm font-medium rounded-test-md transition-colors"
               >
                 <Icon name="Eye" className="h-4 w-4" />
                 <span>Visualizar</span>
@@ -192,7 +192,7 @@ const DropzoneContent = ({
                 e.stopPropagation();
                 onChange(null);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive text-sm font-medium rounded-md transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive text-sm font-medium rounded-test-md transition-colors"
             >
               <Icon name="X" className="h-4 w-4" />
               <span>Remover</span>

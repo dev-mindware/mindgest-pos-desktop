@@ -11,7 +11,7 @@ export function PosWorkspaceSettings() {
             <Card className="border-primary/10 overflow-hidden shadow-sm hover:shadow-md transition-all">
                 <div className="bg-muted/30 px-6 py-4 border-b border-primary/5 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-primary/10">
+                        <div className="p-2 rounded-test-full bg-primary/10">
                             <Icon name="Monitor" className="h-5 w-5 text-primary" />
                         </div>
                         <div>
@@ -22,7 +22,7 @@ export function PosWorkspaceSettings() {
                 </div>
                 <CardContent className="p-6">
                     <div className="space-y-6">
-                        <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg border border-primary/5">
+                        <div className="flex items-center justify-between p-4 bg-muted/20 rounded-test-lg border border-primary/5">
                             <div className="space-y-1 pr-4">
                                 <div className="flex items-center gap-2">
                                     <Icon name="Keyboard" className="h-4 w-4 text-primary" />

@@ -55,7 +55,7 @@ export function ConvertProformaModal() {
                         type="button"
                         onClick={() => setSelectedType(type)}
                         className={cn(
-                            "w-full flex items-start gap-3 rounded-lg border p-4 text-left transition-colors",
+                            "w-full flex items-start gap-3 rounded-test-lg border p-4 text-left transition-colors",
                             selectedType === type
                                 ? "border-primary bg-primary/5"
                                 : "border-border hover:border-muted-foreground"

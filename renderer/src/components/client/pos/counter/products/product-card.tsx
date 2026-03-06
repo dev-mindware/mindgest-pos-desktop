@@ -21,7 +21,6 @@ import {
 } from "@/components";
 import { cn } from "@/lib/utils";
 import { ErrorMessage, formatCurrency } from "@/utils";
-import { useProductActions } from "@/hooks";
 
 interface ProductCardProps {
   product: Product;
@@ -33,7 +32,6 @@ interface ProductCardProps {
 
 export const ProductCard = React.memo<ProductCardProps>(
   ({ product, quantity, onAdd, onRemove, onUpdateQuantity }) => {
-    const { handlerEditProduct } = useProductActions();
     const [isEditing, setIsEditing] = useState(false);
     const [editQty, setEditQty] = useState("");
 
@@ -70,9 +68,9 @@ export const ProductCard = React.memo<ProductCardProps>(
         <CardContent className="p-3 sm:p-4 flex-1 flex flex-col gap-3">
           {/* Top Content: Image & Title */}
           <div className="flex gap-3 sm:gap-3.5">
-            <Avatar className="h-14 w-14 sm:h-16 sm:w-16 rounded-xl shrink-0 border border-border/50 shadow-inner">
+            <Avatar className="h-14 w-14 sm:h-16 sm:w-16 rounded-test-xl shrink-0 border border-border/50 shadow-inner">
               <AvatarImage src={product.image} className="object-cover" />
-              <AvatarFallback className="rounded-xl bg-primary/10 text-primary font-bold text-lg">
+              <AvatarFallback className="rounded-test-xl bg-primary/10 text-primary font-bold text-lg">
                 {product.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
@@ -83,7 +81,7 @@ export const ProductCard = React.memo<ProductCardProps>(
                     <h3 className="font-bold text-xs sm:text-sm leading-tight line-clamp-2 text-foreground/90 group-hover:text-primary transition-colors">
                       {product.name}
                     </h3>
-                    <Button
+                    {/* <Button
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10 hover:text-primary"
@@ -93,7 +91,7 @@ export const ProductCard = React.memo<ProductCardProps>(
                       }}
                     >
                       <Icon name="Pencil" className="h-3 w-3" />
-                    </Button>
+                    </Button> */}
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-tight truncate mt-0.5">
                     {product.description || "Sem descrição"}
@@ -105,8 +103,8 @@ export const ProductCard = React.memo<ProductCardProps>(
                         className="text-[10px] items-center gap-1.5 px-2 py-0.5 border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/15 transition-colors font-medium shadow-sm"
                       >
                         <span className="relative flex h-1.5 w-1.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-test-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-test-full h-1.5 w-1.5 bg-emerald-500"></span>
                         </span>
                         {product?.quantity} unid.
                       </Badge>
@@ -115,18 +113,8 @@ export const ProductCard = React.memo<ProductCardProps>(
                         variant="destructive"
                         className="text-[10px] items-center gap-1.5 px-2 py-0.5 border border-red-500/20 bg-red-500/10 text-red-600 hover:bg-red-500/15 transition-colors cursor-not-allowed font-medium shadow-sm"
                       >
-                        <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                        <div className="h-1.5 w-1.5 rounded-test-full bg-red-500" />
                         Indisponível
-                      </Badge>
-                    )}
-
-                    {/* Tax Rate Badge */}
-                    {product.tax?.rate && (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] px-2 py-0.5 border border-blue-500/30 bg-blue-500/10 text-blue-600 hover:bg-blue-500/15 transition-colors font-medium shadow-sm"
-                      >
-                        IVA {product.tax.rate}%
                       </Badge>
                     )}
                   </div>
@@ -197,7 +185,7 @@ export const ProductCard = React.memo<ProductCardProps>(
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
+                        className="h-7 w-7 sm:h-8 sm:w-8 rounded-test-full hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
                         onClick={() => onRemove(product.id)}
                       >
                         <Icon
@@ -207,7 +195,7 @@ export const ProductCard = React.memo<ProductCardProps>(
                       </Button>
 
                       <span
-                        className="text-xs sm:text-sm font-bold min-w-[1.25rem] sm:min-w-[1.5rem] text-center cursor-pointer select-none tabular-nums hover:text-primary transition-colors px-0.5 sm:px-1"
+                        className="text-xs sm:text-sm font-bold min-w-5 sm:min-w-6 text-center cursor-pointer select-none tabular-nums hover:text-primary transition-colors px-0.5 sm:px-1"
                         onDoubleClick={(e: React.MouseEvent) => {
                           e.preventDefault();
                           handleDoubleClick();
@@ -222,7 +210,7 @@ export const ProductCard = React.memo<ProductCardProps>(
                         variant="ghost"
                         disabled={product.quantity <= quantity}
                         className={cn(
-                          "h-7 w-7 sm:h-8 sm:w-8 rounded-full transition-colors",
+                          "h-7 w-7 sm:h-8 sm:w-8 rounded-test-full transition-colors",
                           product.quantity <= quantity
                             ? "text-muted-foreground/30 cursor-not-allowed"
                             : "text-primary hover:bg-primary/10",
@@ -240,7 +228,7 @@ export const ProductCard = React.memo<ProductCardProps>(
                 </div>
               </PopoverAnchor>
               <PopoverContent
-                className="w-auto p-3 shadow-2xl border-primary/20 backdrop-blur-md z-[110]"
+                className="w-auto p-3 shadow-2xl border-primary/20 backdrop-blur-md z-110"
                 align="end"
                 side="top"
                 onInteractOutside={(e: any) => {

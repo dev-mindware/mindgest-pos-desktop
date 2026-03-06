@@ -14,7 +14,7 @@ export function UpgradeModal({ feature }: { feature: string }) {
       className="w-[28rem]"
       title={
         <div className="flex items-center justify-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 rounded-full text-sm font-medium">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 rounded-test-full text-sm font-medium">
             <Sparkles className="h-4 w-4" />
             Recurso Premium
           </div>

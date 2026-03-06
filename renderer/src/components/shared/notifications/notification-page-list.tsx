@@ -22,7 +22,7 @@ export function NotificationList({
   if (notifications.length === 0) {
     const isFiltered = searchTerm || filterStatus !== "all";
     return (
-      <div className="p-4 bg-sidebar rounded-lg border border-border">
+      <div className="p-4 bg-sidebar rounded-test-lg border border-border">
         <EmptyState
           icon="BellOff"
           title={isFiltered ? "Nenhuma notificação encontrada" : "Sem notificações"}

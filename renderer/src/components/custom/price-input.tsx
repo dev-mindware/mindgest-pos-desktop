@@ -7,7 +7,7 @@ interface PriceInputProps {
   placeholder?: string
   className?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any 
+  [key: string]: any
 }
 
 export default function PriceInput({
@@ -20,18 +20,18 @@ export default function PriceInput({
 
   return (
     <div className="*:not-first:mt-2">
-      <div className="relative flex rounded-md shadow-xs">
+      <div className="relative flex rounded-test-md shadow-xs">
         <span className="absolute inset-y-0 flex items-center justify-center text-sm pointer-events-none text-muted-foreground start-0 ps-4">
           kz
         </span>
         <Input
           id={id ?? generatedId}
-          className={`shadow-none -me-px rounded-e-none ps-8 ${className ?? ""}`}
+          className={`shadow-none -me-px rounded-test-e-none ps-8 ${className ?? ""}`}
           placeholder={placeholder}
           type="text"
           {...rest}
         />
-        <span className="inline-flex items-center px-3 text-sm border border-input bg-background text-muted-foreground -z-10 rounded-e-md">
+        <span className="inline-flex items-center px-3 text-sm border border-input bg-background text-muted-foreground -z-10 rounded-test-e-md">
           AOA
         </span>
       </div>

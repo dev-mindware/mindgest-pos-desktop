@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   DocumentStatusBadge,
   DownloadDocumentButton,
-} from "@/components/client";
+} from "@/components/client/documents/common";
 
 interface InvoiceTemplateProps {
   type: DocumentType
@@ -47,7 +47,7 @@ export function InvoiceTemplate({ type, data, hideDueDate, hideActions, changeVa
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-test-lg overflow-hidden">
         <table className="w-full">
           <thead className="bg-muted">
             <tr>

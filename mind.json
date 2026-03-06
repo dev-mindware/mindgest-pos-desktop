@@ -1,0 +1,148 @@
+{
+  "name": "Chat Support Walkthrough",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "chat-support",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "chat:session:{{$json[\"body\"][\"sessionId\"]}}"
+      },
+      "id": "RedisGet",
+      "name": "Get Session (Redis)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [400, 300],
+      "credentials": {
+        "redis": {
+          "id": "1",
+          "name": "Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT empresa_nome, plano FROM utilizadores WHERE id = {{$json[\"body\"][\"userId\"]}};"
+      },
+      "id": "PostgresUser",
+      "name": "Get User (Postgres)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [600, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const body = $json.body;\nconst user = items[0].json;\n\nconst prompt = `Você é um assistente especializado em software de facturação e gestão.\n\nEmpresa: ${user.empresa_nome}\nPlano: ${user.plano}\n\nPergunta:\n${body.message}\n\nResponda de forma clara e passo a passo se for um walkthrough.`;\n\nreturn [{ json: { prompt, sessionId: body.sessionId, userId: body.userId } }];"
+      },
+      "id": "BuildPrompt",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://ollama:11434/api/generate",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\"model\":\"mistral:7b-instruct-q4\",\"prompt\":$json[\"prompt\"],\"stream\":false}"
+      },
+      "id": "Ollama",
+      "name": "Call Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "chat:session:{{$json[\"sessionId\"]}}",
+        "value": "={{$json[\"response\"]}}"
+      },
+      "id": "RedisSet",
+      "name": "Save Session (Redis)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [1200, 300],
+      "credentials": {
+        "redis": {
+          "id": "1",
+          "name": "Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_logs (user_id, session_id, message, response) VALUES ({{$json[\"userId\"]}}, '{{$json[\"sessionId\"]}}', '{{$node[\"Webhook\"].json[\"body\"][\"message\"]}}', '{{$json[\"response\"]}}');"
+      },
+      "id": "SaveHistory",
+      "name": "Save History (Postgres)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1400, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "responseBody": "={{ { reply: $json[\"response\"] } }}",
+        "options": {}
+      },
+      "id": "Respond",
+      "name": "Respond to Client",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1600, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Get Session (Redis)", "type": "main", "index": 0 }]]
+    },
+    "Get Session (Redis)": {
+      "main": [[{ "node": "Get User (Postgres)", "type": "main", "index": 0 }]]
+    },
+    "Get User (Postgres)": {
+      "main": [[{ "node": "Build Prompt", "type": "main", "index": 0 }]]
+    },
+    "Build Prompt": {
+      "main": [[{ "node": "Call Ollama", "type": "main", "index": 0 }]]
+    },
+    "Call Ollama": {
+      "main": [[{ "node": "Save Session (Redis)", "type": "main", "index": 0 }]]
+    },
+    "Save Session (Redis)": {
+      "main": [[{ "node": "Save History (Postgres)", "type": "main", "index": 0 }]]
+    },
+    "Save History (Postgres)": {
+      "main": [[{ "node": "Respond to Client", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

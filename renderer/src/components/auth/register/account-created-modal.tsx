@@ -6,7 +6,7 @@ import { useModal, useAuthStore } from "@/stores";
 import { Button } from "@/components";
 import { GlobalModal } from "@/components/modal";
 import { RegisterFormData } from "@/schemas";
-import { loginAction } from "@/actions/login";
+import { authService } from "@/services/auth-service";
 import { ErrorMessage } from "@/utils/messages";
 
 export function AccountCreatedModal() {
@@ -21,7 +21,7 @@ export function AccountCreatedModal() {
       try {
         const { email, password } = getValues("step1");
 
-        const result = await loginAction({ email, password });
+        const result = await authService.login({ email, password });
 
         if (result.user && result.redirectPath) {
           setUser(result.user);
@@ -44,7 +44,7 @@ export function AccountCreatedModal() {
       canClose={false}
       id="account-created"
       title="Bem-vindo(a) à Mindgest!"
-      className="!w-lg text-center"
+      className="w-lg! text-center"
       description="Sua conta foi criada com sucesso."
     >
       <div className="flex flex-col items-center justify-center py-2 space-y-4">

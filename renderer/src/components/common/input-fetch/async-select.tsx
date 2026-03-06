@@ -197,7 +197,7 @@ export function AsyncCreatableSelectField({
         <div className="relative">
           {props.children}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between p-2 border-t bg-card rounded-b-[var(--radius)]">
+            <div className="flex items-center justify-between p-2 border-t bg-card rounded-test-b-[var(--radius)]">
               <Button
                 type="button"
                 variant="ghost"

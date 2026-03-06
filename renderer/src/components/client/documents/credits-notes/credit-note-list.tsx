@@ -7,10 +7,10 @@ import {
   ListSkeleton,
   EmptyState,
   ButtonOnlyAction,
-  CreditNotesFiltersTSX,
-  CreditNotePreviewDrawer,
   InvoiceFiltersSkeleton,
 } from "@/components";
+import { CreditNotePreviewDrawer } from "@/components/common/dynamic-drawer/credit-note-drawer";
+import { CreditNotesFiltersTSX } from "./credit-note-filters";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { usePagination, useURLSearchParams } from "@/hooks/common";
 import { DocumentStatusBadge } from "../common";

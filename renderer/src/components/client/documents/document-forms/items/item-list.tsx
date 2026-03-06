@@ -18,7 +18,7 @@ export const ItemList = memo<ItemListProps>(({ items, onRemove }) => {
         </h4>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
+      <div className="overflow-x-auto rounded-test-lg border border-border shadow-sm">
         <table className="w-full">
           <thead className="bg-card border-border">
             <tr className="text-foreground">

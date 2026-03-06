@@ -33,6 +33,8 @@ from app.modules.xml.generator_v2 import XMLGeneratorV2
 from app.modules.docx.generator import DOCXGenerator
 from app.modules.saft.saft_generator import SAFTGenerator
 from app.modules.xlsx.generator import XLSXGenerator
+from pydantic import BaseModel
+from typing import List, Optional
 
 # Setup logging
 setup_logging()
@@ -279,6 +281,7 @@ async def generate_report_download(
 async def root():
     """Root endpoint."""
     return {
+        "message": "Mindgest POS - Servidor de Relatórios (Python) operante!",
         "service": APP_NAME,
         "version": APP_VERSION,
         "status": "running",

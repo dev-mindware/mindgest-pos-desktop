@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger, Appearance, Icon } from "@/components";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PosGeneralSettings, PosWorkspaceSettings } from "./contents";
+import { PosGeneralSettings, PosWorkspaceSettings, PosMindSettings } from "./contents";
 import { currentStoreStore } from "@/stores";
 import { useQuery } from "@tanstack/react-query";
 import { cashSessionsService } from "@/services";
@@ -34,6 +34,12 @@ export function PosSettingsSetup() {
             icon: "Palette",
             component: () => <Appearance />,
         },
+        {
+            id: "mind",
+            label: "MIND AI",
+            icon: "Sparkles",
+            component: () => <PosMindSettings />,
+        },
     ];
 
     const defaultTab = tabs[0].id;
@@ -58,8 +64,8 @@ export function PosSettingsSetup() {
                     className="flex-row w-full mt-5"
                     onValueChange={handleTabChange}
                 >
-                    <div className="h-screen bg-sidebar rounded-md w-64 shrink-0">
-                        <TabsList className="sticky top-0 flex-col gap-1 px-1 font-normal bg-transparent rounded-none w-full text-foreground items-stretch">
+                    <div className="h-screen bg-sidebar rounded-test-md w-64 shrink-0">
+                        <TabsList className="sticky top-0 flex-col gap-1 px-1 font-normal bg-transparent rounded-test-none w-full text-foreground items-stretch">
                             <div className="p-4 space-y-2">
                                 {tabs.map((tab) => (
                                     <TabsTrigger
@@ -75,7 +81,7 @@ export function PosSettingsSetup() {
                         </TabsList>
                     </div>
 
-                    <div className="border rounded-md grow text-start ml-6">
+                    <div className="border rounded-test-md grow text-start ml-6">
                         {tabs.map((tab) => (
                             <TabsContent key={tab.id} value={tab.id} className="p-6">
                                 {tab.component(currentSession, isLoading)}

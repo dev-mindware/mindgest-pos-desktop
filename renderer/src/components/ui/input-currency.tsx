@@ -45,7 +45,7 @@ const InputCurrency = React.forwardRef<HTMLInputElement, InputCurrencyProps>(
 
         <div
           className={cn(
-            "flex items-center rounded-md border px-3 py-2 text-sm transition-colors duration-200 w-full",
+            "flex items-center rounded-test-md border px-3 py-2 text-sm transition-colors duration-200 w-full",
             error
               ? "border-red-500 ring-1 ring-red-400"
               : "border-input focus-within:border-primary-500 focus-within:ring-[3px] focus-within:ring-ring/50"

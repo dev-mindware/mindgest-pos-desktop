@@ -3,7 +3,6 @@
 import { Product } from "@/types";
 import { ProductCard } from "./product-card";
 import { EmptyState } from "@/components/common/empty-state";
-import { AddProductModal } from "@/components/client/items/products/product-modals";
 import { useModal } from "@/stores";
 
 interface ProductSectionProps {
@@ -47,9 +46,6 @@ export function ProductList({
                     />
                 ))}
             </div>
-
-            {/* Global Product Modal for editing/adding from POS */}
-            {(open["add-product"] || open["edit-product"]) && <AddProductModal />}
         </>
     );
 }

@@ -3,17 +3,24 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import serve from "electron-serve";
 import { database } from "./database";
 
-// Register SQLite Handlers
+// Register SQLite Handlers — all document operations now require userId for isolation
 ipcMain.handle("db:save-document", async (_, doc) => {
-  return database.saveDocument(doc.id, doc.type, doc.payload);
+  return database.saveDocument(doc.id, doc.userId, doc.type, doc.payload);
 });
 
-ipcMain.handle("db:get-all-documents", async () => {
-  return database.getAllDocuments();
+ipcMain.handle("db:get-all-documents", async (_, userId: string) => {
+  return database.getAllDocuments(userId);
 });
 
-ipcMain.handle("db:delete-document", async (_, id) => {
-  return database.deleteDocument(id);
+ipcMain.handle(
+  "db:delete-document",
+  async (_, { id, userId }: { id: string; userId: string }) => {
+    return database.deleteDocument(id, userId);
+  },
+);
+
+ipcMain.handle("db:clear-documents", async (_, userId: string) => {
+  return database.clearAllDocuments(userId);
 });
 
 ipcMain.handle("db:update-products-cache", async (_, products) => {

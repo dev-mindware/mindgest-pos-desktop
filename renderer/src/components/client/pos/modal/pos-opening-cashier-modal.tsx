@@ -118,8 +118,8 @@ export function PosOpeningCashierModal({ onSuccess }: PosOpeningCashierModalProp
             >
                 <div className="space-y-6 pt-4">
                     {/* Store Information Banner */}
-                    <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 flex items-start gap-3">
-                        <div className="p-2 bg-primary/10 rounded-full">
+                    <div className="bg-primary/5 border border-primary/10 rounded-test-lg p-4 flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-test-full">
                             <Icon name="Store" className="w-5 h-5 text-primary" />
                         </div>
                         <div className="space-y-1 overflow-hidden">

@@ -5,8 +5,10 @@ export function useAuth() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
+  const logout = useAuthStore((state) => state.logout);
 
-  const subscriptionStatus: SubscriptionStatus = user?.company.subscription.status!;
+  const subscriptionStatus: SubscriptionStatus =
+    user?.company.subscription.status!;
 
-  return { user, setUser, isAuthenticating, subscriptionStatus };
+  return { user, setUser, isAuthenticating, logout, subscriptionStatus };
 }

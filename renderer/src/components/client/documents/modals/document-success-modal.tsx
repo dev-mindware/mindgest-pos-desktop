@@ -35,11 +35,12 @@ export function DocumentSuccessModal() {
                 setIsLoading(true);
                 setError(null);
                 try {
-                    // Check if document is offline
+                    // Check if document is in the offline queue AND if the user is currently offline
+                    const isOffline = !window.navigator.onLine;
                     const offlineDoc = offlineQueue.find(doc => doc.internalId === data.id);
 
-                    if (offlineDoc) {
-                        console.log("Generating offline document PDF...");
+                    if (offlineDoc && isOffline) {
+                        console.log("Sistema Offline: Gerando documento pelo microserviço Python local...");
                         // Call local python-microservice
                         const mappedPayload = {
                             format: "pdf",
@@ -139,12 +140,12 @@ export function DocumentSuccessModal() {
             className={isThermal ? "max-w-md max-h-[90vh] overflow-y-auto" : "max-w-4xl max-h-[90vh] overflow-y-auto"}
         >
             <div className="flex flex-col gap-4 mt-4">
-                <div className={isThermal ? "relative w-full aspect-[1/2] bg-muted rounded-lg border overflow-hidden" : "relative w-full aspect-[1/1.4] bg-muted rounded-lg border overflow-hidden"}>
+                <div className={isThermal ? "relative w-full aspect-[1/2] bg-muted rounded-test-lg border overflow-hidden" : "relative w-full aspect-[1/1.4] bg-muted rounded-test-lg border overflow-hidden"}>
                     {isLoading && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-10 text-center">
                             <Skeleton className="w-full h-full" />
                             <div className="absolute flex flex-col items-center gap-2">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                <div className="animate-spin rounded-test-full h-8 w-8 border-b-2 border-primary"></div>
                                 <p className="text-sm text-muted-foreground">Carregando visualização...</p>
                             </div>
                         </div>

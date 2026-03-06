@@ -92,11 +92,11 @@ export const CashOpeningForm: React.FC<CashOpeningFormProps> = ({
             openCashRegisters.map((cashier) => (
               <div
                 key={cashier.id}
-                className="flex items-center justify-between p-3 border rounded-lg"
+                className="flex items-center justify-between p-3 border rounded-test-lg"
               >
                 <div className="flex items-center gap-3">
-                  <Avatar className="w-8 h-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg">
+                  <Avatar className="w-8 h-8 rounded-test-lg">
+                    <AvatarFallback className="rounded-test-lg">
                       {cashier.name
                         .split(" ")
                         .map((value: string) => value[0])

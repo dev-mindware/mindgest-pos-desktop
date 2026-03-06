@@ -17,7 +17,7 @@ export function StockSummarySkeleton() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Skeleton className="h-[300px] w-full rounded-lg" />
+                    <Skeleton className="h-[300px] w-full rounded-test-lg" />
                 </CardContent>
             </Card>
         </div>

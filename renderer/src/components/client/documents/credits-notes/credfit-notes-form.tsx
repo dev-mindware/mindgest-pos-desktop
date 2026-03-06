@@ -96,7 +96,7 @@ export function CreditNoteForm({ invoice }: Props) {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="p-8 space-y-8 border rounded-lg"
+      className="p-8 space-y-8 border rounded-test-lg"
     >
       <RHFSelect
         label="Motivo"

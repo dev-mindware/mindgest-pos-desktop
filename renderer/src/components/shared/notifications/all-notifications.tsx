@@ -84,7 +84,7 @@ export function AllNotifications() {
         setFilterType={setFilterType}
       />
 
-      <div className="bg-card rounded-xl border shadow-sm">
+      <div className="bg-card rounded-test-xl border shadow-sm">
         <NotificationList
           className="h-[calc(100vh-20rem)]"
           notifications={notifications}

@@ -64,7 +64,7 @@ export default function ValidInputPassword() {
             aria-describedby={`${id}-description`}
           />
           <button
-            className="text-muted-foreground/80 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-md transition-[color,box-shadow] outline-none focus:z-10 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-muted-foreground/80 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-test-e-md transition-[color,box-shadow] outline-none focus:z-10 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
             onClick={toggleVisibility}
             aria-label={isVisible ? "Hide password" : "Show password"}
@@ -82,7 +82,7 @@ export default function ValidInputPassword() {
 
       {/* Password strength indicator */}
       <div
-        className="w-full h-1 mt-3 mb-4 overflow-hidden rounded-full bg-border"
+        className="w-full h-1 mt-3 mb-4 overflow-hidden rounded-test-full bg-border"
         role="progressbar"
         aria-valuenow={strengthScore}
         aria-valuemin={0}

@@ -73,10 +73,10 @@ export function ManagerAuthModal({ onAuthenticated }: ManagerAuthModalProps) {
       <div className="bg-gradient-to-br from-primary/10 via-background to-background p-8">
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="relative">
-            <div className="h-24 w-24 rounded-full bg-primary/15 flex items-center justify-center text-primary shadow-inner animate-pulse">
+            <div className="h-24 w-24 rounded-test-full bg-primary/15 flex items-center justify-center text-primary shadow-inner animate-pulse">
               <Icon name="ShieldCheck" size={48} />
             </div>
-            <div className="absolute -bottom-2 -right-2 h-10 w-10 rounded-full bg-background border-2 border-primary/20 flex items-center justify-center text-primary shadow-lg">
+            <div className="absolute -bottom-2 -right-2 h-10 w-10 rounded-test-full bg-background border-2 border-primary/20 flex items-center justify-center text-primary shadow-lg">
               <Icon name="Barcode" size={20} />
             </div>
           </div>
@@ -94,8 +94,8 @@ export function ManagerAuthModal({ onAuthenticated }: ManagerAuthModalProps) {
           <div className="w-full py-6 flex flex-col items-center gap-4">
             {!showManualInput ? (
               <>
-                <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-primary/5 border border-primary/20 text-primary animate-bounce-slow">
-                  <div className="h-2 w-2 rounded-full bg-primary animate-ping"></div>
+                <div className="flex items-center gap-3 px-6 py-3 rounded-test-full bg-primary/5 border border-primary/20 text-primary animate-bounce-slow">
+                  <div className="h-2 w-2 rounded-test-full bg-primary animate-ping"></div>
                   <span className="text-xs font-bold uppercase tracking-[0.2em]">
                     Aguardando Leitura...
                   </span>
@@ -107,7 +107,7 @@ export function ManagerAuthModal({ onAuthenticated }: ManagerAuthModalProps) {
                       <div
                         key={i}
                         className={cn(
-                          "h-1.5 w-1.5 rounded-full transition-all duration-300",
+                          "h-1.5 w-1.5 rounded-test-full transition-all duration-300",
                           i < buffer.length ? "bg-primary scale-110" : "bg-muted"
                         )}
                       />

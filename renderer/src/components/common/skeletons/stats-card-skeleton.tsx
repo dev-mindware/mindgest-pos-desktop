@@ -44,9 +44,9 @@ export function StatsCardsSkeleton() {
             <CardTitle className="text-sm font-semibold text-gray-700">
               {color.title}
             </CardTitle>
-            <div className={`p-2 rounded-full ${color.bgColor}`}>
+            <div className={`p-2 rounded-test-full ${color.bgColor}`}>
               <Skeleton
-                className={`h-5 w-5 rounded-full ${color.pulseColor}`}
+                className={`h-5 w-5 rounded-test-full ${color.pulseColor}`}
               />
             </div>
           </CardHeader>

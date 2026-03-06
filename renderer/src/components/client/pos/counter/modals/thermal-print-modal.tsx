@@ -58,7 +58,7 @@ export function ThermalPrintModal({
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="flex-1 min-h-0 border rounded-md overflow-hidden bg-muted/20">
+                <div className="flex-1 min-h-0 border rounded-test-md overflow-hidden bg-muted/20">
                     <iframe
                         src={pdfUrl}
                         className="w-full h-full"

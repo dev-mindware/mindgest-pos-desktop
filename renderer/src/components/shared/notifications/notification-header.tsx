@@ -37,7 +37,7 @@ export function NotificationHeader({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="icon" className="bg-white/20 rounded-lg">
+            <Button size="icon" className="bg-white/20 rounded-test-lg">
               <Icon name="EllipsisVertical" className="h-6 w-6 text-white" />
             </Button>
           </DropdownMenuTrigger>

@@ -37,18 +37,18 @@ export function ClientsReportsSkeleton() {
                 <Card className="col-span-2">
                     <CardHeader>
                         <div className="flex items-center gap-2">
-                            <Skeleton className="h-5 w-5 rounded-md" />
+                            <Skeleton className="h-5 w-5 rounded-test-md" />
                             <Skeleton className="h-6 w-48" />
                         </div>
                         <Skeleton className="h-4 w-64" />
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col items-center justify-center space-y-8" style={{ height: 350 }}>
-                            <Skeleton className="h-[200px] w-[200px] rounded-full" />
+                            <Skeleton className="h-[200px] w-[200px] rounded-test-full" />
                             <div className="flex gap-6">
                                 {[1, 2, 3].map((i) => (
                                     <div key={i} className="flex items-center gap-2">
-                                        <Skeleton className="h-3 w-3 rounded-full" />
+                                        <Skeleton className="h-3 w-3 rounded-test-full" />
                                         <Skeleton className="h-4 w-20" />
                                     </div>
                                 ))}
@@ -80,7 +80,7 @@ export function ClientsReportsSkeleton() {
                                     <Skeleton className="h-3 w-32" />
                                 </div>
                             </div>
-                            <Skeleton className="h-12 w-12 rounded-full" />
+                            <Skeleton className="h-12 w-12 rounded-test-full" />
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -102,7 +102,7 @@ export function ClientsReportsSkeleton() {
                                 <Skeleton className="h-4 w-36" />
                                 <Skeleton className="h-5 w-12" />
                             </div>
-                            <Skeleton className="h-2 w-full rounded-full" />
+                            <Skeleton className="h-2 w-full rounded-test-full" />
                         </div>
                     </CardContent>
                 </Card>
@@ -114,7 +114,7 @@ export function ClientsReportsSkeleton() {
                     <Card key={cardIndex}>
                         <CardHeader>
                             <div className="flex items-center gap-2">
-                                <Skeleton className="h-5 w-5 rounded-md" />
+                                <Skeleton className="h-5 w-5 rounded-test-md" />
                                 <Skeleton className="h-6 w-40" />
                             </div>
                             <Skeleton className="h-4 w-56" />
@@ -129,7 +129,7 @@ export function ClientsReportsSkeleton() {
                                 {[1, 2, 3, 4, 5].map((i) => (
                                     <div key={i} className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <Skeleton className="h-8 w-8 rounded-full" />
+                                            <Skeleton className="h-8 w-8 rounded-test-full" />
                                             <div className="space-y-1">
                                                 <Skeleton className="h-4 w-32" />
                                                 <Skeleton className="h-3 w-20" />

@@ -33,11 +33,11 @@ export function PosSessionGuard({ children }: { children: React.ReactNode }) {
     if (isLoading || isLoggingOut) {
         return (
             <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-md">
-                <div className="relative flex flex-col items-center gap-6 p-10 rounded-3xl bg-card border border-primary/5 shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 rounded-3xl" />
+                <div className="relative flex flex-col items-center gap-6 p-10 rounded-test-3xl bg-card border border-primary/5 shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 rounded-test-3xl" />
                     <div className="relative">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" strokeWidth={2.5} />
-                        <div className="absolute inset-0 h-12 w-12 animate-ping bg-primary/20 rounded-full -z-10" />
+                        <div className="absolute inset-0 h-12 w-12 animate-ping bg-primary/20 rounded-test-full -z-10" />
                     </div>
                     <div className="text-center space-y-1.5 relative">
                         <p className="text-lg font-outfit font-bold text-foreground tracking-tight">Verificando POS</p>
@@ -65,8 +65,8 @@ export function PosSessionGuard({ children }: { children: React.ReactNode }) {
     if (error && !isNotFound) {
         return (
             <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-md p-6">
-                <div className="max-w-md w-full p-8 rounded-3xl bg-card border border-destructive/20 shadow-2xl space-y-6 text-center">
-                    <div className="p-4 bg-destructive/10 rounded-full w-fit mx-auto">
+                <div className="max-w-md w-full p-8 rounded-test-3xl bg-card border border-destructive/20 shadow-2xl space-y-6 text-center">
+                    <div className="p-4 bg-destructive/10 rounded-test-full w-fit mx-auto">
                         <Icon name="CircleX" className="w-10 h-10 text-destructive" />
                     </div>
                     <div className="space-y-2">
@@ -75,12 +75,22 @@ export function PosSessionGuard({ children }: { children: React.ReactNode }) {
                             Não foi possível verificar o estado do terminal. Por favor, verifique sua conexão ou tente novamente.
                         </p>
                     </div>
-                    <Button
-                        onClick={() => window.location.reload()}
-                        className="w-full h-12 rounded-xl font-bold font-outfit"
-                    >
-                        Tentar Novamente
-                    </Button>
+                    <div className="flex flex-col gap-3 w-full">
+                        <Button
+                            onClick={() => window.location.reload()}
+                            className="w-full h-12 rounded-test-xl font-bold font-outfit"
+                        >
+                            Tentar Novamente
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            onClick={() => logout()}
+                            className="w-full h-12 rounded-test-xl font-medium"
+                        >
+                            <Icon name="LogOut" className="w-4 h-4 mr-2" />
+                            Terminar Sessão
+                        </Button>
+                    </div>
                 </div>
             </div>
         );
@@ -89,14 +99,14 @@ export function PosSessionGuard({ children }: { children: React.ReactNode }) {
     return (
         <Dialog open={true}>
             <DialogContent
-                className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl"
+                className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-test-3xl"
                 onInteractOutside={(e) => e.preventDefault()}
             >
                 <div className="bg-gradient-to-br from-background via-background to-muted/30 p-8 space-y-8">
                     <DialogHeader className="flex flex-col items-center text-center gap-6">
                         <div className="relative group">
-                            <div className={`absolute inset-0 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity rounded-full ${isClosed ? "bg-amber-500" : "bg-red-500"}`} />
-                            <div className={`relative p-6 rounded-2xl shadow-inner border border-white/10 ${isClosed ? "bg-amber-500/10" : "bg-red-500/10"}`}>
+                            <div className={`absolute inset-0 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity rounded-test-full ${isClosed ? "bg-amber-500" : "bg-red-500"}`} />
+                            <div className={`relative p-6 rounded-test-2xl shadow-inner border border-white/10 ${isClosed ? "bg-amber-500/10" : "bg-red-500/10"}`}>
                                 <Icon
                                     name={isClosed ? "TriangleAlert" : "Lock"}
                                     className={`w-12 h-12 ${isClosed ? "text-amber-600" : "text-red-600"}`}
@@ -130,7 +140,7 @@ export function PosSessionGuard({ children }: { children: React.ReactNode }) {
                             onClick={() => logout()}
                         >
                             <Icon name="House" className="h-4 w-4" />
-                            Voltar ao Início
+                            Voltar para o Login
                         </Button>
                     </div>
                 </div>

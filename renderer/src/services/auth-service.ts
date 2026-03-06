@@ -1,5 +1,7 @@
-import { User } from "@/types";
+import { LoginResponse, Role, User } from "@/types";
 import api from "./api";
+import { createSession, destroySession } from "@/lib/session";
+import { getRouteByRole } from "@/utils/role-redirects";
 
 export const authService = {
   getMe: async (): Promise<User | null> => {
@@ -12,10 +14,56 @@ export const authService = {
     }
   },
 
+  login: async (
+    credentials: any,
+  ): Promise<{
+    user: User | null;
+    redirectPath?: string;
+    message?: string;
+  }> => {
+    try {
+      const res = await api.post<LoginResponse>("/auth/login", credentials);
+      const { user, tokens, message } = res.data;
+
+      if (!user) {
+        throw new Error("Usuário não autorizado");
+      }
+
+      await createSession({
+        user,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      });
+
+      const redirectPath = getRouteByRole(user.role);
+      return { message, user, redirectPath };
+    } catch (error: any) {
+      let messageError = "Ocorreu um erro inesperado!";
+      if (error?.response?.data?.message) {
+        messageError = error.response.data.message;
+      } else if (error instanceof Error) {
+        messageError = error.message;
+      }
+      return { user: null, message: messageError };
+    }
+  },
+
+  logout: async (refreshToken?: string | null): Promise<void> => {
+    try {
+      if (refreshToken) {
+        await api.post("/auth/logout", { refresh_token: refreshToken });
+      }
+    } catch (error) {
+      console.error("Erro ao fazer logout na API:", error);
+    } finally {
+      await destroySession();
+    }
+  },
+
   forgotPassword: async (email: string): Promise<{ message: string }> => {
     const response = await api.post<{ message: string }>(
       "/auth/forgot-password",
-      { email }
+      { email },
     );
     return response.data;
   },

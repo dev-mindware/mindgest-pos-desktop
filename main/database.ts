@@ -13,6 +13,7 @@ const db = new Database(dbPath);
 db.exec(`
   CREATE TABLE IF NOT EXISTS offline_documents (
     id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
     type TEXT NOT NULL,
     payload TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -31,31 +32,47 @@ db.exec(`
   );
 `);
 
+// Migration: add user_id column if it doesn't exist yet (for existing DBs)
+try {
+  db.exec(
+    `ALTER TABLE offline_documents ADD COLUMN user_id TEXT NOT NULL DEFAULT 'unknown'`,
+  );
+} catch {
+  // Column already exists — safe to ignore
+}
+
 export const database = {
-  // Document Operations
-  saveDocument: (id: string, type: string, payload: any) => {
+  // Document Operations — always scoped by userId
+  saveDocument: (id: string, userId: string, type: string, payload: any) => {
     const stmt = db.prepare(
-      "INSERT OR REPLACE INTO offline_documents (id, type, payload) VALUES (?, ?, ?)",
+      "INSERT OR REPLACE INTO offline_documents (id, user_id, type, payload) VALUES (?, ?, ?, ?)",
     );
-    return stmt.run(id, type, JSON.stringify(payload));
+    return stmt.run(id, userId, type, JSON.stringify(payload));
   },
 
-  getAllDocuments: () => {
+  getAllDocuments: (userId: string) => {
     const stmt = db.prepare(
-      "SELECT * FROM offline_documents ORDER BY created_at ASC",
+      "SELECT * FROM offline_documents WHERE user_id = ? ORDER BY created_at ASC",
     );
-    return stmt.all().map((doc: any) => ({
+    return stmt.all(userId).map((doc: any) => ({
       ...doc,
       payload: JSON.parse(doc.payload),
     }));
   },
 
-  deleteDocument: (id: string) => {
-    const stmt = db.prepare("DELETE FROM offline_documents WHERE id = ?");
-    return stmt.run(id);
+  deleteDocument: (id: string, userId: string) => {
+    const stmt = db.prepare(
+      "DELETE FROM offline_documents WHERE id = ? AND user_id = ?",
+    );
+    return stmt.run(id, userId);
   },
 
-  // Cache Operations
+  clearAllDocuments: (userId: string) => {
+    const stmt = db.prepare("DELETE FROM offline_documents WHERE user_id = ?");
+    return stmt.run(userId);
+  },
+
+  // Cache Operations (store-level, not user-level)
   updateProductsCache: (products: any[]) => {
     const deleteStmt = db.prepare("DELETE FROM cache_products");
     const insertStmt = db.prepare(

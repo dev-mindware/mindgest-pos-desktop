@@ -192,7 +192,7 @@ export function InvoiceReceiptForm() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit, (errors) => console.log("Erro de Validação na Fatura Recibo:", errors))}
-      className="p-8 mt-4 space-y-8 border rounded-lg"
+      className="p-8 mt-4 space-y-8 border rounded-test-lg"
     >
       <div className="grid gap-6 md:grid-cols-2">
         <Input

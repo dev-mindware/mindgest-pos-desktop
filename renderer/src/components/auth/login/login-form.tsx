@@ -8,7 +8,7 @@ import { ErrorMessage } from "@/utils/messages";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginFormData, loginSchema } from "@/schemas";
 import { ButtonSubmit, GoogleButton, Input, OrLine } from "@/components";
-import { loginAction } from "@/actions/login";
+import { authService } from "@/services/auth-service";
 import { useAuthStore } from "@/stores";
 
 export function LoginForm() {
@@ -25,7 +25,7 @@ export function LoginForm() {
 
   async function handleLogin({ email, password }: LoginFormData) {
     try {
-      const res = await loginAction({ email, password });
+      const res = await authService.login({ email, password });
 
       if (!res.user) {
         ErrorMessage(res.message || "Erro ao tentar fazer login.");

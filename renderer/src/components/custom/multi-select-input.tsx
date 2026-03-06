@@ -41,7 +41,7 @@ export function MultiQuizSelect({
             onClick={() => handleSelect(opt.value)}
             type="button"
             className={cn(
-              "flex items-center gap-2 rounded-xl px-4 py-3 text-left transition-all border",
+              "flex items-center gap-2 rounded-test-xl px-4 py-3 text-left transition-all border",
               isSelected
                 ? "border-primary bg-background ring-2 ring-primary/50"
                 : "bg-sidebar border-transparent hover:border-muted-foreground/20 text-muted-foreground"

@@ -5,7 +5,7 @@ export function ProductModalSkeleton() {
     <div className="grid grid-cols-1 gap-6 sm:grid-flow-col sm:auto-cols-fr">
       {/* Barcode Section Skeleton */}
       <div className="space-y-6">
-        <div className="rounded-lg bg-sidebar p-6">
+        <div className="rounded-test-lg bg-sidebar p-6">
           <Skeleton className="h-6 w-32 mb-4" />
           <div className="flex justify-center mb-4">
             <div className="flex space-x-1">

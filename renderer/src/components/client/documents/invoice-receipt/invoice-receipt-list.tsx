@@ -1,15 +1,17 @@
 "use client";
 import { usePagination, useURLSearchParams } from "@/hooks/common";
 import {
+  Badge,
   Column,
   RequestError,
   GenericTable,
   ListSkeleton,
   EmptyState,
   ButtonOnlyAction,
-  InvoicePreviewDrawer,
   InvoiceFiltersSkeleton,
 } from "@/components";
+import { ReceiptPreviewDrawer } from "@/components/common/dynamic-drawer/receipt-preview-drawer";
+import { InvoicePreviewDrawer } from "@/components/common/dynamic-drawer/invoice-preview-drawer";
 import { InvoiceResponse } from "@/types";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { useDebounce } from "use-debounce";
@@ -88,7 +90,7 @@ export function InvoiceReceiptList({ storeId }: { storeId?: string }) {
               onClick: () => {
                 const isCashier = user?.role === "CASHIER";
                 const route = isCashier
-                  ? `/pos/movements/notes/${item.id}`
+                  ? `/pos/movements/notes?noteId=${item.id}`
                   : `/documents/notes/${item.id}?invoiceType=invoice-receipt`;
 
                 if (isCashier) {

@@ -7,10 +7,10 @@ import {
   TabsList,
   TabsTrigger,
   TitleList,
-  InvoiceReceiptList,
-  CreditNotesList,
 } from "@/components";
+import { InvoiceReceiptList } from "@/components/client/documents/invoice-receipt/invoice-receipt-list";
 import { ProformaList } from "@/components/client/documents/invoice-proforma/proforma-list";
+import { CreditNotesList } from "@/components/client/documents/credits-notes/credit-note-list";
 
 export function MovementsContent() {
   const { user } = useAuth();

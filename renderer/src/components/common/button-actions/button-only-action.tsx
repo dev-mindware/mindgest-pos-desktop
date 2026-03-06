@@ -48,7 +48,7 @@ export function ButtonOnlyAction<T>({ data, actions }: Props<T>) {
         <Button
           size="icon"
           variant="ghost"
-          className="rounded-full shadow-none"
+          className="rounded-test-full shadow-none"
           aria-label="Open actions menu"
         >
           <Icon name="Ellipsis" size={16} aria-hidden="true" />
@@ -113,7 +113,7 @@ export function ButtonOnlyAction<T>({ data, actions }: Props<T>) {
         <Button
           size="icon"
           variant="ghost"
-          className="rounded-full shadow-none"
+          className="rounded-test-full shadow-none"
           aria-label="Open actions menu"
         >
           <Icon name="Ellipsis" size={16} aria-hidden="true" />

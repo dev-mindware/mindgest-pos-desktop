@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { User } from "@/types";
-import { logoutAction } from "@/actions/login";
+import { authService } from "@/services/auth-service";
 
 interface AuthState {
   user: User | null;
@@ -21,7 +21,17 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     set({ isLoggingOut: true });
-    await logoutAction();
-    set({ user: null });
+    try {
+      const refreshToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("session-refreshToken")
+          : null;
+      await authService.logout(refreshToken);
+    } finally {
+      set({ user: null, isLoggingOut: false });
+      if (typeof window !== "undefined") {
+        window.location.replace("/auth/login");
+      }
+    }
   },
 }));

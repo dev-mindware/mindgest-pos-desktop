@@ -14,10 +14,13 @@ import {
   PosProductSectionSkeleton,
   PosCartSkeleton,
   Tabs, TabsContent, TabsList, TabsTrigger,
-  ScrollArea
+  ScrollArea,
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+  Button
 } from "@/components";
 import { Product, CartType } from "@/types";
-import { useCounterState } from "@/hooks";
+import { useCounterState, useRecommendations, useMindPricingConfig } from "@/hooks";
+import { Sparkles } from "lucide-react";
 
 export function CounterContent() {
   const [search] = useQueryState("search", { defaultValue: "" });
@@ -95,6 +98,16 @@ export function CounterContent() {
   const handleClearCartInvoice = useCallback(() => handleClearCart("invoice"), [handleClearCart]);
   const handleClearCartProforma = useCallback(() => handleClearCart("proforma"), [handleClearCart]);
 
+  // Mind AI Recommendations based on active cart
+  const { isRecommendationsEnabled } = useMindPricingConfig();
+  const currentCartArray = getCartItemsArray(activeCart);
+  const { recommendations, loading: loadingRecs } = useRecommendations(isRecommendationsEnabled ? currentCartArray : []);
+  const recommendedProducts = useMemo(() => {
+    return recommendations
+      .map(id => products.find(p => p.id === id))
+      .filter(Boolean) as Product[];
+  }, [recommendations, products]);
+
   return (
     <div className="flex h-full overflow-hidden">
       <BarcodeProductScanner
@@ -135,12 +148,61 @@ export function CounterContent() {
 
       {/* Right Content - Cart & Payment */}
       <div className="w-[400px] flex flex-col border-l border-border/50 bg-sidebar/30">
-        <Tabs value={activeCart} onValueChange={(v) => setActiveCart(v as CartType)} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 m-4 mb-0">
-            <TabsTrigger value="invoice">Faturação</TabsTrigger>
-            <TabsTrigger value="proforma">Proforma</TabsTrigger>
-          </TabsList>
 
+        <div className="flex border-b items-center justify-between">
+          <Tabs value={activeCart} onValueChange={(v) => setActiveCart(v as CartType)} className="flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-2 m-4 mb-2">
+              <TabsTrigger value="invoice">Faturação</TabsTrigger>
+              <TabsTrigger value="proforma">Proforma</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Mind AI Recommendations Tooltip */}
+          {currentCartArray.length > 0 && (
+            <div className="pr-4 pb-0 items-center justify-center flex">
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-9 w-9 border-primary/30 text-primary relative">
+                      <Sparkles className="w-4 h-4" />
+                      {!loadingRecs && recommendedProducts.length > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                        </span>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="w-[300px] p-4 border bg-background text-foreground shadow-lg">
+                    <div className="font-semibold text-sm mb-3 flex items-center gap-2 text-primary">
+                      <Sparkles className="w-4 h-4" /> Mind AI Sugere:
+                    </div>
+                    {loadingRecs ? (
+                      <div className="text-sm text-muted-foreground animate-pulse text-center p-4">A analisar o cesto...</div>
+                    ) : recommendedProducts.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        {recommendedProducts.slice(0, 2).map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => handleAddToCart(p)}
+                            className="flex flex-col items-center p-2 rounded border hover:bg-muted hover:border-primary transition-colors text-xs text-center wrap-break-word"
+                          >
+                            <span className="font-medium truncate w-full">{p.name}</span>
+                            <span className="text-muted-foreground mt-1 text-xs">+{(p.price || 0).toFixed(2)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground text-center p-2">Sem sugestões de momento.</div>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
+        </div>
+
+        <Tabs value={activeCart} onValueChange={(v) => setActiveCart(v as CartType)} className="flex-1 flex flex-col">
           <TabsContent value="invoice" className="flex-1 mt-0">
             {isLoadingCategories || !currentSession?.id ? (
               <PosCartSkeleton />

@@ -18,8 +18,8 @@ export const CashierCard: React.FC<CashierCardProps> = ({ cashier, onAdd }) => (
     <CardContent className="p-4">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <Avatar className="w-8 h-8 rounded-lg">
-            <AvatarFallback className="rounded-lg">
+          <Avatar className="w-8 h-8 rounded-test-lg">
+            <AvatarFallback className="rounded-test-lg">
               {cashier.name
                 .split(" ")
                 .map((n: string) => n[0])
@@ -37,7 +37,7 @@ export const CashierCard: React.FC<CashierCardProps> = ({ cashier, onAdd }) => (
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className={getStatusColor(cashier.status)}>
             <div
-              className={`w-2 h-2 mr-1 rounded-full ${getStatusDot(
+              className={`w-2 h-2 mr-1 rounded-test-full ${getStatusDot(
                 cashier.status
               )}`}
             ></div>
@@ -69,9 +69,9 @@ export const CashierCard: React.FC<CashierCardProps> = ({ cashier, onAdd }) => (
 
       <div className="mt-3">
         <p className="mb-1 text-xs text-gray-500">Progresso do Expediente</p>
-        <div className="w-full h-2 bg-gray-200 rounded-full">
+        <div className="w-full h-2 bg-gray-200 rounded-test-full">
           <div
-            className="h-2 transition-all duration-300 bg-green-500 rounded-full"
+            className="h-2 transition-all duration-300 bg-green-500 rounded-test-full"
             style={{ width: `${cashier.progress}%` }}
           ></div>
         </div>

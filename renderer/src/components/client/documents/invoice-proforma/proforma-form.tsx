@@ -271,7 +271,7 @@ export function ProformaForm({
   return (
     <form
       onSubmit={handleSubmit(onSubmit, (errors) => console.log("Erro de Validação na Proforma:", errors))}
-      className="space-y-8 p-8 mt-4 border rounded-lg"
+      className="space-y-8 p-8 mt-4 border rounded-test-lg"
     >
       <div className="grid gap-6 md:grid-cols-3">
         <Input

@@ -66,33 +66,33 @@ export function DataTable<TData>({
 
   const columns = enableSelection
     ? [
-        {
-          id: "select",
-          header: ({ table }: { table: TanStackTable<TData> }) => (
-            <Checkbox
-              checked={
-                table.getIsAllPageRowsSelected() ||
-                (table.getIsSomePageRowsSelected() && "indeterminate")
-              }
-              onCheckedChange={(value) =>
-                table.toggleAllPageRowsSelected(!!value)
-              }
-              aria-label="Select all"
-            />
-          ),
-          cell: ({ row }: { row: Row<TData> }) => (
-            <Checkbox
-              checked={row.getIsSelected()}
-              onCheckedChange={(value) => row.toggleSelected(!!value)}
-              aria-label="Select row"
-            />
-          ),
-          size: 28,
-          enableSorting: false,
-          enableHiding: false,
-        },
-        ...userColumns,
-      ]
+      {
+        id: "select",
+        header: ({ table }: { table: TanStackTable<TData> }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }: { row: Row<TData> }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+          />
+        ),
+        size: 28,
+        enableSorting: false,
+        enableHiding: false,
+      },
+      ...userColumns,
+    ]
     : userColumns;
 
   const table = useReactTable({
@@ -147,7 +147,7 @@ export function DataTable<TData>({
         toolbar={toolbar}
       />
 
-      <div className="overflow-hidden border rounded-md bg-background">
+      <div className="overflow-hidden border rounded-test-md bg-background">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -218,7 +218,7 @@ export function DataTable<TData>({
                   className="h-24 text-center"
                 >
                   <div className="flex items-center justify-center">
-                    <div className="w-6 h-6 border-2 border-gray-300 rounded-full border-t-blue-600 animate-spin"></div>
+                    <div className="w-6 h-6 border-2 border-gray-300 rounded-test-full border-t-blue-600 animate-spin"></div>
                     <span className="ml-2">Loading...</span>
                   </div>
                 </TableCell>

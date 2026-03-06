@@ -5,7 +5,7 @@ export default function UnauthorizedPage() {
     <div className="flex min-h-screen items-center justify-center bg-background text-foreground p-6">
       <div className="text-center space-y-8 max-w-2xl w-full">
         <div className="relative inline-flex items-center justify-center group">
-          <div className="absolute inset-0 bg-destructive/10 blur-3xl rounded-full scale-150 group-hover:bg-destructive/15 transition-colors duration-500 animate-pulse" />
+          <div className="absolute inset-0 bg-destructive/10 blur-3xl rounded-test-full scale-150 group-hover:bg-destructive/15 transition-colors duration-500 animate-pulse" />
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"

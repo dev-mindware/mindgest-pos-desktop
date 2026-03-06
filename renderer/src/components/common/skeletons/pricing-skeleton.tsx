@@ -19,15 +19,14 @@ export function PricingSkeleton() {
             return (
               <Card
                 key={index}
-                className={`relative border-border rounded-lg shadow-lg ${
-                  isPopular
+                className={`relative border-border rounded-test-lg shadow-lg ${isPopular
                     ? "border-2 border-primary-500 bg-primary-300/5 shadow-2xl scale-105"
                     : "border border-border bg-card"
-                }`}
+                  }`}
               >
                 {isPopular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <Skeleton className="h-7 w-32 rounded-full" />
+                    <Skeleton className="h-7 w-32 rounded-test-full" />
                   </div>
                 )}
 
@@ -43,7 +42,7 @@ export function PricingSkeleton() {
                   <ul className="space-y-3">
                     {[1, 2, 3, 4, 5, 6].map((featureIndex) => (
                       <li key={featureIndex} className="flex items-start gap-3">
-                        <Skeleton className="h-5 w-5 rounded-sm mt-0.5 flex-shrink-0" />
+                        <Skeleton className="h-5 w-5 rounded-test-sm mt-0.5 flex-shrink-0" />
                         <Skeleton
                           className="h-4 flex-1"
                           style={{ width: `${Math.random() * 30 + 60}%` }}
@@ -54,7 +53,7 @@ export function PricingSkeleton() {
                 </CardContent>
 
                 <CardFooter className="pt-6">
-                  <Skeleton className="h-10 w-full rounded-md" />
+                  <Skeleton className="h-10 w-full rounded-test-md" />
                 </CardFooter>
               </Card>
             );
@@ -68,7 +67,7 @@ export function PricingSkeleton() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[1, 2, 3].map((item) => (
               <div key={item} className="flex flex-col items-center">
-                <Skeleton className="h-16 w-16 rounded-full mb-3" />
+                <Skeleton className="h-16 w-16 rounded-test-full mb-3" />
                 <Skeleton className="h-6 w-40 mb-2" />
                 <Skeleton className="h-4 w-52" />
               </div>

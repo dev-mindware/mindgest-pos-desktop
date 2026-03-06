@@ -7,9 +7,9 @@ import {
   GenericTable,
   ListSkeleton,
   ButtonOnlyAction,
-  ProformaPreviewDrawer,
   InvoiceFiltersSkeleton,
 } from "@/components";
+import { ProformaPreviewDrawer } from "@/components/common/dynamic-drawer/proforma-preview-drawer";
 import { InvoiceResponse } from "@/types";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { useDebounce } from "use-debounce";

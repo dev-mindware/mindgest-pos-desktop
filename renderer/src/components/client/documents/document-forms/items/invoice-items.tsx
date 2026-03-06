@@ -62,7 +62,7 @@ export function InvoiceItems({
           Itens da Fatura
         </h3>
         {fields.length > 0 && (
-          <span className="text-sm text-foreground bg-card px-3 py-1 rounded-full">
+          <span className="text-sm text-foreground bg-card px-3 py-1 rounded-test-full">
             {fields.length} {fields.length === 1 ? "item" : "itens"}
           </span>
         )}
@@ -78,7 +78,7 @@ export function InvoiceItems({
 
 
       {fields.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-6 bg-card rounded-lg border-2 border-dashed">
+        <div className="flex flex-col items-center justify-center py-6 bg-card rounded-test-lg border-2 border-dashed">
           <Package className="h-16 w-16 text-gray-300 mb-4" />
           <p className="text-sm font-medium text-foreground mb-1">
             Nenhum item adicionado
