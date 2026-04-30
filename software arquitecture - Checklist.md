@@ -11,7 +11,7 @@
 - [x] Desenvolver gerador de Hardware Fingerprint (Node.js/Electron).
 - [x] Integrar Login Online com MindGest API.
 - [x] Implementar a recepção, armazenamento e decodificação do JWT Offline.
-- [1/2] Implementar o "Relógio Monotónico" (Validação de timestamp preventivo).
+- [x] Implementar o "Relógio Monotónico" (Validação de timestamp preventivo).
 - [x] Implement PosSessionGuard com bypass para Administração (OWNER/MANAGER).
 - [x] Teste F2: Validação de Login Online em Produção, Hardware Fingerprinting e Licenciamento Offline (30 dias).
 

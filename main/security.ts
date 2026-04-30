@@ -50,10 +50,15 @@ export async function validateMonotonicClock(): Promise<{ valid: boolean; reason
       });
       
       try {
-        const { webContents } = require('electron');
-        webContents.getAllWebContents().forEach((wc: any) => {
-          wc.send('security:tamper-detected', 'Adulteração do relógio do sistema detectada. Time-travel não é permitido.');
-        });
+          const { BrowserWindow } = require('electron');
+          // Notify only real BrowserWindow webContents to avoid duplicate/hidden targets
+          BrowserWindow.getAllWindows().forEach((win: any) => {
+            try {
+              win.webContents.send('security:tamper-detected', 'Adulteração do relógio do sistema detectada. Time-travel não é permitido.');
+            } catch (e) {
+              console.warn('Falha ao notificar uma BrowserWindow sobre adulteração do relógio:', e);
+            }
+          });
       } catch (e) {
         console.error("Erro ao notificar webContents sobre adulteração:", e);
       }

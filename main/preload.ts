@@ -5,8 +5,14 @@ contextBridge.exposeInMainWorld("ipc", {
     ipcRenderer.send(channel, data);
   },
   on: (channel: string, func: (...args: any[]) => void) => {
-    ipcRenderer.on(channel, (event, ...args) => func(...args));
+    // Attach listener directly so the renderer can remove it with the same function reference
+    ipcRenderer.on(channel, func as any);
   },
+  off: (channel: string, func: (...args: any[]) => void) => {
+    // Remove a specific listener previously registered with `on`
+    ipcRenderer.removeListener(channel, func as any);
+  },
+
   // SQLite Database Bridge — all document operations are user-scoped
   db: {
     saveDocument: (doc: any) => ipcRenderer.invoke("db:save-document", doc),

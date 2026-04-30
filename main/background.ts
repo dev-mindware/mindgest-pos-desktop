@@ -753,6 +753,27 @@ const isProd: boolean = process.env.NODE_ENV === "production";
 console.log("--- Electron Main Process Log ---");
 console.log("Environment:", isProd ? "production" : "development");
 
+// Prevent multiple app instances (defensive for dev hot-reload scenarios)
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  console.warn('⚠️ Outra instância detectada. A aplicação principal vai sair para evitar múltiplas janelas.');
+  app.quit();
+  process.exit(0);
+}
+
+app.on('second-instance', () => {
+  // Someone tried to run a second instance, focus existing window instead
+  try {
+    const existing: any = (global as any).__mainWindow;
+    if (existing && !existing.isDestroyed()) {
+      if (existing.isMinimized()) existing.restore();
+      existing.focus();
+    }
+  } catch (e) {
+    console.warn('Falha ao focar janela existente no evento second-instance:', e);
+  }
+});
+
 if (isProd) {
   serve({ directory: "app" });
 } else {
@@ -761,6 +782,25 @@ if (isProd) {
 
 async function createWindow() {
   console.log("Attempting to create window...");
+  // Trace caller for debugging repeated invocations in dev
+  try {
+    const st = new Error().stack;
+    console.log('📌 [createWindow] Call stack:', st);
+  } catch (e) {
+    /* ignore */
+  }
+  // Prevent creating multiple windows during hot-reload or repeated calls
+  if ((global as any).__mainWindow && !(global as any).__mainWindow.isDestroyed()) {
+    try {
+      const existing: any = (global as any).__mainWindow;
+      existing.focus();
+      console.log("⚠️ [createWindow] Janela existente encontrada — focando em vez de criar outra.");
+      return existing;
+    } catch (e) {
+      console.warn("[createWindow] Falha ao focar na janela existente:", e);
+    }
+  }
+
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -768,6 +808,13 @@ async function createWindow() {
       preload: path.join(__dirname, "preload.js"),
     },
   });
+
+  // Store a global reference so subsequent calls reuse this window
+  try {
+    (global as any).__mainWindow = mainWindow;
+  } catch (e) {
+    console.warn('Falha ao armazenar referência global da janela:', e);
+  }
 
   // Nextron passes the port as the first argument in development
   const port = process.argv[2];
@@ -799,6 +846,15 @@ async function createWindow() {
   if (!isProd) {
     mainWindow.webContents.openDevTools();
   }
+
+  mainWindow.on('closed', () => {
+    try {
+      (global as any).__mainWindow = null;
+      console.log('🗙 [createWindow] Janela principal fechada; referência global limpa.');
+    } catch (e) {
+      console.warn('Falha ao limpar referência global da janela:', e);
+    }
+  });
 }
 
 import { testPrismaConnection } from "./prisma";
