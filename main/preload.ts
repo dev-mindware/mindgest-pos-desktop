@@ -23,4 +23,10 @@ contextBridge.exposeInMainWorld("ipc", {
     getCachedProducts: () => ipcRenderer.invoke("db:get-cached-products"),
     getCachedClients: () => ipcRenderer.invoke("db:get-cached-clients"),
   },
+  // Security Bridge (Anti-Tampering)
+  security: {
+    getHardwareId: () => ipcRenderer.invoke("security:get-hwid"),
+    saveOfflineLicense: (licenseJwt: string, storeId: string) => 
+      ipcRenderer.invoke("security:save-license", { licenseJwt, storeId }),
+  }
 });

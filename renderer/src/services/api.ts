@@ -21,7 +21,7 @@ const processQueue = (error: any, token: string | null = null) => {
 export const api = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL ||
-    "https://mindgest.mindware-vps.cloud/api",
+    "http://localhost:3001/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -45,17 +45,17 @@ api.interceptors.request.use(async (config) => {
     | string
     | { path: string; methods: string[] }
   )[] = [
-    "invoice",
-    "items",
-    { path: "stocks", methods: ["get"] },
-    "cash-sessions",
-    "reports/dashboard",
-    "receipt",
-    "documents",
-    "dashboard",
-    { path: "credit-note", methods: ["get"] },
-    { path: "categories", methods: ["get", "post"] },
-  ];
+      "invoice",
+      "items",
+      { path: "stocks", methods: ["get"] },
+      "cash-sessions",
+      "reports/dashboard",
+      "receipt",
+      "documents",
+      "dashboard",
+      { path: "credit-note", methods: ["get"] },
+      { path: "categories", methods: ["get", "post"] },
+    ];
 
   const EXCLUDED_ROUTES = [
     "/expenses",
@@ -142,7 +142,7 @@ api.interceptors.response.use(
         if (!refreshToken) throw new Error("No refresh token");
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"}/auth/refresh`,
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/auth/refresh`,
           {
             method: "POST",
             body: JSON.stringify({ refreshToken }),

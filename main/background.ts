@@ -2,8 +2,28 @@ import path from "path";
 import { app, BrowserWindow, ipcMain } from "electron";
 import serve from "electron-serve";
 import { database } from "./database";
+import { getHardwareFingerprint } from "./security";
+import { prisma } from "./prisma";
 
-// Register SQLite Handlers — all document operations now require userId for isolation
+// ==========================================
+// Security & Anti-Tampering IPC Handlers
+// ==========================================
+ipcMain.handle("security:get-hwid", () => {
+  return getHardwareFingerprint();
+});
+
+ipcMain.handle("security:save-license", async (_, { licenseJwt, storeId }) => {
+  await prisma.settings.upsert({
+    where: { id: 'singleton' },
+    update: { offlineLicense: licenseJwt, storeId },
+    create: { id: 'singleton', offlineLicense: licenseJwt, storeId }
+  });
+  return true;
+});
+
+// ==========================================
+// Old SQLite Cache Handlers (Deprecated soon)
+// ========================================== — all document operations now require userId for isolation
 ipcMain.handle("db:save-document", async (_, doc) => {
   return database.saveDocument(doc.id, doc.userId, doc.type, doc.payload);
 });
@@ -50,6 +70,8 @@ if (isProd) {
   app.setPath("userData", `${app.getPath("userData")} (development)`);
 }
 
+import { validateOfflineLicense } from "./security";
+
 async function createWindow() {
   console.log("Attempting to create window...");
   const mainWindow = new BrowserWindow({
@@ -62,7 +84,18 @@ async function createWindow() {
 
   // Nextron passes the port as the first argument in development
   const port = process.argv[2];
-  const entryPath = "pos/counter";
+  
+  // ==========================================
+  // VALIDAÇÃO DE SEGURANÇA (Anti-Tampering)
+  // ==========================================
+  const securityCheck = await validateOfflineLicense();
+  let entryPath = "/pos/counter"; // Por defeito vai para o POS
+
+  if (!securityCheck.valid) {
+    console.warn(`🔒 [Lockdown] Acesso Offline Bloqueado: ${securityCheck.reason}`);
+    entryPath = "/auth/login"; // Redireciona para o ecrã de Login Online
+  }
+
   const url = isProd
     ? `app://./${entryPath}`
     : `http://localhost:${port}/${entryPath}`;
@@ -81,8 +114,19 @@ async function createWindow() {
   }
 }
 
-app.on("ready", () => {
+import { testPrismaConnection } from "./prisma";
+import { startLocalServer } from "./server";
+
+app.on("ready", async () => {
   console.log("Main process READY EVENT triggered");
+  await testPrismaConnection();
+  
+  try {
+    await startLocalServer();
+  } catch (error) {
+    console.error("⚠️ [Aviso] Não foi possível iniciar o servidor local. A porta pode estar ocupada:", error);
+  }
+  
   createWindow();
 });
 
@@ -93,4 +137,8 @@ app.on("window-all-closed", () => {
 
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION:", err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("UNHANDLED REJECTION at:", promise, "reason:", reason);
 });

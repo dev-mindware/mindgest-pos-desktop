@@ -22,11 +22,26 @@ export const authService = {
     message?: string;
   }> => {
     try {
+      // 1. OBTENÇÃO DA IMPRESSÃO DIGITAL FÍSICA PARA POS DESKTOP
+      if (typeof window !== 'undefined' && (window as any).ipc) {
+        try {
+          const hwid = await (window as any).ipc.security.getHardwareId();
+          credentials.hardwareId = hwid;
+        } catch (e) {
+          console.warn("Não foi possível obter HWID. Ambiente não-Electron?");
+        }
+      }
+
       const res = await api.post<LoginResponse>("/auth/login", credentials);
       const { user, tokens, message } = res.data;
 
       if (!user) {
         throw new Error("Usuário não autorizado");
+      }
+
+      // 2. GUARDA A LICENÇA OFFLINE NO SQLITE LOCAL (POS DESKTOP)
+      if (typeof window !== 'undefined' && (window as any).ipc && (tokens as any).offlineLicense) {
+        await (window as any).ipc.security.saveOfflineLicense((tokens as any).offlineLicense, user.storeId);
       }
 
       await createSession({

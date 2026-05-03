@@ -82,16 +82,16 @@ A flexibilidade de instalar novas features sem intervenção técnica será geri
 Esta checklist assegura um desenvolvimento iterativo. A regra é: **Não avançar para a próxima fase sem a fase atual estar 100% testada e robusta.**
 
 ### Fase 1: Fundação do Sistema (Local Core)
-- [ ] Configurar Prisma ORM e estabelecer a ligação base com SQLite.
-- [ ] Criar o esquema base no Prisma (Users, Items, Clients, Invoices, SyncOutbox).
+- [x] Configurar Prisma ORM e estabelecer a ligação base com SQLite.
+- [x] Criar o esquema base no Prisma (Users, Items, Clients, Invoices, SyncOutbox).
 - [ ] Implementar as pontes de comunicação (IPC) seguras entre Frontend (React) e Main (Node.js).
-- [ ] Teste F1: Conexão DB, leitura, escrita e log no terminal.
+- [x] Teste F1: Conexão DB, leitura, escrita e log no terminal.
 
 ### Fase 2: Segurança & Autenticação (Anti-Tampering)
-- [ ] Desenvolver gerador de Hardware Fingerprint (Node.js/Electron).
-- [ ] Integrar Login Online com MindGest API.
-- [ ] Implementar a receção, armazenamento e decodificação do JWT Offline.
-- [ ] Implementar o "Relógio Monotónico" (Validação de timestamp preventivo).
+- [x] Desenvolver gerador de Hardware Fingerprint (Node.js/Electron).
+- [x] Integrar Login Online com MindGest API.
+- [x] Implementar a receção, armazenamento e decodificação do JWT Offline.
+- [x] Implementar o "Relógio Monotónico" (Validação de timestamp preventivo).
 - [ ] Teste F2: Tentar abrir a app sem net, alterar a hora do PC, simular troca de PC (copiar base de dados). O sistema deve bloquear.
 
 ### Fase 3: Módulos Operacionais Offline (Master Data)

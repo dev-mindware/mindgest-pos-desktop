@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// Módulo de Segurança e Autenticação
+// ==========================================
+
+model User {
+  id          String   @id @default(uuid())
+  cloudId     String?  @unique // ID on the cloud MINDGEST-API
+  name        String
+  email       String   @unique
+  role        String   // Ex: CASHIER, MANAGER, ADMIN (Sincronizado da MINDGEST-API)
+  password    String?  // Password ou PIN local encriptado
+  isActive    Boolean  @default(true)
+  storeId     String   // Contexto da Loja
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  invoices    Invoice[]
+}
+
+model Settings {
+  id             String   @id @default("singleton") // Só existe 1 registo por instalação
+  storeId        String?  // Loja atual a que este terminal pertence
+  hardwareId     String?  // Impressão digital da máquina para segurança anti-cópia
+  offlineLicense String?  // JWT assinado pela cloud
+  lastSync       DateTime @default(now())
+}
+
+// ==========================================
+// Master Data (Sincronizado da Cloud para Local)
+// ==========================================
+
+model Client {
+  id          String   @id @default(uuid())
+  cloudId     String?  @unique
+  name        String
+  nif         String?
+  email       String?
+  phone       String?
+  address     String?
+  storeId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  invoices    Invoice[]
+}
+
+model Item {
+  id          String   @id @default(uuid())
+  cloudId     String?  @unique
+  code        String?  @unique
+  name        String
+  description String?
+  price       Float
+  taxPercent  Float    @default(14.0) // Ex: IVA
+  stock       Float    @default(0.0)
+  barcode     String?  @unique
+  categoryId  String?
+  storeId     String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  invoiceLines InvoiceLine[]
+}
+
+// ==========================================
+// Transacional (Faturação e Stock JIT)
+// ==========================================
+
+model Invoice {
+  id             String   @id @default(uuid())
+  localNo        String   @unique // Ref interna local
+  agtNo          String?  @unique // Numeração oficial (ex: FT 2026/1)
+  status         String   @default("DRAFT") // DRAFT, VALID, CANCELED
+  issueDate      DateTime @default(now())
+  netTotal       Float
+  taxTotal       Float
+  grossTotal     Float
+  
+  // AGT Security - Assinaturas locais
+  hash           String?
+  hashControl    String?
+  
+  // Relacionamentos
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  clientId       String?
+  client         Client?  @relation(fields: [clientId], references: [id])
+  storeId        String
+  
+  lines          InvoiceLine[]
+  outboxEntries  SyncOutbox[]
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model InvoiceLine {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  itemId      String
+  item        Item     @relation(fields: [itemId], references: [id])
+  quantity    Float
+  unitPrice   Float
+  taxPercent  Float
+  discount    Float    @default(0.0)
+  netTotal    Float
+  grossTotal  Float
+}
+
+// ==========================================
+// Sincronização (Outbox Pattern)
+// ==========================================
+
+model SyncOutbox {
+  id          String   @id @default(uuid())
+  entityType  String   // Ex: INVOICE, CLIENT, CASH_MOVEMENT
+  entityId    String   // ID local da entidade
+  action      String   // CREATE, UPDATE, DELETE
+  payload     String   // JSON Payload completo a enviar para a MINDGEST-API
+  status      String   @default("PENDING") // PENDING, SYNCED, ERROR
+  errorMsg    String?
+  storeId     String
+  
+  invoice     Invoice? @relation(fields: [entityId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
