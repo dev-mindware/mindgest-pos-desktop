@@ -28,5 +28,14 @@ contextBridge.exposeInMainWorld("ipc", {
     getHardwareId: () => ipcRenderer.invoke("security:get-hwid"),
     saveOfflineLicense: (licenseJwt: string, storeId: string) => 
       ipcRenderer.invoke("security:save-license", { licenseJwt, storeId }),
+  },
+  // Sync Bridge (Cloud to Local)
+  sync: {
+    products: (token: string, storeId: string) => 
+      ipcRenderer.invoke("sync:products", { token, storeId }),
+    clients: (token: string, storeId: string) => 
+      ipcRenderer.invoke("sync:clients", { token, storeId }),
+    searchItems: (params: { search?: string, categoryId?: string, storeId?: string }) =>
+      ipcRenderer.invoke("sync:search-items", params),
   }
 });

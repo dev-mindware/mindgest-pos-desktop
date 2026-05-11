@@ -17,6 +17,15 @@ export interface IpcBridge {
     getCachedProducts: () => Promise<any[]>;
     getCachedClients: () => Promise<any[]>;
   };
+  security: {
+    getHardwareId: () => Promise<string>;
+    saveOfflineLicense: (licenseJwt: string, storeId: string) => Promise<boolean>;
+  };
+  sync: {
+    products: (token: string, storeId: string) => Promise<{ success: boolean; count: number }>;
+    clients: (token: string, storeId: string) => Promise<{ success: boolean; count: number }>;
+    searchItems: (params: { search?: string; categoryId?: string; storeId?: string }) => Promise<any[]>;
+  };
 }
 
 declare global {

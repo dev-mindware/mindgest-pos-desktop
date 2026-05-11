@@ -4,6 +4,7 @@ import serve from "electron-serve";
 import { database } from "./database";
 import { getHardwareFingerprint } from "./security";
 import { prisma } from "./prisma";
+import { syncService } from "./sync";
 
 // ==========================================
 // Security & Anti-Tampering IPC Handlers
@@ -19,6 +20,46 @@ ipcMain.handle("security:save-license", async (_, { licenseJwt, storeId }) => {
     create: { id: 'singleton', offlineLicense: licenseJwt, storeId }
   });
   return true;
+});
+
+// ==========================================
+// Data Sync IPC Handlers
+// ==========================================
+ipcMain.handle("sync:products", async (_, { token, storeId }) => {
+  return syncService.syncProducts(token, storeId);
+});
+
+ipcMain.handle("sync:clients", async (_, { token, storeId }) => {
+  return syncService.syncClients(token, storeId);
+});
+
+ipcMain.handle("sync:search-items", async (_, { search, categoryId, storeId }) => {
+  try {
+    const where: any = {
+      isActive: true,
+    };
+
+    if (storeId) where.storeId = storeId;
+    if (categoryId) where.categoryId = categoryId;
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { code: { contains: search } },
+        { barcode: { contains: search } },
+      ];
+    }
+
+    const items = await prisma.item.findMany({
+      where,
+      take: 100,
+      orderBy: { name: 'asc' }
+    });
+
+    return items;
+  } catch (error) {
+    console.error("❌ [DB] Erro na busca local de items:", error);
+    return [];
+  }
 });
 
 // ==========================================

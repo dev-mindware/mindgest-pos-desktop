@@ -5,6 +5,7 @@ import { usePagination } from "../common/use-pagination";
 import { ItemResponse } from "@/types/items";
 import { useMindPricingConfig } from "../pos";
 import { useState, useEffect } from "react";
+import { currentStoreStore } from "@/stores";
 
 export function useGetItems(params?: {
   search?: string;
@@ -29,66 +30,45 @@ export function useGetItems(params?: {
   const { isMindPricingEnabled, triggerPricingRecalculation } =
     useMindPricingConfig();
   const [items, setItems] = useState<any[]>([]);
+  const { currentStore } = currentStoreStore();
 
   useEffect(() => {
     async function loadItems() {
-      // If MIND features are Disabled, skip SQLite completely
-      if (!isMindPricingEnabled) {
-        setItems(data?.data || []);
-        return;
-      }
-
-      // If MIND features are Enabled, intercept data and use DB as source of truth for dynamic prices
-      if (typeof window !== "undefined" && window.ipc?.db?.getCachedProducts) {
+      // 1. Tentar sempre buscar do SQLite Local primeiro (Velocidade e Offline-First)
+      if (typeof window !== "undefined" && window.ipc?.sync?.searchItems) {
         try {
-          const fetchedItems = Array.isArray(data)
-            ? data
-            : data?.data || data?.items;
+          const localItems = await window.ipc.sync.searchItems({
+            search: params?.search,
+            categoryId: params?.categoryId,
+            storeId: currentStore?.id
+          });
 
-          if (
-            fetchedItems &&
-            Array.isArray(fetchedItems) &&
-            fetchedItems.length > 0
-          ) {
-            await window.ipc.db.updateProductsCache(fetchedItems);
-            await triggerPricingRecalculation(); // Tell Python microservice to crunch new prices
+          if (localItems && localItems.length > 0) {
+            setItems(localItems);
+            // Se já temos dados locais, não precisamos de esperar pelo Loading da API para mostrar algo
           }
-
-          // Delay slightly to let the background job finish replacing prices
-          setTimeout(async () => {
-            let cached = await window.ipc.db.getCachedProducts();
-            if (cached && cached.length > 0) {
-              // Apply search filters
-              if (params?.search) {
-                const searchLower = params.search.toLowerCase();
-                cached = cached.filter(
-                  (c: any) =>
-                    c.name?.toLowerCase().includes(searchLower) ||
-                    c.reference?.toLowerCase().includes(searchLower) ||
-                    c.barcode?.toLowerCase().includes(searchLower),
-                );
-              }
-              if (params?.categoryId) {
-                cached = cached.filter(
-                  (c: any) => c.categoryId === params.categoryId,
-                );
-              }
-              setItems(cached);
-              return;
-            }
-          }, 300); // 300ms breather
-          return;
         } catch (e) {
-          console.error("Error loading cached MIND priced products", e);
+          console.error("Erro na busca local:", e);
         }
       }
 
-      // Final fallback
-      setItems(data?.data || []);
+      // 2. Se a API Cloud devolver dados (online), usamos esses como fonte de verdade mais recente
+      if (data?.data || data?.items) {
+        const fetchedItems = data?.data || data?.items || [];
+        if (fetchedItems.length > 0) {
+          setItems(fetchedItems);
+          
+          // 3. (Opcional) Poderíamos disparar um sync aqui, mas por agora 
+          // confiamos no botão de Sincronização explícito.
+        }
+      } else if (!isLoading && items.length === 0) {
+        // Fallback final se nada for encontrado em lado nenhum
+        setItems([]);
+      }
     }
 
     loadItems();
-  }, [data, params?.search, params?.categoryId, isMindPricingEnabled]);
+  }, [data, isLoading, params?.search, params?.categoryId]);
 
   return { items, error, isLoading, refetch };
 }
