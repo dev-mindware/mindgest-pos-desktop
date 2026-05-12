@@ -62,6 +62,85 @@ ipcMain.handle("sync:search-items", async (_, { search, categoryId, storeId }) =
   }
 });
 
+ipcMain.handle("sync:search-clients", async (_, { search, storeId }) => {
+  try {
+    const where: any = {};
+
+    if (storeId) where.storeId = storeId;
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { nif: { contains: search } },
+        { email: { contains: search } },
+      ];
+    }
+
+    const clients = await prisma.client.findMany({
+      where,
+      take: 50,
+      orderBy: { name: 'asc' }
+    });
+
+    return clients;
+  } catch (error) {
+    console.error("❌ [DB] Erro na busca local de clientes:", error);
+    return [];
+  }
+});
+
+// ==========================================
+// CRUD Local Operations (Offline-First)
+// ==========================================
+
+ipcMain.handle("sync:upsert-item", async (_, { item, storeId }) => {
+  try {
+    return await prisma.item.upsert({
+      where: { id: item.id || 'new-id' },
+      update: { ...item, storeId },
+      create: { ...item, storeId }
+    });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao salvar item localmente:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("sync:delete-item", async (_, { id, role }) => {
+  if (role !== 'OWNER') throw new Error("Apenas o OWNER pode eliminar itens.");
+  try {
+    return await prisma.item.update({
+      where: { id },
+      data: { isActive: false } // Soft delete
+    });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao eliminar item:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("sync:upsert-client", async (_, { client, storeId }) => {
+  try {
+    return await prisma.client.upsert({
+      where: { id: client.id || 'new-id' },
+      update: { ...client, storeId },
+      create: { ...client, storeId }
+    });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao salvar cliente localmente:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("sync:delete-client", async (_, { id, role }) => {
+  if (role !== 'OWNER') throw new Error("Apenas o OWNER pode eliminar clientes.");
+  try {
+    return await prisma.client.delete({ where: { id } });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao eliminar cliente:", error);
+    throw error;
+  }
+});
+
 // ==========================================
 // Old SQLite Cache Handlers (Deprecated soon)
 // ========================================== — all document operations now require userId for isolation

@@ -37,5 +37,15 @@ contextBridge.exposeInMainWorld("ipc", {
       ipcRenderer.invoke("sync:clients", { token, storeId }),
     searchItems: (params: { search?: string, categoryId?: string, storeId?: string }) =>
       ipcRenderer.invoke("sync:search-items", params),
+    searchClients: (params: { search?: string, storeId?: string }) =>
+      ipcRenderer.invoke("sync:search-clients", params),
+    upsertItem: (item: any, storeId: string) =>
+      ipcRenderer.invoke("sync:upsert-item", { item, storeId }),
+    deleteItem: (id: string, role: string) =>
+      ipcRenderer.invoke("sync:delete-item", { id, role }),
+    upsertClient: (client: any, storeId: string) =>
+      ipcRenderer.invoke("sync:upsert-client", { client, storeId }),
+    deleteClient: (id: string, role: string) =>
+      ipcRenderer.invoke("sync:delete-client", { id, role }),
   }
 });

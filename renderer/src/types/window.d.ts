@@ -25,6 +25,11 @@ export interface IpcBridge {
     products: (token: string, storeId: string) => Promise<{ success: boolean; count: number }>;
     clients: (token: string, storeId: string) => Promise<{ success: boolean; count: number }>;
     searchItems: (params: { search?: string; categoryId?: string; storeId?: string }) => Promise<any[]>;
+    searchClients: (params: { search?: string; storeId?: string }) => Promise<any[]>;
+    upsertItem: (item: any, storeId: string) => Promise<any>;
+    deleteItem: (id: string, role: string) => Promise<any>;
+    upsertClient: (client: any, storeId: string) => Promise<any>;
+    deleteClient: (id: string, role: string) => Promise<any>;
   };
 }
 

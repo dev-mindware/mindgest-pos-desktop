@@ -16,3 +16,4 @@ export * from "./taxes";
 export * from "./cash-session";
 export * from "./stock";
 export * from "./pos";
+export * from "./clients";
