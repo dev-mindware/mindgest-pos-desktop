@@ -123,6 +123,42 @@ model InvoiceLine {
 }
 
 // ==========================================
+// Gestão de Caixa (Offline-First)
+// ==========================================
+
+model CashSession {
+  id            String         @id @default(uuid())
+  cloudId       String?        @unique
+  openingDate   DateTime       @default(now())
+  closingDate   DateTime?
+  openingBalance Float
+  closingBalance Float?
+  totalSales    Float          @default(0.0)
+  totalExpenses Float          @default(0.0)
+  status        String         @default("OPEN") // OPEN, CLOSED
+  userId        String
+  storeId       String
+  
+  movements     CashMovement[]
+  
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model CashMovement {
+  id            String      @id @default(uuid())
+  cloudId       String?     @unique
+  type          String      // IN (Reforço), OUT (Sangria/Despesa), SALE (Venda)
+  description   String
+  amount        Float
+  cashSessionId String
+  cashSession   CashSession @relation(fields: [cashSessionId], references: [id])
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// ==========================================
 // Sincronização (Outbox Pattern)
 // ==========================================
 

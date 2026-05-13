@@ -14,11 +14,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components";
+import { useState } from "react";
+import { ClientModal } from "@/components/shared/modals/client-modal";
 
 export default function ClientsPage() {
-  const { clients, isLoading } = useGetClients();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<any>(null);
+
+  const { clients, isLoading, refetch } = useGetClients();
   const { deleteClient } = useClientActions();
   const { user } = useAuth();
+
+  const handleEdit = (client: any) => {
+    setSelectedClient(client);
+    setIsModalOpen(true);
+  };
+
+  const handleAdd = () => {
+    setSelectedClient(null);
+    setIsModalOpen(true);
+  };
 
   return (
     <PageWrapper subRoute="Clientes" routeLabel="Gestão">
@@ -30,7 +45,7 @@ export default function ClientsPage() {
               Clientes sincronizados localmente para faturação offline.
             </p>
           </div>
-          <Button size="sm">
+          <Button size="sm" onClick={handleAdd}>
             <Icon name="UserPlus" className="mr-2 h-4 w-4" />
             Novo Cliente
           </Button>
@@ -73,7 +88,12 @@ export default function ClientsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => handleEdit(client)}
+                        >
                           <Icon name="Pencil" className="h-4 w-4" />
                         </Button>
                         {user?.role === 'OWNER' && (
@@ -102,6 +122,12 @@ export default function ClientsPage() {
           </Table>
         </div>
       </div>
+      <ClientModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        client={selectedClient} 
+        onSuccess={refetch}
+      />
     </PageWrapper>
   );
 }

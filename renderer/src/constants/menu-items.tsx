@@ -26,13 +26,6 @@ export type MenuStructure = {
 export const menuItems: MenuStructure = {
   items: [
     {
-      name: "Dashboard",
-      url: "/dashboard",
-      icon: <Icon name="LayoutDashboard" className="w-5 h-5" />,
-      roles: ["MANAGER", "OWNER"],
-      minPlan: "Base",
-    },
-    {
       name: "Clientes",
       url: "/clients",
       icon: <Icon name="Users" className="w-5 h-5" />,
@@ -65,13 +58,6 @@ export const menuItems: MenuStructure = {
       url: "/pos/movements",
       icon: <Icon name="Wallet" className="w-5 h-5" />,
       roles: ["CASHIER", "MANAGER", "OWNER"],
-      minPlan: "Base",
-    },
-    {
-      name: "Configurações",
-      url: "/settings",
-      icon: <Icon name="Settings" className="w-5 h-5" />,
-      roles: ["MANAGER", "OWNER"],
       minPlan: "Base",
     },
   ],

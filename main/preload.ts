@@ -47,5 +47,19 @@ contextBridge.exposeInMainWorld("ipc", {
       ipcRenderer.invoke("sync:upsert-client", { client, storeId }),
     deleteClient: (id: string, role: string) =>
       ipcRenderer.invoke("sync:delete-client", { id, role }),
+    searchInvoices: (params: { storeId?: string }) =>
+      ipcRenderer.invoke("sync:search-invoices", params),
+    
+    // Sessões de Caixa
+    searchCashSessions: (params: { storeId?: string }) =>
+      ipcRenderer.invoke("sync:search-cash-sessions", params),
+    getCurrentSession: (params: { storeId?: string, userId?: string }) =>
+      ipcRenderer.invoke("sync:get-current-session", params),
+    openCashSession: (params: { storeId: string, userId: string, openingBalance: number }) =>
+      ipcRenderer.invoke("sync:open-cash-session", params),
+    closeCashSession: (params: { sessionId: string, closingBalance: number, totalSales: number, totalExpenses: number }) =>
+      ipcRenderer.invoke("sync:close-cash-session", params),
+    addCashMovement: (params: { sessionId: string, type: string, description: string, amount: number }) =>
+      ipcRenderer.invoke("sync:add-cash-movement", params),
   }
 });

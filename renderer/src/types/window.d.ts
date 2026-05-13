@@ -30,6 +30,14 @@ export interface IpcBridge {
     deleteItem: (id: string, role: string) => Promise<any>;
     upsertClient: (client: any, storeId: string) => Promise<any>;
     deleteClient: (id: string, role: string) => Promise<any>;
+    searchInvoices: (params: { storeId?: string }) => Promise<any[]>;
+    
+    // Sessões de Caixa
+    searchCashSessions: (params: { storeId?: string }) => Promise<any[]>;
+    getCurrentSession: (params: { storeId?: string, userId?: string }) => Promise<any>;
+    openCashSession: (params: { storeId: string, userId: string, openingBalance: number }) => Promise<any>;
+    closeCashSession: (params: { sessionId: string, closingBalance: number, totalSales: number, totalExpenses: number }) => Promise<any>;
+    addCashMovement: (params: { sessionId: string, type: string, description: string, amount: number }) => Promise<any>;
   };
 }
 

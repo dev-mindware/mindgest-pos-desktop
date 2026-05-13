@@ -32,45 +32,40 @@ export function useGetItems(params?: {
   const [items, setItems] = useState<any[]>([]);
   const { currentStore } = currentStoreStore();
 
-  useEffect(() => {
-    async function loadItems() {
-      // 1. Tentar sempre buscar do SQLite Local primeiro (Velocidade e Offline-First)
-      if (typeof window !== "undefined" && window.ipc?.sync?.searchItems) {
-        try {
-          const localItems = await window.ipc.sync.searchItems({
-            search: params?.search,
-            categoryId: params?.categoryId,
-            storeId: currentStore?.id
-          });
+  async function loadItems() {
+    // 1. Tentar sempre buscar do SQLite Local primeiro (Velocidade e Offline-First)
+    if (typeof window !== "undefined" && window.ipc?.sync?.searchItems) {
+      try {
+        const localItems = await window.ipc.sync.searchItems({
+          search: params?.search,
+          categoryId: params?.categoryId,
+          storeId: currentStore?.id
+        });
 
-          if (localItems && localItems.length > 0) {
-            setItems(localItems);
-            // Se já temos dados locais, não precisamos de esperar pelo Loading da API para mostrar algo
-          }
-        } catch (e) {
-          console.error("Erro na busca local:", e);
+        if (localItems && localItems.length > 0) {
+          setItems(localItems);
         }
-      }
-
-      // 2. Se a API Cloud devolver dados (online), usamos esses como fonte de verdade mais recente
-      if (data?.data || data?.items) {
-        const fetchedItems = data?.data || data?.items || [];
-        if (fetchedItems.length > 0) {
-          setItems(fetchedItems);
-          
-          // 3. (Opcional) Poderíamos disparar um sync aqui, mas por agora 
-          // confiamos no botão de Sincronização explícito.
-        }
-      } else if (!isLoading && items.length === 0) {
-        // Fallback final se nada for encontrado em lado nenhum
-        setItems([]);
+      } catch (e) {
+        console.error("Erro na busca local:", e);
       }
     }
 
+    // 2. Se a API Cloud devolver dados (online), usamos esses como fonte de verdade mais recente
+    if (data?.data || data?.items) {
+      const fetchedItems = data?.data || data?.items || [];
+      if (fetchedItems.length > 0) {
+        setItems(fetchedItems);
+      }
+    } else if (!isLoading && items.length === 0) {
+      setItems([]);
+    }
+  }
+
+  useEffect(() => {
     loadItems();
   }, [data, isLoading, params?.search, params?.categoryId]);
 
-  return { items, error, isLoading, refetch };
+  return { items, error, isLoading, refetch: loadItems };
 }
 
 export function useGetItemsPaginated(

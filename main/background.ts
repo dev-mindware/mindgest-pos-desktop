@@ -141,6 +141,120 @@ ipcMain.handle("sync:delete-client", async (_, { id, role }) => {
   }
 });
 
+ipcMain.handle("sync:search-invoices", async (_, { storeId }) => {
+  try {
+    const where: any = {};
+    if (storeId) where.storeId = storeId;
+
+    return await prisma.invoice.findMany({
+      where,
+      include: {
+        client: true,
+        user: { select: { name: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao buscar faturas locais:", error);
+    return [];
+  }
+});
+
+// ==========================================
+// Handlers de Sessão de Caixa (Offline)
+// ==========================================
+
+ipcMain.handle("sync:search-cash-sessions", async (_, { storeId }) => {
+  try {
+    return await prisma.cashSession.findMany({
+      where: { storeId },
+      orderBy: { openingDate: 'desc' },
+      include: { movements: true }
+    });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao buscar sessões de caixa:", error);
+    return [];
+  }
+});
+
+ipcMain.handle("sync:get-current-session", async (_, { storeId, userId }) => {
+  try {
+    return await prisma.cashSession.findFirst({
+      where: { 
+        storeId, 
+        userId,
+        status: "OPEN" 
+      },
+      include: { movements: true }
+    });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao buscar sessão atual:", error);
+    return null;
+  }
+});
+
+ipcMain.handle("sync:open-cash-session", async (_, { storeId, userId, openingBalance }) => {
+  try {
+    return await prisma.cashSession.create({
+      data: {
+        storeId,
+        userId,
+        openingBalance,
+        status: "OPEN",
+        openingDate: new Date()
+      }
+    });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao abrir sessão local:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("sync:close-cash-session", async (_, { sessionId, closingBalance, totalSales, totalExpenses }) => {
+  try {
+    return await prisma.cashSession.update({
+      where: { id: sessionId },
+      data: {
+        closingBalance,
+        totalSales,
+        totalExpenses,
+        status: "CLOSED",
+        closingDate: new Date()
+      }
+    });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao fechar sessão local:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("sync:add-cash-movement", async (_, { sessionId, type, description, amount }) => {
+  try {
+    return await prisma.$transaction([
+      prisma.cashMovement.create({
+        data: {
+          cashSessionId: sessionId,
+          type,
+          description,
+          amount
+        }
+      }),
+      // Atualizar totais na sessão
+      prisma.cashSession.update({
+        where: { id: sessionId },
+        data: {
+          totalSales: type === 'SALE' ? { increment: amount } : undefined,
+          totalExpenses: type === 'OUT' ? { increment: amount } : undefined,
+        }
+      })
+    ]);
+  } catch (error) {
+    console.error("❌ [DB] Erro ao registar movimento local:", error);
+    throw error;
+  }
+});
+
 // ==========================================
 // Old SQLite Cache Handlers (Deprecated soon)
 // ========================================== — all document operations now require userId for isolation

@@ -14,11 +14,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components";
+import { useState } from "react";
+import { ItemModal } from "@/components/shared/modals/item-modal";
 
 export default function ItemsPage() {
-  const { items, isLoading } = useGetItems({ limit: 100 });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  
+  const { items, isLoading, refetch } = useGetItems({ limit: 100 });
   const { deleteItem } = useItemActions();
   const { user } = useAuth();
+
+  const handleEdit = (item: any) => {
+    setSelectedItem(item);
+    setIsModalOpen(true);
+  };
+
+  const handleAdd = () => {
+    setSelectedItem(null);
+    setIsModalOpen(true);
+  };
 
   return (
     <PageWrapper subRoute="Itens" routeLabel="Gestão">
@@ -30,7 +45,7 @@ export default function ItemsPage() {
               Lista de itens sincronizados localmente para venda offline.
             </p>
           </div>
-          <Button size="sm">
+          <Button size="sm" onClick={handleAdd}>
             <Icon name="Plus" className="mr-2 h-4 w-4" />
             Novo Item
           </Button>
@@ -73,7 +88,12 @@ export default function ItemsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => handleEdit(item)}
+                        >
                           <Icon name="Pencil" className="h-4 w-4" />
                         </Button>
                         {user?.role === 'OWNER' && (
@@ -102,6 +122,12 @@ export default function ItemsPage() {
           </Table>
         </div>
       </div>
+      <ItemModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        item={selectedItem} 
+        onSuccess={refetch}
+      />
     </PageWrapper>
   );
 }
