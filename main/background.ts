@@ -29,8 +29,28 @@ ipcMain.handle("sync:products", async (_, { token, storeId }) => {
   return syncService.syncProducts(token, storeId);
 });
 
+ipcMain.handle("sync:categories", async (_, { token, storeId }) => {
+  return syncService.syncCategories(token, storeId);
+});
+
 ipcMain.handle("sync:clients", async (_, { token, storeId }) => {
   return syncService.syncClients(token, storeId);
+});
+
+ipcMain.handle("sync:process-outbox", async (_, { token, userId }) => {
+  return syncService.processOutbox(token, userId);
+});
+
+ipcMain.handle("sync:get-categories", async (_, { storeId }) => {
+  try {
+    return await prisma.category.findMany({
+      where: { storeId, isActive: true },
+      orderBy: { name: 'asc' }
+    });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao buscar categorias locais:", error);
+    return [];
+  }
 });
 
 ipcMain.handle("sync:search-items", async (_, { search, categoryId, storeId }) => {
@@ -55,18 +75,22 @@ ipcMain.handle("sync:search-items", async (_, { search, categoryId, storeId }) =
       orderBy: { name: 'asc' }
     });
 
-    return items;
+    // Mapear campos do SQLite para o formato que o frontend espera (Product interface)
+    return items.map(item => ({
+      ...item,
+      quantity: item.stock, // Frontend espera 'quantity'
+      sku: item.code,      // Frontend espera 'sku'
+    }));
   } catch (error) {
     console.error("❌ [DB] Erro na busca local de items:", error);
     return [];
   }
 });
 
-ipcMain.handle("sync:search-clients", async (_, { search, storeId }) => {
+ipcMain.handle("sync:search-clients", async (_, { search }) => {
   try {
     const where: any = {};
 
-    if (storeId) where.storeId = storeId;
     if (search) {
       where.OR = [
         { name: { contains: search } },
@@ -115,6 +139,78 @@ ipcMain.handle("sync:delete-item", async (_, { id, role }) => {
   } catch (error) {
     console.error("❌ [DB] Erro ao eliminar item:", error);
     throw error;
+  }
+});
+
+ipcMain.handle("sync:reduce-local-stock", async (_, items: { id: string; quantity: number }[]) => {
+  try {
+    const operations = [];
+    for (const item of items) {
+      // Find the local record by matching EITHER id or cloudId
+      const localItem = await prisma.item.findFirst({
+        where: {
+          OR: [
+            { id: item.id },
+            { cloudId: item.id }
+          ]
+        },
+        select: { id: true }
+      });
+
+      if (localItem) {
+        operations.push(
+          prisma.item.update({
+            where: { id: localItem.id },
+            data: { stock: { decrement: item.quantity } }
+          })
+        );
+      } else {
+        console.warn(`⚠️ [DB] Item não encontrado para redução de stock: ${item.id}`);
+      }
+    }
+    
+    if (operations.length > 0) {
+      await prisma.$transaction(operations);
+    }
+    return true;
+  } catch (error) {
+    console.error("❌ [DB] Erro ao reduzir stock local:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("db:get-item-cloud-id", async (_, id: string) => {
+  try {
+    const item = await prisma.item.findUnique({
+      where: { id },
+      select: { cloudId: true }
+    });
+    return item?.cloudId || id;
+  } catch (error) {
+    console.error("❌ [DB] Erro ao buscar cloudId do item:", error);
+    return id;
+  }
+});
+
+ipcMain.handle("db:get-client-cloud-id", async (_, params: { id?: string; nif?: string; email?: string }) => {
+  try {
+    const orConditions: any[] = [];
+    if (params?.id) orConditions.push({ id: params.id });
+    if (params?.nif) orConditions.push({ nif: params.nif });
+    if (params?.email) orConditions.push({ email: params.email });
+
+    if (orConditions.length === 0) return null;
+
+    const client = await prisma.client.findFirst({
+      where: {
+        OR: orConditions
+      },
+      select: { cloudId: true }
+    });
+    return client?.cloudId || null;
+  } catch (error) {
+    console.error("❌ [DB] Erro ao buscar cloudId do cliente:", error);
+    return null;
   }
 });
 
@@ -207,6 +303,36 @@ ipcMain.handle("sync:open-cash-session", async (_, { storeId, userId, openingBal
     });
   } catch (error) {
     console.error("❌ [DB] Erro ao abrir sessão local:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("sync:persist-cash-session", async (_, { session }) => {
+  try {
+    return await prisma.cashSession.upsert({
+      where: { id: session.id },
+      update: {
+        status: session.status || (session.isOpen ? "OPEN" : "CLOSED"),
+        openingBalance: session.openingBalance || session.openingCash || 0,
+        totalSales: session.totalSales || 0,
+        totalExpenses: session.totalExpenses || 0,
+        openingDate: new Date(session.openingDate || session.openedAt),
+        closingDate: session.closingDate ? new Date(session.closingDate) : null,
+      },
+      create: {
+        id: session.id,
+        cloudId: session.id,
+        storeId: session.storeId,
+        userId: session.userId,
+        status: session.status || (session.isOpen ? "OPEN" : "CLOSED"),
+        openingBalance: session.openingBalance || session.openingCash || 0,
+        totalSales: session.totalSales || 0,
+        totalExpenses: session.totalExpenses || 0,
+        openingDate: new Date(session.openingDate || session.openedAt),
+      }
+    });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao persistir sessão localmente:", error);
     throw error;
   }
 });

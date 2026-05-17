@@ -29,8 +29,12 @@ export function useRecommendations(cartItems: any[]) {
         if (response.data && response.data.recommendations) {
           setRecommendations(response.data.recommendations);
         }
-      } catch (error) {
-        console.error("Failed to fetch recommendations:", error);
+      } catch (error: any) {
+        // Se for erro de rede (serviço Python desligado), ignoramos silenciosamente
+        // para não poluir a consola, visto que as recomendações não são críticas para o POS
+        if (error.code !== "ERR_NETWORK" && error.code !== "ECONNREFUSED") {
+          console.error("Failed to fetch recommendations:", error);
+        }
       } finally {
         setLoading(false);
       }

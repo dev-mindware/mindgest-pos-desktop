@@ -88,7 +88,10 @@ export function PosOpeningCashierModal({ onSuccess }: PosOpeningCashierModalProp
         try {
             const payload = {
                 ...pendingData,
+                initialCapital: Number(pendingData.initialCapital),
+                openingBalance: Number(pendingData.initialCapital),
                 storeId: currentStore?.id,
+                userId: user?.id,
                 managerBarcode: barcode,
                 cashierIds: user?.id ? [user.id] : []
             };

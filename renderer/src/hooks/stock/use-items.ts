@@ -63,6 +63,21 @@ export function useGetItems(params?: {
 
   useEffect(() => {
     loadItems();
+
+    const handleStockUpdate = () => {
+      console.log("🔄 [POS] Evento 'local-stock-updated' recebido. Recarregando itens...");
+      loadItems();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("local-stock-updated", handleStockUpdate);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("local-stock-updated", handleStockUpdate);
+      }
+    };
   }, [data, isLoading, params?.search, params?.categoryId]);
 
   return { items, error, isLoading, refetch: loadItems };

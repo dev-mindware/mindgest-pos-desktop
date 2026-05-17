@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger, Appearance, Icon } from "@/co
 import { useRouter, useSearchParams } from "next/navigation";
 import { PosGeneralSettings, PosWorkspaceSettings, PosMindSettings } from "./contents";
 import { currentStoreStore } from "@/stores";
-import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/auth";
+import { useGetCurrentSession } from "@/hooks";
 import { cashSessionsService } from "@/services";
 
 export function PosSettingsSetup() {
@@ -45,11 +46,8 @@ export function PosSettingsSetup() {
     const defaultTab = tabs[0].id;
     const activeTab = currentTab && tabs.some((t) => t.id === currentTab) ? currentTab : defaultTab;
 
-    const { data: currentSession, isLoading } = useQuery({
-        queryKey: ["current-cash-session", currentStore?.id],
-        queryFn: () => cashSessionsService.getCurrentSession(currentStore?.id),
-        enabled: activeTab === "general",
-    });
+    const { user } = useAuth();
+    const { data: currentSession, isLoading } = useGetCurrentSession(currentStore?.id, user?.id);
 
     const handleTabChange = (value: string) => {
         router.push(`?tab=${value}`);

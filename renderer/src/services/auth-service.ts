@@ -1,5 +1,6 @@
 import { LoginResponse, Role, User } from "@/types";
 import api from "./api";
+import publicApi from "./public-api";
 import { createSession, destroySession } from "@/lib/session";
 import { getRouteByRole } from "@/utils/role-redirects";
 
@@ -32,7 +33,7 @@ export const authService = {
         }
       }
 
-      const res = await api.post<LoginResponse>("/auth/login", credentials);
+      const res = await publicApi.post<LoginResponse>("/auth/login", credentials);
       const { user, tokens, message } = res.data;
 
       if (!user) {
@@ -40,8 +41,11 @@ export const authService = {
       }
 
       // 2. GUARDA A LICENÇA OFFLINE NO SQLITE LOCAL (POS DESKTOP)
-      if (typeof window !== 'undefined' && (window as any).ipc && (tokens as any).offlineLicense) {
-        await (window as any).ipc.security.saveOfflineLicense((tokens as any).offlineLicense, user.storeId);
+      // O storeId pode vir na raiz do user ou dentro de company.stores[0]
+      const storeId = user.storeId || user.company?.stores?.[0]?.id;
+      
+      if (typeof window !== 'undefined' && (window as any).ipc && tokens.offlineLicense && storeId) {
+        await (window as any).ipc.security.saveOfflineLicense(tokens.offlineLicense, storeId);
       }
 
       await createSession({

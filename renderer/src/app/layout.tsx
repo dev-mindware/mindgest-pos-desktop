@@ -5,7 +5,7 @@ import { Inter, Outfit, } from "next/font/google";
 import { ThemeProvider } from "@/providers";
 import { CustomToaster } from "@/utils";
 import { SidebarProvider } from "@/components";
-import { AuthProvider } from "@/contexts";
+import { AuthProvider, SyncProvider } from "@/contexts";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { NotificationDetail } from "@/components/shared/notifications";
 
@@ -50,11 +50,13 @@ export default function RootLayout({
         >
           <ReactQueryProvider>
             <AuthProvider>
-              <NuqsAdapter>
-                <SidebarProvider>{children}</SidebarProvider>
-                <CustomToaster />
-                <NotificationDetail />
-              </NuqsAdapter>
+              <SyncProvider>
+                <NuqsAdapter>
+                  <SidebarProvider>{children}</SidebarProvider>
+                  <CustomToaster />
+                  <NotificationDetail />
+                </NuqsAdapter>
+              </SyncProvider>
             </AuthProvider>
           </ReactQueryProvider>
         </ThemeProvider>

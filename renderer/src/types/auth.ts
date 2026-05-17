@@ -15,11 +15,13 @@ export type User = {
   role: Role;
   phone: string,
   company: Company;
-  store?: Store
+  store?: Store;
+  storeId?: string;
 }
 
 export interface Tokens {
   accessToken: string;
   refreshToken: string;
   expiresIn: string;
+  offlineLicense?: string;
 }

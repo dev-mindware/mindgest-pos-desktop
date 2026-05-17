@@ -13,6 +13,7 @@ export interface Company {
   createdAt?: string;
   updatedAt?: string;
   subscription: Subscription;
+  stores?: Store[];
 }
 
 export interface Store {

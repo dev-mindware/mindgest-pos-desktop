@@ -22,7 +22,17 @@ export function PosSessionGuard({ children }: { children: React.ReactNode }) {
     const { logout, isLoggingOut } = useAuthStore();
     const { user } = useAuth();
     const { currentStore } = currentStoreStore();
-    const { data: currentSession, isLoading, error } = useGetCurrentSession(currentStore?.id);
+    const { data: currentSession, isLoading, error } = useGetCurrentSession(currentStore?.id, user?.id);
+    
+    console.log("🛡️ [SessionGuard] Verificando sessão...", {
+        path: pathname,
+        userRole: user?.role,
+        userId: user?.id,
+        storeId: currentStore?.id,
+        hasSession: !!currentSession,
+        isOpen: currentSession?.isOpen,
+        status: (currentSession as any)?.status
+    });
 
     // Paths that require an active session
     const protectedPaths = ["/pos/counter", "/pos/movements"];
@@ -32,7 +42,10 @@ export function PosSessionGuard({ children }: { children: React.ReactNode }) {
     const canBypass = user?.role === 'OWNER' || user?.role === 'MANAGER';
 
     // If not a protected path or user has bypass permission, allow access
-    if (!isProtectedPath || canBypass) return <>{children}</>;
+    if (!isProtectedPath || canBypass) {
+        if (canBypass && isProtectedPath) console.log("🛡️ [SessionGuard] Acesso permitido via BYPASS (OWNER/MANAGER)");
+        return <>{children}</>;
+    }
 
     // Show loading state while checking session
     if (isLoading || isLoggingOut) {

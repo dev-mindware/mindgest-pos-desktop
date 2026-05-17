@@ -19,10 +19,10 @@ export function useGetOpeningRequests(filters?: CashSessionRequestFilters) {
   });
 }
 
-export function useGetCurrentSession(storeId?: string) {
+export function useGetCurrentSession(storeId?: string, userId?: string) {
   return useQuery({
-    queryKey: ["current-cash-session", storeId],
-    queryFn: () => cashSessionsService.getCurrentSession(storeId),
+    queryKey: ["current-cash-session", storeId, userId],
+    queryFn: () => cashSessionsService.getCurrentSession(storeId, userId),
     retry: false,
   });
 }

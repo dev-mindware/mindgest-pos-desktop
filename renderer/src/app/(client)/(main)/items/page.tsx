@@ -1,7 +1,7 @@
 "use client";
 
 import { PageWrapper } from "@/components/common/page-wrapper";
-import { useGetItems, useItemActions, useAuth } from "@/hooks";
+import { useGetItems } from "@/hooks";
 import { 
   Table, 
   TableBody, 
@@ -12,28 +12,9 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Icon } from "@/components";
-import { useState } from "react";
-import { ItemModal } from "@/components/shared/modals/item-modal";
 
 export default function ItemsPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  
-  const { items, isLoading, refetch } = useGetItems({ limit: 100 });
-  const { deleteItem } = useItemActions();
-  const { user } = useAuth();
-
-  const handleEdit = (item: any) => {
-    setSelectedItem(item);
-    setIsModalOpen(true);
-  };
-
-  const handleAdd = () => {
-    setSelectedItem(null);
-    setIsModalOpen(true);
-  };
+  const { items, isLoading } = useGetItems({ limit: 100 });
 
   return (
     <PageWrapper subRoute="Itens" routeLabel="Gestão">
@@ -45,10 +26,6 @@ export default function ItemsPage() {
               Lista de itens sincronizados localmente para venda offline.
             </p>
           </div>
-          <Button size="sm" onClick={handleAdd}>
-            <Icon name="Plus" className="mr-2 h-4 w-4" />
-            Novo Item
-          </Button>
         </div>
 
         <div className="border rounded-test-lg bg-card">
@@ -60,7 +37,6 @@ export default function ItemsPage() {
                 <TableHead>Preço</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -86,33 +62,11 @@ export default function ItemsPage() {
                         {item.isActive ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => handleEdit(item)}
-                        >
-                          <Icon name="Pencil" className="h-4 w-4" />
-                        </Button>
-                        {user?.role === 'OWNER' && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => deleteItem(item.id)}
-                          >
-                            <Icon name="Trash2" className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                     Nenhum produto encontrado no banco de dados local. 
                     <br/> Use o botão "Sincronizar Cloud" na barra lateral.
                   </TableCell>
@@ -122,12 +76,6 @@ export default function ItemsPage() {
           </Table>
         </div>
       </div>
-      <ItemModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        item={selectedItem} 
-        onSuccess={refetch}
-      />
     </PageWrapper>
   );
 }

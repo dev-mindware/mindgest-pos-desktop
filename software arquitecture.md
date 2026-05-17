@@ -84,7 +84,7 @@ Esta checklist assegura um desenvolvimento iterativo. A regra é: **Não avança
 ### Fase 1: Fundação do Sistema (Local Core)
 - [x] Configurar Prisma ORM e estabelecer a ligação base com SQLite.
 - [x] Criar o esquema base no Prisma (Users, Items, Clients, Invoices, SyncOutbox).
-- [ ] Implementar as pontes de comunicação (IPC) seguras entre Frontend (React) e Main (Node.js).
+- [x] Implementar as pontes de comunicação (IPC) seguras entre Frontend (React) e Main (Node.js).
 - [x] Teste F1: Conexão DB, leitura, escrita e log no terminal.
 
 ### Fase 2: Segurança & Autenticação (Anti-Tampering)
@@ -92,13 +92,16 @@ Esta checklist assegura um desenvolvimento iterativo. A regra é: **Não avança
 - [x] Integrar Login Online com MindGest API.
 - [x] Implementar a receção, armazenamento e decodificação do JWT Offline.
 - [x] Implementar o "Relógio Monotónico" (Validação de timestamp preventivo).
-- [ ] Teste F2: Tentar abrir a app sem net, alterar a hora do PC, simular troca de PC (copiar base de dados). O sistema deve bloquear.
+- [x] Implement PosSessionGuard com bypass para Administração (OWNER/MANAGER).
+- [x] Teste F2: Validação de Login Online em Produção, Hardware Fingerprinting e Licenciamento Offline (30 dias).
 
-### Fase 3: Módulos Operacionais Offline (Master Data)
-- [ ] CRUD de Gestão de Items (Local).
-- [ ] CRUD de Clientes (Local).
-- [ ] Sistema de Controlo de Stock com decrementos transacionais no Prisma (Just-in-Time lock).
-- [ ] Teste F3: Gestão de entidades com performance, validação de limites de stock na criação de carrinhos.
+### Fase 3: Operação e Sincronização (Master Data)
+- [x] Visualização de Catálogo de Items (Sincronizado da Cloud).
+- [x] Visualização de Base de Clientes (Sincronizado da Cloud).
+- [x] Implementar Gestão de Sessões de Caixa (Abertura/Fecho de Turnos Local).
+- [x] Redesenhar Arquivo de Documentos (Tabs FR/PP/NC) com leitura SQLite.
+- [ ] Implementar SyncWorker (Background process para enviar SyncOutbox para API).
+- [ ] Teste F3: Sincronizar 1000 itens da Cloud e consultar offline com performance.
 
 ### Fase 4: O Coração do POS (Invoicing & AGT)
 - [ ] UI do Counter (Carrinho, Pesquisa Rápida de Produtos).

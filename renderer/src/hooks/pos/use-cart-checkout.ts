@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateInvoiceReceipt, useCreateProforma } from "@/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 import { currentStoreStore, useAuthStore, useModal } from "@/stores";
 import { ErrorMessage, formatCurrency, parseCurrency } from "@/utils";
 import { useInvoiceTotals, useClientSelection } from "@/hooks/invoice";
@@ -31,6 +32,7 @@ export function useCartCheckout({
   const { user } = useAuthStore();
   const { currentStore } = currentStoreStore();
   const { openModal } = useModal();
+  const queryClient = useQueryClient();
 
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("Credit Card");
@@ -84,6 +86,7 @@ export function useCartCheckout({
   useEffect(() => {
     const items = cartItems.map((item) => ({
       id: item.id,
+      cloudId: (item as any).cloudId, // Save the cloud ID for API sync
       description: item.name,
       type: "PRODUCT" as const,
       quantity: item.qty,
@@ -159,14 +162,20 @@ export function useCartCheckout({
 
     // Prepare payload
     const simplifiedItems = data.items.map((item: any) => ({
-      id: item.id,
+      id: item.cloudId || item.id, // Ensure we send the Cloud API ID, not the local SQLite UUID
       quantity: item.quantity,
     }));
+
+    // Sanitize client object (remove if empty)
+    let finalClient = undefined;
+    if (data.client && (data.client.id || (data.client.name && data.client.name.trim() !== ""))) {
+      finalClient = data.client;
+    }
 
     const payload: PosSalesFormData = {
       ...data,
       items: simplifiedItems,
-      client: data.client,
+      client: finalClient,
       storeId: currentStore?.id || user?.store?.id || data.storeId,
       change:
         typeof data.change === "number" && !isNaN(data.change)
@@ -174,6 +183,10 @@ export function useCartCheckout({
           : 0,
       cashSessionId,
     };
+
+    if (payload.receivedValue === 0) {
+      delete (payload as any).receivedValue;
+    }
 
     if (!payload.storeId) {
       ErrorMessage("Loja não identificada. Recarregue a página.");
@@ -231,6 +244,32 @@ export function useCartCheckout({
             type: "proforma",
             format: "thermal",
           });
+        }
+      }
+
+      // NOVIDADE: Reduzir o stock localmente no SQLite para atualizar a UI do POS imediatamente
+      if (typeof window !== "undefined" && window.ipc?.sync?.reduceLocalStock) {
+        try {
+          const stockItems = cartItems.map(item => ({ id: item.id, quantity: item.qty }));
+          await window.ipc.sync.reduceLocalStock(stockItems);
+          console.log("✅ Stock local descontado com sucesso.");
+          
+          // Disparar evento para atualizar a UI em tempo real
+          window.dispatchEvent(new CustomEvent("local-stock-updated"));
+          
+          // Invalidate React Query caches to trigger real-time UI refresh
+          queryClient.invalidateQueries({
+            predicate: (query) => {
+              const key = query.queryKey[0];
+              return typeof key === "string" && (
+                key.startsWith("items-for-pos") ||
+                key.includes("items") ||
+                key.includes("products")
+              );
+            }
+          });
+        } catch (stockErr) {
+          console.error("❌ Erro ao descontar stock local:", stockErr);
         }
       }
 

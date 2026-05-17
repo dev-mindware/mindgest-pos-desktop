@@ -1,7 +1,7 @@
 "use client";
 
 import { PageWrapper } from "@/components/common/page-wrapper";
-import { useGetClients, useClientActions, useAuth } from "@/hooks";
+import { useGetClients } from "@/hooks";
 import { 
   Table, 
   TableBody, 
@@ -12,28 +12,9 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Icon } from "@/components";
-import { useState } from "react";
-import { ClientModal } from "@/components/shared/modals/client-modal";
 
 export default function ClientsPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<any>(null);
-
-  const { clients, isLoading, refetch } = useGetClients();
-  const { deleteClient } = useClientActions();
-  const { user } = useAuth();
-
-  const handleEdit = (client: any) => {
-    setSelectedClient(client);
-    setIsModalOpen(true);
-  };
-
-  const handleAdd = () => {
-    setSelectedClient(null);
-    setIsModalOpen(true);
-  };
+  const { clients, isLoading } = useGetClients();
 
   return (
     <PageWrapper subRoute="Clientes" routeLabel="Gestão">
@@ -45,10 +26,6 @@ export default function ClientsPage() {
               Clientes sincronizados localmente para faturação offline.
             </p>
           </div>
-          <Button size="sm" onClick={handleAdd}>
-            <Icon name="UserPlus" className="mr-2 h-4 w-4" />
-            Novo Cliente
-          </Button>
         </div>
 
         <div className="border rounded-test-lg bg-card">
@@ -60,7 +37,6 @@ export default function ClientsPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Tipo</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -86,33 +62,11 @@ export default function ClientsPage() {
                         {client.type || "Geral"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => handleEdit(client)}
-                        >
-                          <Icon name="Pencil" className="h-4 w-4" />
-                        </Button>
-                        {user?.role === 'OWNER' && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => deleteClient(client.id)}
-                          >
-                            <Icon name="Trash2" className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                     Nenhum cliente encontrado no banco de dados local. 
                     <br/> Use o botão "Sincronizar Cloud" na barra lateral.
                   </TableCell>
@@ -122,12 +76,6 @@ export default function ClientsPage() {
           </Table>
         </div>
       </div>
-      <ClientModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        client={selectedClient} 
-        onSuccess={refetch}
-      />
     </PageWrapper>
   );
 }

@@ -34,10 +34,13 @@ export function SyncButton() {
       // 1. Sincronizar Produtos
       const prodResult = await window.ipc.sync.products(token, storeId);
       
-      // 2. Sincronizar Clientes
+      // 2. Sincronizar Categorias
+      const catResult = await window.ipc.sync.categories(token, storeId);
+
+      // 3. Sincronizar Clientes
       const clientResult = await window.ipc.sync.clients(token, storeId);
 
-      SucessMessage(`Sincronização concluída! (${prodResult.count} produtos, ${clientResult.count} clientes)`);
+      SucessMessage(`Sincronização concluída! (${prodResult.count} produtos, ${catResult.count} categorias, ${clientResult.count} clientes)`);
     } catch (error: any) {
       console.error("❌ [Sync] Erro durante a sincronização:", error);
     } finally {

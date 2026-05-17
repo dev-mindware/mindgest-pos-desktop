@@ -57,6 +57,19 @@ model Client {
   invoices    Invoice[]
 }
 
+model Category {
+  id          String   @id @default(uuid())
+  cloudId     String?  @unique
+  name        String
+  description String?
+  storeId     String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       Item[]
+}
+
 model Item {
   id          String   @id @default(uuid())
   cloudId     String?  @unique
@@ -68,6 +81,7 @@ model Item {
   stock       Float    @default(0.0)
   barcode     String?  @unique
   categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
   storeId     String
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())

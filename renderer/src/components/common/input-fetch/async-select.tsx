@@ -62,23 +62,25 @@ export function AsyncCreatableSelectField({
         return;
       }
 
-      const isOffline = typeof window !== "undefined" && !window.navigator.onLine;
+      const isOffline = typeof window !== "undefined" && (!window.navigator.onLine || (window as any).isOffline);
 
-      if (isOffline) {
-        console.log("Offline mode: searching in local cache...");
-        const offlineStore = useOfflineStore.getState();
-        const cache = endpoint.includes("clients") ? offlineStore.clients : offlineStore.products;
+      const tryLocalFetch = async () => {
+        if (typeof window === "undefined" || !window.ipc?.sync) return null;
+        
+        console.log(`🌐 [Offline Select] Buscando ${endpoint} no SQLite...`);
+        let localData: any[] = [];
+        
+        // Obter storeId do contexto global se possível
+        const storeId = undefined; // Pode ser passado via props no futuro se necessário
+
+        if (endpoint.includes("/clients")) {
+          localData = await window.ipc.sync.searchClients({ search });
+        } else if (endpoint.includes("/items") || endpoint.includes("/products")) {
+          localData = await window.ipc.sync.searchItems({ search });
+        }
 
         const fields = displayFieldsKey.split(",");
-        const filtered = (cache as any[]).filter(item => {
-          if (!search) return true;
-          return fields.some(field => {
-            const val = getNestedValue(item, field);
-            return val?.toString().toLowerCase().includes(search.toLowerCase());
-          });
-        });
-
-        const mappedOptions = filtered.map((item: any) => ({
+        return localData.map((item: any) => ({
           value: item.id,
           label: fields
             .map((field) => getNestedValue(item, field))
@@ -86,12 +88,17 @@ export function AsyncCreatableSelectField({
             .join(" - "),
           data: item,
         }));
+      };
 
-        setOptions(mappedOptions.slice((currentPage - 1) * 5, currentPage * 5));
-        setTotalPages(Math.ceil(mappedOptions.length / 5));
-        setTotal(mappedOptions.length);
-        setIsSearching(false);
-        return;
+      if (isOffline) {
+        const mappedOptions = await tryLocalFetch();
+        if (mappedOptions) {
+          setOptions(mappedOptions);
+          setTotalPages(1);
+          setTotal(mappedOptions.length);
+          setIsSearching(false);
+          return;
+        }
       }
 
       setIsSearching(true);
@@ -144,8 +151,15 @@ export function AsyncCreatableSelectField({
 
         setOptions(mappedOptions);
       } catch (error) {
-        console.error("Erro ao buscar opções:", error);
-        setOptions([]);
+        console.error("Erro ao buscar opções na API, tentando local...", error);
+        const mappedOptions = await tryLocalFetch();
+        if (mappedOptions) {
+          setOptions(mappedOptions);
+          setTotalPages(1);
+          setTotal(mappedOptions.length);
+        } else {
+          setOptions([]);
+        }
       } finally {
         setIsSearching(false);
       }

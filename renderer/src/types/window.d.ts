@@ -16,6 +16,8 @@ export interface IpcBridge {
     updateClientsCache: (clients: any[]) => Promise<any>;
     getCachedProducts: () => Promise<any[]>;
     getCachedClients: () => Promise<any[]>;
+    getItemCloudId: (id: string) => Promise<string>;
+    getClientCloudId: (params: { id?: string; nif?: string; email?: string }) => Promise<string | null>;
   };
   security: {
     getHardwareId: () => Promise<string>;
@@ -23,10 +25,13 @@ export interface IpcBridge {
   };
   sync: {
     products: (token: string, storeId: string) => Promise<{ success: boolean; count: number }>;
+    categories: (token: string, storeId: string) => Promise<{ success: boolean; count: number }>;
     clients: (token: string, storeId: string) => Promise<{ success: boolean; count: number }>;
+    getCategories: (params: { storeId?: string }) => Promise<any[]>;
     searchItems: (params: { search?: string; categoryId?: string; storeId?: string }) => Promise<any[]>;
     searchClients: (params: { search?: string; storeId?: string }) => Promise<any[]>;
     upsertItem: (item: any, storeId: string) => Promise<any>;
+    reduceLocalStock: (items: { id: string; quantity: number }[]) => Promise<boolean>;
     deleteItem: (id: string, role: string) => Promise<any>;
     upsertClient: (client: any, storeId: string) => Promise<any>;
     deleteClient: (id: string, role: string) => Promise<any>;
@@ -38,6 +43,10 @@ export interface IpcBridge {
     openCashSession: (params: { storeId: string, userId: string, openingBalance: number }) => Promise<any>;
     closeCashSession: (params: { sessionId: string, closingBalance: number, totalSales: number, totalExpenses: number }) => Promise<any>;
     addCashMovement: (params: { sessionId: string, type: string, description: string, amount: number }) => Promise<any>;
+    
+    // Métodos para persistência de dados quando offline
+    persistCashSession: (params: { session: any }) => Promise<any>;
+    processOutbox: (params: { token: string, userId: string }) => Promise<{ processed: number; error?: string }>;
   };
 }
 
