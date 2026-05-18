@@ -36,6 +36,9 @@ export interface IpcBridge {
     upsertClient: (client: any, storeId: string) => Promise<any>;
     deleteClient: (id: string, role: string) => Promise<any>;
     searchInvoices: (params: { storeId?: string }) => Promise<any[]>;
+    createInvoice: (params: { invoiceData: any; storeId: string; userId: string }) => Promise<any>;
+    createProforma: (params: { proformaData: any; storeId: string; userId: string }) => Promise<any>;
+    getPendingOutboxCount: () => Promise<number>;
     
     // Sessões de Caixa
     searchCashSessions: (params: { storeId?: string }) => Promise<any[]>;

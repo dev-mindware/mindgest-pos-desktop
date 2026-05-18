@@ -57,6 +57,12 @@ contextBridge.exposeInMainWorld("ipc", {
       ipcRenderer.invoke("sync:delete-client", { id, role }),
     searchInvoices: (params: { storeId?: string }) =>
       ipcRenderer.invoke("sync:search-invoices", params),
+    createInvoice: (params: { invoiceData: any, storeId: string, userId: string }) =>
+      ipcRenderer.invoke("sync:create-invoice", params),
+    createProforma: (params: { proformaData: any, storeId: string, userId: string }) =>
+      ipcRenderer.invoke("sync:create-proforma", params),
+    getPendingOutboxCount: () =>
+      ipcRenderer.invoke("sync:get-pending-outbox-count"),
     
     // Sessões de Caixa
     searchCashSessions: (params: { storeId?: string }) =>

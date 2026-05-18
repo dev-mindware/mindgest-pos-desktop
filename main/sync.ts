@@ -186,36 +186,131 @@ export const syncService = {
   /**
    * Processa a fila de saída (Outbox) - Local -> Cloud
    */
+  /**
+   * Processa a fila de saída (Outbox) - Local -> Cloud
+   */
   processOutbox: async (token: string, userId: string) => {
     try {
-      // Usando o database.ts legado para buscar documentos offline
-      const { database } = await import("./database");
-      const pendingDocs = await database.getAllDocuments(userId);
+      // 1. Procurar registos no prisma.syncOutbox com status PENDING
+      const pendingDocs = await prisma.syncOutbox.findMany({
+        where: { status: "PENDING" },
+        orderBy: { createdAt: 'asc' }
+      });
 
       if (pendingDocs.length === 0) return { processed: 0 };
 
-      console.log(`🔄 [SyncWorker] Processando ${pendingDocs.length} documentos pendentes...`);
+      console.log(`🔄 [SyncWorker] Processando ${pendingDocs.length} documentos pendentes do Outbox...`);
       let processed = 0;
 
       for (const doc of pendingDocs) {
         try {
           const payload = typeof doc.payload === 'string' ? JSON.parse(doc.payload) : doc.payload;
           
-          let endpoint = "/items";
-          if (doc.type === "invoice-receipt") endpoint = "/invoice-receipts";
-          if (doc.type === "invoice") endpoint = "/invoices";
+          let endpoint = "";
+          let method: "post" | "put" = "post";
 
-          await axios.post(`${CLOUD_API_URL}${endpoint}`, payload, {
+          if (doc.entityType === "CLIENT") {
+            endpoint = doc.action === "CREATE" ? "/clients" : `/clients/${doc.entityId}`;
+            method = doc.action === "CREATE" ? "post" : "put";
+          } else if (doc.entityType === "INVOICE") {
+            endpoint = "/invoice/invoice-receipt";
+            method = "post";
+
+            // Resolver FKs locais com cloudId para o cliente se aplicável
+            const localInvoice = await prisma.invoice.findUnique({
+              where: { id: doc.entityId },
+              include: { client: true }
+            });
+
+            if (localInvoice && localInvoice.client && localInvoice.client.cloudId) {
+              if (payload.client) {
+                payload.client.id = localInvoice.client.cloudId;
+              }
+            }
+          } else if (doc.entityType === "PROFORMA") {
+            endpoint = "/invoice/proforma";
+            method = "post";
+          }
+
+          if (!endpoint) continue;
+
+          console.log(`📡 [SyncWorker] Enviando ${doc.entityType} ${doc.entityId} para ${endpoint}...`);
+          
+          const response = await axios({
+            method,
+            url: `${CLOUD_API_URL}${endpoint}`,
+            data: payload,
             headers: { Authorization: `Bearer ${token}` }
           });
 
-          // Se teve sucesso, remove da fila local
-          await database.deleteDocument(doc.id, userId);
+          const responseData = response.data?.data || response.data;
+
+          // Se for sucesso, atualizar base de dados local
+          if (doc.entityType === "CLIENT") {
+            const cloudId = responseData?.id;
+            if (cloudId) {
+              await prisma.client.update({
+                where: { id: doc.entityId },
+                data: { cloudId }
+              });
+              console.log(`✅ [SyncWorker] Cliente ${doc.entityId} associado ao cloudId ${cloudId}`);
+            }
+          } else if (doc.entityType === "INVOICE") {
+            const cloudId = responseData?.id;
+            const agtNo = responseData?.agtNo;
+            const hash = responseData?.hash;
+            const hashControl = responseData?.hashControl;
+            
+            await prisma.invoice.update({
+              where: { id: doc.entityId },
+              data: {
+                status: "VALID",
+                // Note: some schema/Prisma clients might not have a separate 'cloudId' column 
+                // in Invoice, but we saw 'cloudId' is not present in Invoice model in schema.prisma!
+                // Ah, let's verify if cloudId exists in Invoice in schema.prisma:
+                // Lines 97-123 in schema.prisma has:
+                // model Invoice { id, localNo, agtNo, status, issueDate, netTotal, taxTotal, grossTotal, hash, hashControl, userId, clientId, storeId
+                // Wait! Invoice in schema.prisma does NOT have a cloudId field!
+                // It only has id, localNo, agtNo, status...
+                // So the Invoice ID itself (uuid) is either the cloudId or we just map it.
+                // Wait, if id is a uuid, we don't need a separate cloudId in Invoice because it uses the same id!
+                // Yes, createdInvoice was created with a local uuid, and when POSTed to the Cloud,
+                // wait, if we send payload without an ID, the Cloud generates a CUID/UUID.
+                // But in Electron, we should send the invoice ID (which is the local uuid) as the ID, or let the cloud return the ID.
+                // Yes, so we can store the returned agtNo, hash, and hashControl.
+                // We do NOT need to update cloudId since the Invoice model does not have a cloudId!
+                // Let's look at the schema.prisma for Invoice again:
+                // model Invoice { id, localNo, agtNo, status, ... }
+                // So there is NO cloudId field in Invoice!
+                // That's fine, we will just update agtNo, status, hash, and hashControl!
+                agtNo,
+                hash,
+                hashControl
+              }
+            });
+            console.log(`✅ [SyncWorker] Fatura ${doc.entityId} sincronizada com sucesso na cloud.`);
+          }
+
+          // Marcar outbox como SYNCED
+          await prisma.syncOutbox.update({
+            where: { id: doc.id },
+            data: { status: "SYNCED" }
+          });
+
           processed++;
-          console.log(`✅ [SyncWorker] Documento ${doc.id} sincronizado.`);
         } catch (err: any) {
           console.error(`❌ [SyncWorker] Erro ao sincronizar documento ${doc.id}:`, err.message);
-          // Continua para o próximo
+          
+          if (err.response && (err.response.status === 400 || err.response.status === 422)) {
+            const errorMsg = JSON.stringify(err.response.data || err.message);
+            await prisma.syncOutbox.update({
+              where: { id: doc.id },
+              data: { status: "ERROR", errorMsg }
+            });
+          } else {
+            // Se for erro de rede/servidor, interrompemos o loop para tentar de novo mais tarde
+            break;
+          }
         }
       }
 

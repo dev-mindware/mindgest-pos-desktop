@@ -5,6 +5,7 @@ import { database } from "./database";
 import { getHardwareFingerprint } from "./security";
 import { prisma } from "./prisma";
 import { syncService } from "./sync";
+import crypto from "crypto";
 
 // ==========================================
 // Security & Anti-Tampering IPC Handlers
@@ -216,14 +217,223 @@ ipcMain.handle("db:get-client-cloud-id", async (_, params: { id?: string; nif?: 
 
 ipcMain.handle("sync:upsert-client", async (_, { client, storeId }) => {
   try {
-    return await prisma.client.upsert({
-      where: { id: client.id || 'new-id' },
-      update: { ...client, storeId },
-      create: { ...client, storeId }
+    const isNew = !client.id;
+    const clientUuid = client.id || crypto.randomUUID();
+    
+    const result = await prisma.client.upsert({
+      where: { id: clientUuid },
+      update: { ...client, id: clientUuid, storeId },
+      create: { ...client, id: clientUuid, storeId }
     });
+
+    // Registar no Outbox local para sincronizar com a cloud
+    await prisma.syncOutbox.create({
+      data: {
+        entityType: "CLIENT",
+        entityId: result.id,
+        action: isNew ? "CREATE" : "UPDATE",
+        payload: JSON.stringify(result),
+        storeId
+      }
+    });
+
+    return result;
   } catch (error) {
     console.error("❌ [DB] Erro ao salvar cliente localmente:", error);
     throw error;
+  }
+});
+
+ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId }) => {
+  try {
+    const invoiceId = crypto.randomUUID();
+    const localNo = `FT-DRAFT-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+
+    // 1. Processar cliente se fornecido no payload
+    let clientId = null;
+    if (invoiceData.client) {
+      if (!invoiceData.client.id || invoiceData.client.id.includes('-new-') || invoiceData.client.__isNew__) {
+        const clientUuid = crypto.randomUUID();
+        const clientResult = await prisma.client.create({
+          data: {
+            id: clientUuid,
+            name: invoiceData.client.name,
+            nif: invoiceData.client.taxNumber || invoiceData.client.nif || null,
+            email: invoiceData.client.email || null,
+            phone: invoiceData.client.phone || null,
+            address: invoiceData.client.address || null,
+            storeId
+          }
+        });
+        clientId = clientResult.id;
+
+        // Criar outbox para este novo cliente
+        await prisma.syncOutbox.create({
+          data: {
+            entityType: "CLIENT",
+            entityId: clientResult.id,
+            action: "CREATE",
+            payload: JSON.stringify(clientResult),
+            storeId
+          }
+        });
+      } else {
+        const localClient = await prisma.client.findFirst({
+          where: {
+            OR: [
+              { id: invoiceData.client.id },
+              { cloudId: invoiceData.client.id }
+            ]
+          }
+        });
+        if (localClient) {
+          clientId = localClient.id;
+        }
+      }
+    }
+
+    // 2. Calcular totais locais e preparar as linhas da fatura
+    const linesData = [];
+    let calculatedNetTotal = 0;
+    let calculatedTaxTotal = 0;
+
+    for (const item of invoiceData.items) {
+      const localItem = await prisma.item.findFirst({
+        where: {
+          OR: [
+            { id: item.id },
+            { cloudId: item.id }
+          ]
+        }
+      });
+
+      if (!localItem) {
+        throw new Error(`Item com ID ${item.id} não encontrado localmente.`);
+      }
+
+      const qty = item.quantity || 1;
+      const unitPrice = localItem.price;
+      const taxPercent = localItem.taxPercent;
+      
+      const netTotal = qty * unitPrice;
+      const taxTotal = netTotal * (taxPercent / 100);
+      const grossTotal = netTotal + taxTotal;
+
+      calculatedNetTotal += netTotal;
+      calculatedTaxTotal += taxTotal;
+
+      linesData.push({
+        id: crypto.randomUUID(),
+        itemId: localItem.id,
+        quantity: qty,
+        unitPrice,
+        taxPercent,
+        netTotal,
+        grossTotal
+      });
+    }
+
+    const calculatedGrossTotal = calculatedNetTotal + calculatedTaxTotal;
+
+    // 3. Criar a Fatura no SQLite
+    const createdInvoice = await prisma.invoice.create({
+      data: {
+        id: invoiceId,
+        localNo,
+        status: "DRAFT",
+        issueDate: new Date(),
+        netTotal: calculatedNetTotal,
+        taxTotal: calculatedTaxTotal,
+        grossTotal: calculatedGrossTotal,
+        userId,
+        clientId,
+        storeId,
+        lines: {
+          create: linesData
+        }
+      },
+      include: {
+        lines: true,
+        client: true
+      }
+    });
+
+    // 4. Preparar payload de sincronização da fatura para a Cloud
+    const cloudPayload = {
+      ...invoiceData,
+      localNo,
+      client: clientId ? {
+        id: createdInvoice.client?.cloudId || createdInvoice.client?.id,
+        name: createdInvoice.client?.name,
+        nif: createdInvoice.client?.nif,
+        email: createdInvoice.client?.email,
+        phone: createdInvoice.client?.phone,
+        address: createdInvoice.client?.address,
+      } : undefined,
+    };
+
+    // 5. Adicionar ao Outbox
+    await prisma.syncOutbox.create({
+      data: {
+        entityType: "INVOICE",
+        entityId: invoiceId,
+        action: "CREATE",
+        payload: JSON.stringify(cloudPayload),
+        storeId
+      }
+    });
+
+    // Retorna uma resposta compatível para a UI (com id e offline flag)
+    return {
+      data: {
+        id: createdInvoice.id,
+        localNo: createdInvoice.localNo,
+        offline: true,
+        invoice: createdInvoice
+      }
+    };
+  } catch (error) {
+    console.error("❌ [DB] Erro ao criar fatura localmente:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("sync:create-proforma", async (_, { proformaData, storeId, userId }) => {
+  try {
+    const proformaId = crypto.randomUUID();
+    
+    // Proformas não necessitam de representação estruturada offline de imediato no SQLite
+    // Apenas guardamos o payload no outbox para sincronizar mais tarde
+    await prisma.syncOutbox.create({
+      data: {
+        entityType: "PROFORMA",
+        entityId: proformaId,
+        action: "CREATE",
+        payload: JSON.stringify(proformaData),
+        storeId
+      }
+    });
+
+    return {
+      data: {
+        id: proformaId,
+        offline: true
+      }
+    };
+  } catch (error) {
+    console.error("❌ [DB] Erro ao criar proforma localmente:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("sync:get-pending-outbox-count", async () => {
+  try {
+    return await prisma.syncOutbox.count({
+      where: { status: "PENDING" }
+    });
+  } catch (error) {
+    console.error("❌ [DB] Erro ao contar outbox pendente:", error);
+    return 0;
   }
 });
 

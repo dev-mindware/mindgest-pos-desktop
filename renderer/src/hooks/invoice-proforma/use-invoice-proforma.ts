@@ -21,32 +21,28 @@ export function useDeleteProforma() {
 
 export function useCreateProforma() {
   const queryClient = useQueryClient();
-  const { isOnline } = useNetworkStatus();
-  const { addDocument } = useOfflineStore();
   const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (data: ProformData) => {
-      if (!isOnline) {
-        // Document creation is now async due to SQLite IPC bridge
-        const internalId = await addDocument(
-          {
-            type: "proforma",
-            payload: data as any,
-          },
-          user?.id || "unknown",
-        );
-
-        // Return mock response for offline
-        return { data: { id: internalId, offline: true } };
+      if (typeof window !== "undefined" && window.ipc?.sync?.createProforma) {
+        const storeId = data.storeId || (user as any)?.store?.id || (user as any)?.storeId || "";
+        const result = await window.ipc.sync.createProforma({
+          proformaData: data,
+          storeId,
+          userId: user?.id || "unknown",
+        });
+        return result;
       }
+      
+      // Fallback para ambiente puramente web
       return proformaService.createProforma(data);
     },
     onSuccess: (response) => {
       const isOffline = (response as any)?.offline;
       SucessMessage(
         isOffline
-          ? "Proforma salva localmente!"
+          ? "Proforma salva localmente com sucesso!"
           : "Proforma criada com sucesso!",
       );
       queryClient.invalidateQueries({ queryKey: ["invoice-proforma"] });

@@ -27,15 +27,38 @@ import { database } from './database';
  */
 export async function validateMonotonicClock(): Promise<boolean> {
   try {
-    // Por enquanto, as faturas estão a cair em 'offline_documents' via legacy database.ts
-    // No futuro, quando migrarmos o POS para Prisma, voltamos a usar o prisma.invoice.
-    const allDocs = await database.getAllDocuments('unknown'); // 'unknown' é o user_id padrão do legado
-    
-    if (allDocs.length === 0) return true;
+    // Verifica a última transação em várias tabelas críticas do Prisma
+    const [lastInvoice, lastSession, lastClient, lastOutbox] = await Promise.all([
+      prisma.invoice.findFirst({ orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
+      prisma.cashSession.findFirst({ orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
+      prisma.client.findFirst({ orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
+      prisma.syncOutbox.findFirst({ orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
+    ]);
 
-    // Obtém o documento mais recente (o último do array, já que getAllDocuments ordena por data ASC)
-    const lastDoc = allDocs[allDocs.length - 1];
-    const lastOperationTime = new Date(lastDoc.created_at);
+    const timestamps: number[] = [];
+    if (lastInvoice) timestamps.push(lastInvoice.createdAt.getTime());
+    if (lastSession) timestamps.push(lastSession.createdAt.getTime());
+    if (lastClient) timestamps.push(lastClient.createdAt.getTime());
+    if (lastOutbox) timestamps.push(lastOutbox.createdAt.getTime());
+
+    // Também verifica a base legado onde as faturas e proformas offline são guardadas temporariamente
+    try {
+      const allDocs = await database.getAllDocuments('unknown');
+      if (allDocs && allDocs.length > 0) {
+        const lastDoc = allDocs[allDocs.length - 1];
+        if (lastDoc && lastDoc.created_at) {
+          timestamps.push(new Date(lastDoc.created_at).getTime());
+        }
+      }
+    } catch (err) {
+      console.error("⚠️ [Security] Erro ao ler documentos offline legados para o relógio:", err);
+    }
+
+    // Se a base de dados for completamente nova e vazia
+    if (timestamps.length === 0) return true;
+
+    // A operação mais recente feita no POS
+    const lastOperationTime = new Date(Math.max(...timestamps));
 
     const currentTime = new Date();
 

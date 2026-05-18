@@ -63,6 +63,7 @@ export function AsyncCreatableSelectField({
       }
 
       const isOffline = typeof window !== "undefined" && (!window.navigator.onLine || (window as any).isOffline);
+      const isElectron = typeof window !== "undefined" && !!window.ipc?.sync;
 
       const tryLocalFetch = async () => {
         if (typeof window === "undefined" || !window.ipc?.sync) return null;
@@ -90,7 +91,7 @@ export function AsyncCreatableSelectField({
         }));
       };
 
-      if (isOffline) {
+      if (isOffline || isElectron) {
         const mappedOptions = await tryLocalFetch();
         if (mappedOptions) {
           setOptions(mappedOptions);
