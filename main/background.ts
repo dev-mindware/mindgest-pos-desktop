@@ -6,6 +6,8 @@ import { getHardwareFingerprint } from "./security";
 import { prisma } from "./prisma";
 import { syncService } from "./sync";
 import crypto from "crypto";
+import { spawn, ChildProcess } from "child_process";
+import fs from "fs";
 
 // ==========================================
 // Security & Anti-Tampering IPC Handlers
@@ -687,6 +689,62 @@ async function createWindow() {
 import { testPrismaConnection } from "./prisma";
 import { startLocalServer } from "./server";
 
+// ====================================================
+// Subprocesso do Microserviço MIND AI (Ciclo de Vida)
+// ====================================================
+let pySubprocess: ChildProcess | null = null;
+
+function startPythonSubprocess() {
+  const isProd = process.env.NODE_ENV === "production";
+  let pyPath = "";
+  let pyArgs: string[] = [];
+
+  if (isProd) {
+    // 1. Em Produção: Executa o .exe que está embutido na pasta de recursos
+    pyPath = path.join(process.resourcesPath, "bin", "mind-ai", "mind-ai.exe");
+  } else {
+    // 2. Em Desenvolvimento: Corre via interpretador da nossa venv local
+    const venvPython = path.join(app.getAppPath(), "mind-microservice", "venv", "Scripts", "python.exe");
+    const localMainPy = path.join(app.getAppPath(), "mind-microservice", "main.py");
+    
+    if (fs.existsSync(venvPython)) {
+      pyPath = venvPython;
+      pyArgs = [localMainPy];
+    } else {
+      // Fallback para comando global python se não houver venv configurada
+      pyPath = "python";
+      pyArgs = [localMainPy];
+    }
+  }
+
+  console.log(`🚀 [Launcher] A tentar iniciar serviço MIND AI em: ${pyPath}`);
+
+  try {
+    pySubprocess = spawn(pyPath, pyArgs, {
+      stdio: "ignore",     // Esconde logs do stdout para manter limpo
+      windowsHide: true   // Garante que NENHUMA janela preta cmd pisca no Windows
+    });
+
+    pySubprocess.on("error", (err) => {
+      console.error("❌ [Launcher] Erro ao iniciar subprocesso MIND:", err);
+    });
+
+    pySubprocess.on("close", (code) => {
+      console.log(`🔌 [Launcher] Subprocesso MIND AI fechado com código: ${code}`);
+    });
+  } catch (err) {
+    console.error("❌ [Launcher] Erro crítico ao fazer spawn do subprocesso MIND:", err);
+  }
+}
+
+function killPythonSubprocess() {
+  if (pySubprocess) {
+    console.log("🔌 [Launcher] A encerrar serviço MIND AI em background...");
+    pySubprocess.kill();
+    pySubprocess = null;
+  }
+}
+
 app.on("ready", async () => {
   console.log("Main process READY EVENT triggered");
   await testPrismaConnection();
@@ -697,16 +755,25 @@ app.on("ready", async () => {
     console.error("⚠️ [Aviso] Não foi possível iniciar o servidor local. A porta pode estar ocupada:", error);
   }
   
+  // Iniciar automaticamente o microserviço de IA da MIND
+  startPythonSubprocess();
+  
   createWindow();
 });
 
 app.on("window-all-closed", () => {
   console.log("Shutdown: All windows closed");
+  killPythonSubprocess();
   app.quit();
+});
+
+process.on("exit", () => {
+  killPythonSubprocess();
 });
 
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION:", err);
+  killPythonSubprocess();
 });
 
 process.on("unhandledRejection", (reason, promise) => {

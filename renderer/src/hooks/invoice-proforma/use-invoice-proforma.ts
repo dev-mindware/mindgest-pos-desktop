@@ -26,7 +26,8 @@ export function useCreateProforma() {
   return useMutation({
     mutationFn: async (data: ProformData) => {
       if (typeof window !== "undefined" && window.ipc?.sync?.createProforma) {
-        const storeId = data.storeId || (user as any)?.store?.id || (user as any)?.storeId || "";
+        const storeId = data.store?.id || (user as any)?.store?.id || (user as any)?.storeId || "";
+        console.log(storeId);
         const result = await window.ipc.sync.createProforma({
           proformaData: data,
           storeId,

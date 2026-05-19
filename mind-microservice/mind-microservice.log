@@ -21,3 +21,4 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 2026-03-06 11:27:33,495 - app.modules.ai.recommender - INFO - Starting Apriori training for Recommendation Engine from provided payload...
 2026-03-06 11:27:40,745 - app.modules.ai.recommender - INFO - Successfully trained model. Generated 2 rules.
 2026-03-06 11:27:40,746 - main - INFO - Background model training completed successfully.
+2026-05-19 16:01:39,254 - app.modules.ai.assistant - ERROR - GEMINI_API_KEY is missing from environment variables.
