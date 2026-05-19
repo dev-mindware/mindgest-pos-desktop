@@ -5,25 +5,41 @@ import { InvoiceReceiptPayload } from "@/types";
 import { useNetworkStatus } from "../common/use-network-status";
 import { useOfflineStore } from "@/stores/offline/offline-store";
 import { useAuth } from "../auth/use-auth";
+import { fi } from "date-fns/locale";
 
 export function useCreateInvoiceReceipt() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+
   return useMutation({
     mutationFn: async (data: InvoiceReceiptPayload) => {
-      if (typeof window !== "undefined" && window.ipc?.sync?.createInvoice) {
-        const storeId = data.storeId || (user as any)?.store?.id || (user as any)?.storeId || "";
-        const result = await window.ipc.sync.createInvoice({
-          invoiceData: data,
-          storeId,
-          userId: user?.id || "unknown",
-        });
-        return result;
+      if (!user?.id) {
+        throw new Error("Usuário não autenticado para criar a fatura.");
       }
-      
-      // Fallback para ambiente puramente web
-      return invoiceReceiptService.createInvoiceReceipt(data);
+      try {
+
+        if (typeof window !== "undefined" && window.ipc?.sync?.createInvoice) {
+          const storeId = data.storeId || (user as any)?.store?.id || (user as any)?.storeId || "";
+          await window.ipc.sync.createInvoice({
+            invoiceData: data,
+            storeId,
+            userId: user.id,
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              storeId: user.storeId || (user as any)?.store?.id,
+            },
+          });
+        }
+
+      } catch (error) {
+        throw new Error("Usuário não autenticado para criar a fatura.");
+      } finally {
+        return invoiceReceiptService.createInvoiceReceipt(data);
+      }
     },
     onSuccess: (response) => {
       const isOffline = (response as any)?.offline;

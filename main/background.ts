@@ -29,7 +29,7 @@ ipcMain.handle("security:save-license", async (_, { licenseJwt, storeId }) => {
 // Data Sync IPC Handlers
 // ==========================================
 ipcMain.handle("sync:products", async (_, { token, storeId }) => {
-  return syncService.syncProducts(token, storeId);
+  return  syncService.syncProducts(token, storeId);
 });
 
 ipcMain.handle("sync:categories", async (_, { token, storeId }) => {
@@ -246,10 +246,41 @@ ipcMain.handle("sync:upsert-client", async (_, { client, storeId }) => {
   }
 });
 
-ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId }) => {
+ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, user }) => {
   try {
+    if (!userId) {
+      throw new Error("userId obrigatório para criar a fatura localmente.");
+    }
+
     const invoiceId = crypto.randomUUID();
     const localNo = `FT-DRAFT-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+
+    let localUser = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!localUser) {
+      if (!user?.email || !user?.name) {
+        throw new Error(`Usuário local não encontrado para userId=${userId} e faltam dados de usuário para criá-lo.`);
+      }
+
+      localUser = await prisma.user.create({
+        data: {
+          id: userId,
+          email: user.email,
+          name: user.name,
+          role: user.role || "CASHIER",
+          storeId: storeId || user.storeId || "unknown",
+        }
+      });
+      console.log(`✅ [sync:create-invoice] Local user criado automaticamente: ${localUser.id}`);
+    } else {
+      console.log(`✅ [sync:create-invoice] Local user encontrado: ${localUser.id}`);
+    }
+
+    console.log(
+      `[sync:create-invoice] Criar fatura para userId=${userId}, storeId=${storeId}, itemIds=${invoiceData.items?.map((item: any) => item.id).join(",")}`,
+    );
 
     // 1. Processar cliente se fornecido no payload
     let clientId = null;

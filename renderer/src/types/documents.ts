@@ -129,6 +129,13 @@ export type InvoiceReceiptPayload = {
   storeId?: string;
   amountReceived?: number;
   change?: number;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    storeId?: string;
+  };
 };
 
 // ========================
