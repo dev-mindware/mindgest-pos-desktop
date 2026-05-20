@@ -48,10 +48,7 @@ export function useNotifications(
 
   // Socket.IO Connection
   useEffect(() => {
-    // Only connect if URL is defined
-    if (!"https://mindgest.mindware-vps.cloud/api") return;
-
-    socket = io("https://mindgest.mindware-vps.cloud/api", {
+    socket = io("http://localhost:3001/api", {
       transports: ["websocket"],
     });
 

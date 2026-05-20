@@ -2,11 +2,11 @@ import { prisma } from "./prisma";
 import axios from "axios";
 
 // Configurações da API Cloud (Poderia vir de variáveis de ambiente)
-const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api";
+const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api" //"https://mindgest.mindware-vps.cloud/api";
 
 export const syncService = {
   /**
-   * Sincroniza todos os produtos da Cloud para o SQLite Local
+   * Sincroniza todos os produtos da Cloud para o SQLite Local  
    */
   syncProducts: async (token: string, storeId: string) => {
     try {
