@@ -116,7 +116,6 @@ model Invoice {
   storeId        String
   
   lines          InvoiceLine[]
-  outboxEntries  SyncOutbox[]
   
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -177,17 +176,24 @@ model CashMovement {
 // ==========================================
 
 model SyncOutbox {
-  id          String   @id @default(uuid())
-  entityType  String   // Ex: INVOICE, CLIENT, CASH_MOVEMENT
-  entityId    String   // ID local da entidade
-  action      String   // CREATE, UPDATE, DELETE
-  payload     String   // JSON Payload completo a enviar para a MINDGEST-API
-  status      String   @default("PENDING") // PENDING, SYNCED, ERROR
-  errorMsg    String?
-  storeId     String
-  
-  invoice     Invoice? @relation(fields: [entityId], references: [id])
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(uuid())
+  entityType      String   // Ex: INVOICE, CLIENT, CASH_MOVEMENT, PROFORMA
+  entityId        String   // ID local da entidade
+  action          String   // CREATE, UPDATE, DELETE
+  payload         String   // JSON Payload completo a enviar para a MINDGEST-API
+  status          String   @default("PENDING") // PENDING, SYNCED, FAILED, PENDING_DEPENDENCIES
+  errorMsg        String?
+  storeId         String
+
+  // Rastreamento de dependências (ex: INVOICE depende de CLIENT)
+  dependsOnType   String?   // Ex: "CLIENT"
+  dependsOnId     String?   // Ex: clientId
+
+  // Retry logic
+  retryCount      Int       @default(0)
+  lastErrorTime   DateTime?
+  syncedAt        DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

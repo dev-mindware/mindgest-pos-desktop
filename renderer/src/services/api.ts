@@ -21,7 +21,7 @@ const processQueue = (error: any, token: string | null = null) => {
 export const api = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL ||
-   "http://localhost:3001/api",
+   "https://mindgest.mindware-vps.cloud/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -142,7 +142,7 @@ api.interceptors.response.use(
         if (!refreshToken) throw new Error("No refresh token");
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/auth/refresh`,
+          `${process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"}/auth/refresh`,
           {
             method: "POST",
             body: JSON.stringify({ refreshToken }),

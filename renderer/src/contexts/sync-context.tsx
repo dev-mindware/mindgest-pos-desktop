@@ -13,7 +13,8 @@ const SyncContext = createContext<SyncContextType | undefined>(undefined);
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { isOnline } = useNetworkStatus();
-  const { user, token } = useAuth();
+  const { user } = useAuth();
+  const token = typeof window !== "undefined" ? localStorage.getItem("session-accessToken") : null;
   const { queue, setSyncing, isSyncing } = useOfflineStore();
   const lastSyncRef = useRef<number>(0);
 

@@ -29,7 +29,7 @@ ipcMain.handle("security:save-license", async (_, { licenseJwt, storeId }) => {
 // Data Sync IPC Handlers
 // ==========================================
 ipcMain.handle("sync:products", async (_, { token, storeId }) => {
-  return  syncService.syncProducts(token, storeId);
+  return syncService.syncProducts(token, storeId);
 });
 
 ipcMain.handle("sync:categories", async (_, { token, storeId }) => {
@@ -171,7 +171,7 @@ ipcMain.handle("sync:reduce-local-stock", async (_, items: { id: string; quantit
         console.warn(`⚠️ [DB] Item não encontrado para redução de stock: ${item.id}`);
       }
     }
-    
+
     if (operations.length > 0) {
       await prisma.$transaction(operations);
     }
@@ -221,7 +221,7 @@ ipcMain.handle("sync:upsert-client", async (_, { client, storeId }) => {
   try {
     const isNew = !client.id;
     const clientUuid = client.id || crypto.randomUUID();
-    
+
     const result = await prisma.client.upsert({
       where: { id: clientUuid },
       update: { ...client, id: clientUuid, storeId },
@@ -347,7 +347,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       const qty = item.quantity || 1;
       const unitPrice = localItem.price;
       const taxPercent = localItem.taxPercent;
-      
+
       const netTotal = qty * unitPrice;
       const taxTotal = netTotal * (taxPercent / 100);
       const grossTotal = netTotal + taxTotal;
@@ -405,14 +405,16 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       } : undefined,
     };
 
-    // 5. Adicionar ao Outbox
+    // 5. Adicionar ao Outbox com rastreamento de dependência
     await prisma.syncOutbox.create({
       data: {
         entityType: "INVOICE",
-        entityId: invoiceId,
+        entityId: createdInvoice.id,
         action: "CREATE",
         payload: JSON.stringify(cloudPayload),
-        storeId
+        storeId,
+        dependsOnType: clientId ? "CLIENT" : undefined,
+        dependsOnId: clientId ? clientId : undefined
       }
     });
 
@@ -434,7 +436,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
 ipcMain.handle("sync:create-proforma", async (_, { proformaData, storeId, userId }) => {
   try {
     const proformaId = crypto.randomUUID();
-    
+
     // Proformas não necessitam de representação estruturada offline de imediato no SQLite
     // Apenas guardamos o payload no outbox para sincronizar mais tarde
     await prisma.syncOutbox.create({
@@ -462,7 +464,7 @@ ipcMain.handle("sync:create-proforma", async (_, { proformaData, storeId, userId
 ipcMain.handle("sync:get-pending-outbox-count", async () => {
   try {
     return await prisma.syncOutbox.count({
-      where: { status: "PENDING" }
+      where: { status: { in: ["PENDING", "PENDING_DEPENDENCIES"] } }
     });
   } catch (error) {
     console.error("❌ [DB] Erro ao contar outbox pendente:", error);
@@ -520,10 +522,10 @@ ipcMain.handle("sync:search-cash-sessions", async (_, { storeId }) => {
 ipcMain.handle("sync:get-current-session", async (_, { storeId, userId }) => {
   try {
     return await prisma.cashSession.findFirst({
-      where: { 
-        storeId, 
+      where: {
+        storeId,
         userId,
-        status: "OPEN" 
+        status: "OPEN"
       },
       include: { movements: true }
     });
@@ -687,7 +689,7 @@ async function createWindow() {
 
   // Nextron passes the port as the first argument in development
   const port = process.argv[2];
-  
+
   // ==========================================
   // VALIDAÇÃO DE SEGURANÇA (Anti-Tampering)
   // ==========================================
@@ -737,7 +739,7 @@ function startPythonSubprocess() {
     // 2. Em Desenvolvimento: Corre via interpretador da nossa venv local
     const venvPython = path.join(app.getAppPath(), "mind-microservice", "venv", "Scripts", "python.exe");
     const localMainPy = path.join(app.getAppPath(), "mind-microservice", "main.py");
-    
+
     if (fs.existsSync(venvPython)) {
       pyPath = venvPython;
       pyArgs = [localMainPy];
@@ -779,16 +781,16 @@ function killPythonSubprocess() {
 app.on("ready", async () => {
   console.log("Main process READY EVENT triggered");
   await testPrismaConnection();
-  
+
   try {
     await startLocalServer();
   } catch (error) {
     console.error("⚠️ [Aviso] Não foi possível iniciar o servidor local. A porta pode estar ocupada:", error);
   }
-  
+
   // Iniciar automaticamente o microserviço de IA da MIND
   startPythonSubprocess();
-  
+
   createWindow();
 });
 

@@ -2,7 +2,7 @@ import { prisma } from "./prisma";
 import axios from "axios";
 
 // Configurações da API Cloud (Poderia vir de variáveis de ambiente)
-const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api" //"https://mindgest.mindware-vps.cloud/api";
+const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api";
 
 export const syncService = {
   /**
@@ -26,7 +26,7 @@ export const syncService = {
             const existingWithBarcode = await prisma.item.findUnique({
               where: { barcode: item.barcode }
             });
-            
+
             if (existingWithBarcode && existingWithBarcode.cloudId !== item.id) {
               await prisma.item.update({
                 where: { id: existingWithBarcode.id },
@@ -40,7 +40,7 @@ export const syncService = {
             const existingWithCode = await prisma.item.findUnique({
               where: { code: item.sku }
             });
-            
+
             if (existingWithCode && existingWithCode.cloudId !== item.id) {
               await prisma.item.update({
                 where: { id: existingWithCode.id },
@@ -191,21 +191,47 @@ export const syncService = {
    */
   processOutbox: async (token: string, userId: string) => {
     try {
-      // 1. Procurar registos no prisma.syncOutbox com status PENDING
+      // Buscar pendentes (inclui PENDING_DEPENDENCIES)
       const pendingDocs = await prisma.syncOutbox.findMany({
-        where: { status: "PENDING" },
-        orderBy: { createdAt: 'asc' }
+        where: { status: { in: ["PENDING", "PENDING_DEPENDENCIES"] } },
+        orderBy: { createdAt: "asc" }
       });
 
       if (pendingDocs.length === 0) return { processed: 0 };
 
-      console.log(`🔄 [SyncWorker] Processando ${pendingDocs.length} documentos pendentes do Outbox...`);
+      // Prioridade por tipo: CLIENT -> ITEM -> INVOICE -> PROFORMA -> CASH_MOVEMENT
+      const priority: Record<string, number> = {
+        CLIENT: 0,
+        ITEM: 1,
+        INVOICE: 2,
+        PROFORMA: 3,
+        CASH_MOVEMENT: 4
+      };
+
+      const sortedDocs = pendingDocs.sort((a, b) => (priority[a.entityType] ?? 99) - (priority[b.entityType] ?? 99));
+
+      console.log(`🔄 [SyncWorker] Processando ${sortedDocs.length} documentos (ordenados por dependências)...`);
       let processed = 0;
 
-      for (const doc of pendingDocs) {
+      for (const doc of sortedDocs) {
         try {
-          const payload = typeof doc.payload === 'string' ? JSON.parse(doc.payload) : doc.payload;
-          
+          // Se tiver dependência, garantir que a dependência já foi SYNCED
+          if (doc.dependsOnType && doc.dependsOnId) {
+            const dep = await prisma.syncOutbox.findFirst({
+              where: {
+                entityType: doc.dependsOnType,
+                entityId: doc.dependsOnId,
+                status: "SYNCED"
+              }
+            });
+            if (!dep) {
+              console.warn(`[SyncWorker] ${doc.entityType} ${doc.entityId} aguardando ${doc.dependsOnType} ${doc.dependsOnId}`);
+              await prisma.syncOutbox.update({ where: { id: doc.id }, data: { status: "PENDING_DEPENDENCIES" } });
+              continue;
+            }
+          }
+
+          const payload = typeof doc.payload === "string" ? JSON.parse(doc.payload) : doc.payload;
           let endpoint = "";
           let method: "post" | "put" = "post";
 
@@ -216,26 +242,21 @@ export const syncService = {
             endpoint = "/invoice/invoice-receipt";
             method = "post";
 
-            // Resolver FKs locais com cloudId para o cliente se aplicável
-            const localInvoice = await prisma.invoice.findUnique({
-              where: { id: doc.entityId },
-              include: { client: true }
-            });
-
-            if (localInvoice && localInvoice.client && localInvoice.client.cloudId) {
-              if (payload.client) {
-                payload.client.id = localInvoice.client.cloudId;
-              }
+            // Se possível, trocar client.id pelo cloudId local
+            const localInvoice = await prisma.invoice.findUnique({ where: { id: doc.entityId }, include: { client: true } });
+            if (localInvoice?.client?.cloudId && payload.client) {
+              payload.client.id = localInvoice.client.cloudId;
             }
           } else if (doc.entityType === "PROFORMA") {
             endpoint = "/invoice/proforma";
             method = "post";
+          } else {
+            // fallback — enviar payload genérico
           }
 
           if (!endpoint) continue;
 
-          console.log(`📡 [SyncWorker] Enviando ${doc.entityType} ${doc.entityId} para ${endpoint}...`);
-          
+          console.log(`📡 [SyncWorker] Enviando ${doc.entityType} ${doc.entityId} -> ${endpoint}`);
           const response = await axios({
             method,
             url: `${CLOUD_API_URL}${endpoint}`,
@@ -245,70 +266,43 @@ export const syncService = {
 
           const responseData = response.data?.data || response.data;
 
-          // Se for sucesso, atualizar base de dados local
+          // Atualizações locais pós-success
           if (doc.entityType === "CLIENT") {
             const cloudId = responseData?.id;
             if (cloudId) {
-              await prisma.client.update({
-                where: { id: doc.entityId },
-                data: { cloudId }
-              });
+              await prisma.client.update({ where: { id: doc.entityId }, data: { cloudId } });
               console.log(`✅ [SyncWorker] Cliente ${doc.entityId} associado ao cloudId ${cloudId}`);
             }
           } else if (doc.entityType === "INVOICE") {
-            const cloudId = responseData?.id;
             const agtNo = responseData?.agtNo;
             const hash = responseData?.hash;
             const hashControl = responseData?.hashControl;
-            
             await prisma.invoice.update({
               where: { id: doc.entityId },
-              data: {
-                status: "VALID",
-                // Note: some schema/Prisma clients might not have a separate 'cloudId' column 
-                // in Invoice, but we saw 'cloudId' is not present in Invoice model in schema.prisma!
-                // Ah, let's verify if cloudId exists in Invoice in schema.prisma:
-                // Lines 97-123 in schema.prisma has:
-                // model Invoice { id, localNo, agtNo, status, issueDate, netTotal, taxTotal, grossTotal, hash, hashControl, userId, clientId, storeId
-                // Wait! Invoice in schema.prisma does NOT have a cloudId field!
-                // It only has id, localNo, agtNo, status...
-                // So the Invoice ID itself (uuid) is either the cloudId or we just map it.
-                // Wait, if id is a uuid, we don't need a separate cloudId in Invoice because it uses the same id!
-                // Yes, createdInvoice was created with a local uuid, and when POSTed to the Cloud,
-                // wait, if we send payload without an ID, the Cloud generates a CUID/UUID.
-                // But in Electron, we should send the invoice ID (which is the local uuid) as the ID, or let the cloud return the ID.
-                // Yes, so we can store the returned agtNo, hash, and hashControl.
-                // We do NOT need to update cloudId since the Invoice model does not have a cloudId!
-                // Let's look at the schema.prisma for Invoice again:
-                // model Invoice { id, localNo, agtNo, status, ... }
-                // So there is NO cloudId field in Invoice!
-                // That's fine, we will just update agtNo, status, hash, and hashControl!
-                agtNo,
-                hash,
-                hashControl
-              }
+              data: { status: "VALID", agtNo, hash, hashControl }
             });
-            console.log(`✅ [SyncWorker] Fatura ${doc.entityId} sincronizada com sucesso na cloud.`);
+            console.log(`✅ [SyncWorker] Fatura ${doc.entityId} sincronizada`);
           }
 
-          // Marcar outbox como SYNCED
-          await prisma.syncOutbox.update({
-            where: { id: doc.id },
-            data: { status: "SYNCED" }
-          });
-
+          await prisma.syncOutbox.update({ where: { id: doc.id }, data: { status: "SYNCED", syncedAt: new Date(), retryCount: 0 } });
           processed++;
         } catch (err: any) {
-          console.error(`❌ [SyncWorker] Erro ao sincronizar documento ${doc.id}:`, err.message);
-          
-          if (err.response && (err.response.status === 400 || err.response.status === 422)) {
-            const errorMsg = JSON.stringify(err.response.data || err.message);
+          console.error(`❌ [SyncWorker] Erro ao sincronizar ${doc.entityType} ${doc.id}:`, err?.message || err);
+          const newRetry = (doc.retryCount ?? 0) + 1;
+          const maxRetries = 5;
+
+          if (newRetry >= maxRetries) {
             await prisma.syncOutbox.update({
               where: { id: doc.id },
-              data: { status: "ERROR", errorMsg }
+              data: { status: "FAILED", errorMsg: err?.message || String(err), lastErrorTime: new Date(), retryCount: newRetry }
             });
+            console.error(`[SyncWorker] ${doc.entityType} ${doc.id} marcado como FAILED`);
           } else {
-            // Se for erro de rede/servidor, interrompemos o loop para tentar de novo mais tarde
+            await prisma.syncOutbox.update({
+              where: { id: doc.id },
+              data: { status: "PENDING", errorMsg: `Retry ${newRetry}/${maxRetries}: ${err?.message || String(err)}`, lastErrorTime: new Date(), retryCount: newRetry }
+            });
+            // parar o loop para tentar novamente depois (backoff externo)
             break;
           }
         }
@@ -316,8 +310,8 @@ export const syncService = {
 
       return { processed };
     } catch (error: any) {
-      console.error("❌ [SyncWorker] Falha crítica no processamento do outbox:", error.message);
-      return { processed: 0, error: error.message };
+      console.error("❌ [SyncWorker] Falha crítica no processamento do outbox:", error?.message || error);
+      return { processed: 0, error: error?.message || String(error) };
     }
   }
 };

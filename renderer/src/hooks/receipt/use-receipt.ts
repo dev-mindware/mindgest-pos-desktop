@@ -3,45 +3,43 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoiceReceiptService } from "@/services/invoice-receipt-service";
 import { InvoiceReceiptPayload } from "@/types";
 import { useNetworkStatus } from "../common/use-network-status";
-import { useOfflineStore } from "@/stores/offline/offline-store";
 import { useAuth } from "../auth/use-auth";
-import { fi } from "date-fns/locale";
+import { useOfflineStore } from "@/stores/offline/offline-store";
 
 export function useCreateInvoiceReceipt() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-
+  const { isOnline } = useNetworkStatus();
+  const { initialize } = useOfflineStore();
 
   return useMutation({
     mutationFn: async (data: InvoiceReceiptPayload) => {
-      if (!user?.id) {
-        throw new Error("Usuário não autenticado para criar a fatura.");
-      }
-      try {
+      if (!user?.id) throw new Error("Usuário não autenticado para criar a fatura.");
 
-        if (typeof window !== "undefined" && window.ipc?.sync?.createInvoice) {
-          const storeId = data.storeId || (user as any)?.store?.id || (user as any)?.storeId || "";
-          await window.ipc.sync.createInvoice({
-            invoiceData: data,
-            storeId,
-            userId: user.id,
-            user: {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: user.role,
-              storeId: user.storeId || (user as any)?.store?.id,
-            },
-          });
-        }
+      let localResult;
 
-      } catch (error) {
-        throw new Error("Usuário não autenticado para criar a fatura.");
-      } finally {
-        return invoiceReceiptService.createInvoiceReceipt(data);
+      if (typeof window !== "undefined" && window.ipc?.sync?.createInvoice) {
+        localResult = await window.ipc.sync.createInvoice({
+          invoiceData: data,
+          storeId: data.storeId || user.store?.id || "",
+          userId: user.id,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            storeId: user.storeId || user.store?.id,
+          },
+        });
       }
+
+      if (!isOnline || localResult?.data?.offline) {
+        return localResult;
+      }
+
+      return invoiceReceiptService.createInvoiceReceipt(data);
     },
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       const isOffline = (response as any)?.offline;
       SucessMessage(
         isOffline
@@ -49,6 +47,11 @@ export function useCreateInvoiceReceipt() {
           : "Fatura Recibo criada com sucesso!",
       );
       queryClient.invalidateQueries({ queryKey: ["invoice-receipt"] });
+
+      if (isOffline && user?.id) {
+        await initialize(user.id);
+      }
+
       return response.data;
     },
   });

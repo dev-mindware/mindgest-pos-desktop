@@ -24,9 +24,107 @@ export const prisma = new PrismaClient({
 });
 
 // Teste de conexão e criação de tabelas de emergência
+async function tableHasColumn(tableName: string, columnName: string) {
+  const columns = await prisma.$queryRawUnsafe<Array<{ name: string }>>(
+    `PRAGMA table_info("${tableName}")`
+  );
+  return columns.some((column) => column.name === columnName);
+}
+
+async function hasSyncOutboxInvoiceFK() {
+  const fks = await prisma.$queryRawUnsafe<Array<{ table: string; from: string }>>(
+    `PRAGMA foreign_key_list("SyncOutbox")`
+  );
+
+  return fks.some((fk) => fk.table === 'Invoice' && fk.from === 'entityId');
+}
+
+async function rebuildSyncOutboxWithoutInvoiceFK() {
+  console.log('🔧 [Prisma] Removendo FK inválida SyncOutbox.entityId -> Invoice.id...');
+  await prisma.$executeRawUnsafe(`PRAGMA foreign_keys=OFF;`);
+  await prisma.$executeRawUnsafe(`PRAGMA defer_foreign_keys=ON;`);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE "new_SyncOutbox" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "entityType" TEXT NOT NULL,
+      "entityId" TEXT NOT NULL,
+      "action" TEXT NOT NULL,
+      "payload" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'PENDING',
+      "errorMsg" TEXT,
+      "storeId" TEXT NOT NULL,
+      "dependsOnType" TEXT,
+      "dependsOnId" TEXT,
+      "retryCount" INTEGER NOT NULL DEFAULT 0,
+      "lastErrorTime" DATETIME,
+      "syncedAt" DATETIME,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO "new_SyncOutbox" ("id","entityType","entityId","action","payload","status","errorMsg","storeId","dependsOnType","dependsOnId","retryCount","lastErrorTime","syncedAt","createdAt","updatedAt")
+    SELECT "id","entityType","entityId","action","payload","status","errorMsg","storeId","dependsOnType","dependsOnId","retryCount","lastErrorTime","syncedAt","createdAt","updatedAt"
+    FROM "SyncOutbox";
+  `);
+  await prisma.$executeRawUnsafe(`DROP TABLE "SyncOutbox";`);
+  await prisma.$executeRawUnsafe(`ALTER TABLE "new_SyncOutbox" RENAME TO "SyncOutbox";`);
+  await prisma.$executeRawUnsafe(`PRAGMA foreign_keys=ON;`);
+  await prisma.$executeRawUnsafe(`PRAGMA defer_foreign_keys=OFF;`);
+}
+
+async function ensureSyncOutboxSchema() {
+  const tableExists = await prisma.$queryRawUnsafe<Array<{ name: string }>>(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name='SyncOutbox'`
+  );
+
+  if (tableExists.length === 0) {
+    console.log('🔧 [Prisma] Criando tabela SyncOutbox ausente...');
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE "SyncOutbox" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "entityType" TEXT NOT NULL,
+        "entityId" TEXT NOT NULL,
+        "action" TEXT NOT NULL,
+        "payload" TEXT NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'PENDING',
+        "errorMsg" TEXT,
+        "storeId" TEXT NOT NULL,
+        "dependsOnType" TEXT,
+        "dependsOnId" TEXT,
+        "retryCount" INTEGER NOT NULL DEFAULT 0,
+        "lastErrorTime" DATETIME,
+        "syncedAt" DATETIME,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL
+      );
+    `);
+    return;
+  }
+
+  if (await hasSyncOutboxInvoiceFK()) {
+    await rebuildSyncOutboxWithoutInvoiceFK();
+  }
+
+  const columnsToAdd: Array<[string, string]> = [
+    ['dependsOnType', 'TEXT'],
+    ['dependsOnId', 'TEXT'],
+    ['retryCount', 'INTEGER NOT NULL DEFAULT 0'],
+    ['lastErrorTime', 'DATETIME'],
+    ['syncedAt', 'DATETIME'],
+  ];
+
+  for (const [columnName, definition] of columnsToAdd) {
+    if (!(await tableHasColumn('SyncOutbox', columnName))) {
+      console.log(`🔧 [Prisma] Adicionando coluna ausente SyncOutbox.${columnName}...`);
+      await prisma.$executeRawUnsafe(`ALTER TABLE "SyncOutbox" ADD COLUMN "${columnName}" ${definition};`);
+    }
+  }
+}
+
 export async function testPrismaConnection() {
   try {
-    console.log("🔄 [Prisma] A tentar conectar à base de dados em:", dbPath);
+    console.log('🔄 [Prisma] A tentar conectar à base de dados em:', dbPath);
     
     // Emergência: Criar tabelas se não existirem (SQLite não suporta migrations automáticas no Electron empacotado facilmente)
     await prisma.$executeRawUnsafe(`
@@ -79,9 +177,19 @@ export async function testPrismaConnection() {
       );
     `);
 
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "CashMovement_cloudId_key" ON "CashMovement"("cloudId");
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "CashSession_cloudId_key" ON "CashSession"("cloudId");
+    `);
+
+    await ensureSyncOutboxSchema();
+
     const userCount = await prisma.user.count();
-    console.log("✅ [Prisma] Conexão bem-sucedida! Total de Utilizadores na DB:", userCount);
+    console.log('✅ [Prisma] Conexão bem-sucedida! Total de Utilizadores na DB:', userCount);
   } catch (error) {
-    console.error("❌ [Prisma] Erro fatal de conexão ou criação de tabelas:", error);
+    console.error('❌ [Prisma] Erro fatal de conexão ou criação de tabelas:', error);
   }
 }

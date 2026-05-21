@@ -1,3 +1,4 @@
+// c:\Users\GTIMINDCOM\Documents\GitHub\mindgest-pos-desktop\renderer\src\components\client\pos\counter\cart\checkout-form\customer-selection.tsx
 import { Icon } from "@/components";
 import { Input } from "@/components/ui/input";
 import { AsyncCreatableSelectField } from "@/components/common/input-fetch/async-select";
@@ -9,6 +10,8 @@ interface CustomerSelectionProps {
     onClientChange: (client: any) => void;
     newCustomerPhone: string;
     onPhoneChange: (phone: string) => void;
+    newCustomerNif?: string;
+    onNifChange?: (nif: string) => void;
 }
 
 export function CustomerSelection({
@@ -18,6 +21,8 @@ export function CustomerSelection({
     onClientChange,
     newCustomerPhone,
     onPhoneChange,
+    newCustomerNif,
+    onNifChange,
 }: CustomerSelectionProps) {
     return (
         <div className="mb-6 space-y-3">
@@ -61,7 +66,7 @@ export function CustomerSelection({
                         />
                     </div>
 
-                    {/* If no selected customer or it's a new one, show phone field */}
+                    {/* If no selected customer or it's a new one, show phone + nif fields */}
                     {(!selectedClient || selectedClient.__isNew__) && (
                         <div className="space-y-2 pt-2 border-t border-dashed">
                             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -75,6 +80,19 @@ export function CustomerSelection({
                                 placeholder="Digite o número de telefone..."
                                 value={newCustomerPhone}
                                 onChange={(e) => onPhoneChange(e.target.value)}
+                                className="bg-muted/30"
+                            />
+
+                            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mt-2">
+                                NIF do Cliente (Opcional)
+                            </label>
+                            <Input
+                                startIcon="Hash"
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="Digite o NIF (se aplicável)..."
+                                value={newCustomerNif}
+                                onChange={(e) => onNifChange?.(e.target.value)}
                                 className="bg-muted/30"
                             />
                         </div>

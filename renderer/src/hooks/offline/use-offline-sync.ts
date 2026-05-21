@@ -12,10 +12,11 @@ export function useOfflineSync() {
   const { isOnline } = useNetworkStatus();
   const { queue, isSyncing, setSyncing, initialize } = useOfflineStore();
   const queryClient = useQueryClient();
-  const { user, token } = useAuth();
+  const { user } = useAuth();
+  const token = typeof window !== "undefined" ? localStorage.getItem("session-accessToken") : null;
 
   const sync = useCallback(async () => {
-    if (isSyncing || queue.length === 0 || !isOnline || !token) return;
+    if (isSyncing || queue.length === 0 || !isOnline || !token || !user?.id) return;
 
     setSyncing(true);
     console.log(`🔄 [SyncWorker] Iniciando sincronização em background para ${queue.length} documento(s)...`);
@@ -24,15 +25,12 @@ export function useOfflineSync() {
       if (window.ipc?.sync?.processOutbox) {
         const result = await window.ipc.sync.processOutbox({
           token,
-          userId: user?.id || "unknown"
+          userId: user.id
         });
 
         if (result && result.processed > 0) {
           console.log(`✅ [SyncWorker] ${result.processed} documento(s) sincronizado(s) com sucesso.`);
-          
-          // Recarregar contagem de outbox na store reativa
-          await initialize(user?.id || "unknown");
-          
+          await initialize(user.id);
           SucessMessage(`${result.processed} documento(s) sincronizado(s) com sucesso!`);
           queryClient.invalidateQueries({ queryKey: ["invoice-receipt"] });
           queryClient.invalidateQueries({ queryKey: ["proforma"] });
@@ -51,6 +49,16 @@ export function useOfflineSync() {
       sync();
     }
   }, [isOnline, queue.length, isSyncing, sync, token]);
+
+  useEffect(() => {
+    if (!user?.id || !isOnline) return;
+
+    const intervalId = window.setInterval(() => {
+      initialize(user.id);
+    }, 30000);
+
+    return () => window.clearInterval(intervalId);
+  }, [user?.id, initialize, isOnline]);
 
   return { isSyncing, sync, pendingCount: queue.length };
 }

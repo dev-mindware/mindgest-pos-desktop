@@ -39,7 +39,9 @@ export function useCartCheckout({
   const [cashGiven, setCashGiven] = useState<number | "">("");
   const [change, setChange] = useState<number>(0);
 
+
   const [isCustomerExpanded, setIsCustomerExpanded] = useState(false);
+  const [newCustomerNif, setNewCustomerNif] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<PosSalesFormData | null>(
@@ -166,10 +168,18 @@ export function useCartCheckout({
       quantity: item.quantity,
     }));
 
-    // Sanitize client object (remove if empty)
     let finalClient = undefined;
     if (data.client && (data.client.id || (data.client.name && data.client.name.trim() !== ""))) {
-      finalClient = data.client;
+      const c: any = {};
+      if (data.client.id) c.id = data.client.id;
+      if (data.client.name && data.client.name.trim() !== "") c.name = data.client.name.trim();
+      if (data.client.phone && data.client.phone.trim() !== "") c.phone = data.client.phone.trim();
+      if (data.client.email && data.client.email.trim() !== "") c.email = data.client.email.trim();
+      if (data.client.address && data.client.address.trim() !== "") c.address = data.client.address.trim();
+      if (data.client.taxNumber && data.client.taxNumber.trim() !== "") c.taxNumber = data.client.taxNumber.trim();
+      if (data.client.nif && data.client.nif.trim() !== "") c.nif = data.client.nif.trim();
+
+      if (Object.keys(c).length > 0) finalClient = c;
     }
 
     const payload: PosSalesFormData = {
@@ -184,26 +194,42 @@ export function useCartCheckout({
       cashSessionId,
     };
 
+    // If creating a new anonymous customer by phone/NIF, build minimal client object
+    if ((!selectedClient || selectedClient.__isNew__) && (newCustomerPhone || newCustomerNif)) {
+      payload.client = payload.client || {};
+      payload.client.name = payload.client.name || "Consumidor Final";
+
+      if (newCustomerPhone && typeof newCustomerPhone === "string" && newCustomerPhone.trim() !== "") {
+        payload.client.phone = newCustomerPhone.trim();
+      }
+
+      if (newCustomerNif && typeof newCustomerNif === "string" && newCustomerNif.trim() !== "") {
+        // prefer taxNumber field used elsewhere
+        payload.client.taxNumber = newCustomerNif.trim();
+      }
+
+      // sensible defaults (do not include if empty)
+      if (!payload.client.email) delete payload.client.email;
+      if (!payload.client.address) delete payload.client.address;
+    }
+
+    // Remove any empty string / null / undefined fields from client before sending
+    if (payload.client) {
+      for (const k of Object.keys(payload.client)) {
+        const v = (payload.client as any)[k];
+        if (v === undefined || v === null || (typeof v === "string" && v.trim() === "")) {
+          delete (payload.client as any)[k];
+        }
+      }
+      if (Object.keys(payload.client).length === 0) {
+        delete (payload as any).client;
+      }
+    }
+
     if (payload.receivedValue === 0) {
       delete (payload as any).receivedValue;
     }
-
-    if (!payload.storeId) {
-      ErrorMessage("Loja não identificada. Recarregue a página.");
-      return;
-    }
-
-    // Custom adjustments for client
-    if (!selectedClient && newCustomerPhone) {
-      payload.client = {
-        name: "Consumidor Final",
-        phone: newCustomerPhone,
-        email: "consumidor@final.com",
-        address: "Loja",
-        taxNumber: "999999999",
-      };
-    }
-
+    
     setPendingPayload(payload);
     setIsPreviewOpen(true);
   };
@@ -253,10 +279,10 @@ export function useCartCheckout({
           const stockItems = cartItems.map(item => ({ id: item.id, quantity: item.qty }));
           await window.ipc.sync.reduceLocalStock(stockItems);
           console.log("✅ Stock local descontado com sucesso.");
-          
+
           // Disparar evento para atualizar a UI em tempo real
           window.dispatchEvent(new CustomEvent("local-stock-updated"));
-          
+
           // Invalidate React Query caches to trigger real-time UI refresh
           queryClient.invalidateQueries({
             predicate: (query) => {
@@ -300,6 +326,8 @@ export function useCartCheckout({
     setIsCustomerExpanded,
     newCustomerPhone,
     setNewCustomerPhone,
+    newCustomerNif,
+    setNewCustomerNif,
     selectedClient,
     handleClientChange,
     handleQuickCash,
