@@ -344,6 +344,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
 
     // 2. Calcular totais locais e preparar as linhas da fatura
     const linesData = [];
+    const itemsForCloud = [];
     let calculatedNetTotal = 0;
     let calculatedTaxTotal = 0;
 
@@ -372,6 +373,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       calculatedNetTotal += netTotal;
       calculatedTaxTotal += taxTotal;
 
+      // Guardar na fatura local com referência ao ID local do item
       linesData.push({
         id: crypto.randomUUID(),
         itemId: localItem.id,
@@ -380,6 +382,15 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
         taxPercent,
         netTotal,
         grossTotal
+      });
+
+      // Preparar item para envio à cloud usando cloudId quando disponível
+      itemsForCloud.push({
+        id: localItem.cloudId || localItem.id,
+        name: localItem.name,
+        quantity: qty,
+        unitPrice,
+        taxPercent
       });
     }
 
@@ -409,17 +420,25 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
     });
 
     // 4. Preparar payload de sincronização da fatura para a Cloud
+    // Importante: usar cloudIds dos itens, não IDs locais
+    const cloudClient: any = {};
+    const clientName = createdInvoice.client?.name?.trim();
+    if (clientName) {
+      if (createdInvoice.client?.cloudId) {
+        cloudClient.id = createdInvoice.client.cloudId;
+      }
+      cloudClient.name = clientName;
+      if (createdInvoice.client?.nif) cloudClient.nif = createdInvoice.client.nif;
+      if (createdInvoice.client?.email) cloudClient.email = createdInvoice.client.email;
+      if (createdInvoice.client?.phone) cloudClient.phone = createdInvoice.client.phone;
+      if (createdInvoice.client?.address) cloudClient.address = createdInvoice.client.address;
+    }
+
     const cloudPayload = {
       ...invoiceData,
       localNo,
-      client: clientId ? {
-        id: createdInvoice.client?.cloudId || createdInvoice.client?.id,
-        name: createdInvoice.client?.name,
-        nif: createdInvoice.client?.nif,
-        email: createdInvoice.client?.email,
-        phone: createdInvoice.client?.phone,
-        address: createdInvoice.client?.address,
-      } : undefined,
+      items: itemsForCloud,
+      client: Object.keys(cloudClient).length > 0 ? cloudClient : undefined,
     };
 
     // 5. Adicionar ao Outbox com rastreamento de dependência

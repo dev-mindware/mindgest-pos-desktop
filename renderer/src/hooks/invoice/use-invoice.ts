@@ -49,17 +49,16 @@ export function useCreateInvoice() {
   return useMutation({
     mutationFn: async (data: InvoicePayload) => {
       if (!isOnline) {
-        // Document creation is now async due to SQLite IPC bridge
-        const internalId = await addDocument(
-          {
-            type: "invoice",
-            payload: data as any,
-          },
-          user?.id || "unknown",
-        );
-
-        // Return mock response for offline
-        return { data: { id: internalId, offline: true } };
+        // Substituir o addDocument pelo novo IPC do Prisma
+        if (window.ipc?.sync?.createInvoice) {
+          const response = await window.ipc.sync.createInvoice({
+            invoiceData: data,
+            storeId: user?.storeId || "unknown",
+            userId: user?.id || "unknown"
+          });
+          return response;
+        }
+        throw new Error("Sistema offline não inicializado.");
       }
       return invoiceService.createInvoice(data);
     },

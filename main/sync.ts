@@ -247,19 +247,19 @@ export const syncService = {
 
       for (const doc of sortedDocs) {
         try {
-          // Se tiver dependência, garantir que a dependência já foi SYNCED
+          // 1. Verificação de Dependências mais tolerante
           if (doc.dependsOnType && doc.dependsOnId) {
             const dep = await prisma.syncOutbox.findFirst({
               where: {
                 entityType: doc.dependsOnType,
                 entityId: doc.dependsOnId,
-                status: "SYNCED"
               }
             });
-            if (!dep) {
-              console.warn(`[SyncWorker] ${doc.entityType} ${doc.entityId} aguardando ${doc.dependsOnType} ${doc.dependsOnId}`);
+
+            if (!dep || dep.status === "PENDING" || dep.status === "FAILED") {
+              console.warn(`⏳ [SyncWorker] ${doc.entityType} ${doc.entityId} aguardando ${doc.dependsOnType} (Status atual: ${dep?.status})`);
               await prisma.syncOutbox.update({ where: { id: doc.id }, data: { status: "PENDING_DEPENDENCIES" } });
-              continue;
+              continue; // Passa para o próximo documento no batch
             }
           }
 
@@ -271,24 +271,21 @@ export const syncService = {
             endpoint = doc.action === "CREATE" ? "/clients" : `/clients/${doc.entityId}`;
             method = doc.action === "CREATE" ? "post" : "put";
           } else if (doc.entityType === "INVOICE") {
-            endpoint = "/invoice/invoice-receipt";
+            endpoint = "/invoice/normal"; // Corrigido o endpoint!
             method = "post";
 
-            // Se possível, trocar client.id pelo cloudId local
             const localInvoice = await prisma.invoice.findUnique({ where: { id: doc.entityId }, include: { client: true } });
             if (localInvoice?.client?.cloudId && payload.client) {
-              payload.client.id = localInvoice.client.cloudId;
+              payload.client.id = localInvoice.client.cloudId; // Injecta a Cloud ID real antes de enviar
             }
           } else if (doc.entityType === "PROFORMA") {
             endpoint = "/invoice/proforma";
             method = "post";
-          } else {
-            // fallback — enviar payload genérico
           }
 
           if (!endpoint) continue;
 
-          console.log(`📡 [SyncWorker] Enviando ${doc.entityType} ${doc.entityId} -> ${endpoint}`);
+          console.log(`📡 [SyncWorker] A enviar ${doc.entityType} ${doc.entityId} -> ${endpoint}`);
           const response = await axios({
             method,
             url: `${CLOUD_API_URL}${endpoint}`,
@@ -300,43 +297,45 @@ export const syncService = {
 
           // Atualizações locais pós-success
           if (doc.entityType === "CLIENT") {
-            const cloudId = responseData?.id;
+            const cloudId = responseData?.id || responseData?.cloudId;
             if (cloudId) {
               await prisma.client.update({ where: { id: doc.entityId }, data: { cloudId } });
-              console.log(`✅ [SyncWorker] Cliente ${doc.entityId} associado ao cloudId ${cloudId}`);
             }
           } else if (doc.entityType === "INVOICE") {
-            const agtNo = responseData?.agtNo;
-            const hash = responseData?.hash;
-            const hashControl = responseData?.hashControl;
             await prisma.invoice.update({
               where: { id: doc.entityId },
-              data: { status: "VALID", agtNo, hash, hashControl }
+              data: {
+                status: "VALID",
+                agtNo: responseData?.agtNo,
+                hash: responseData?.hash,
+                hashControl: responseData?.hashControl
+              }
             });
-            console.log(`✅ [SyncWorker] Fatura ${doc.entityId} sincronizada`);
           }
 
           await prisma.syncOutbox.update({ where: { id: doc.id }, data: { status: "SYNCED", syncedAt: new Date(), retryCount: 0 } });
           processed++;
+
         } catch (err: any) {
-          console.error(`❌ [SyncWorker] Erro ao sincronizar ${doc.entityType} ${doc.id}:`, err?.message || err);
+          // Extração profunda do erro da API
+          const apiError = err.response?.data ? JSON.stringify(err.response.data) : (err?.message || "Erro desconhecido");
+          console.error(`❌ [SyncWorker] Erro na API ao sincronizar ${doc.entityType} ${doc.id}:`, apiError);
+
           const newRetry = (doc.retryCount ?? 0) + 1;
           const maxRetries = 5;
 
           if (newRetry >= maxRetries) {
             await prisma.syncOutbox.update({
               where: { id: doc.id },
-              data: { status: "FAILED", errorMsg: err?.message || String(err), lastErrorTime: new Date(), retryCount: newRetry }
+              data: { status: "FAILED", errorMsg: apiError, lastErrorTime: new Date(), retryCount: newRetry }
             });
-            console.error(`[SyncWorker] ${doc.entityType} ${doc.id} marcado como FAILED`);
           } else {
             await prisma.syncOutbox.update({
               where: { id: doc.id },
-              data: { status: "PENDING", errorMsg: `Retry ${newRetry}/${maxRetries}: ${err?.message || String(err)}`, lastErrorTime: new Date(), retryCount: newRetry }
+              data: { status: "PENDING", errorMsg: apiError, lastErrorTime: new Date(), retryCount: newRetry }
             });
-            // parar o loop para tentar novamente depois (backoff externo)
-            break;
           }
+          // Removido o 'break;' para permitir que o ciclo continue a processar outros documentos!
         }
       }
 

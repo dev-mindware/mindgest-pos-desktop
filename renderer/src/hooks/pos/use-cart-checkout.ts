@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateInvoiceReceipt, useCreateProforma } from "@/hooks";
@@ -84,31 +84,60 @@ export function useCartCheckout({
     discount: 0, // POS não usa desconto global
   });
 
+  const cartTotals = useMemo(() => {
+    const subtotal = cartItems.reduce((acc, item) => {
+      const price = Number(item.price) || 0;
+      const qty = Number(item.qty) || 0;
+      return acc + price * qty;
+    }, 0);
+
+    const discountAmount = 0;
+    const taxAmount = cartItems.reduce((acc, item) => {
+      const price = Number(item.price) || 0;
+      const qty = Number(item.qty) || 0;
+      const rate = Number(item.tax?.rate) || 0;
+      return acc + price * qty * (rate / 100);
+    }, 0);
+
+    const total = subtotal + taxAmount - discountAmount;
+
+    return {
+      subtotal: Number(subtotal.toFixed(2)),
+      taxAmount: Number(taxAmount.toFixed(2)),
+      discountAmount: Number(discountAmount.toFixed(2)),
+      total: Number(total.toFixed(2)),
+    };
+  }, [cartItems]);
+
   // Synchronize cartItems with form items
   useEffect(() => {
     const items = cartItems.map((item) => ({
-      id: item.id,
-      cloudId: (item as any).cloudId, // Save the cloud ID for API sync
-      description: item.name,
-      type: "PRODUCT" as const,
+      id: (item as any).cloudId || item.id,
       quantity: item.qty,
-      unitPrice: item.price || 0,
-      tax: Number((item as any).tax?.rate || (item as any).taxRate || 0), // ✅ Convert string to number
-      discount: 0,
-      total: (item.price || 0) * item.qty,
-      isFromAPI: true,
     }));
 
-    setValue("items", items as any, { shouldValidate: true });
-  }, [cartItems, setValue]);
+    const sameItems =
+      items.length === watchedItems.length &&
+      items.every((item, index) => {
+        const watched = watchedItems[index];
+        return watched?.id === item.id && watched?.quantity === item.quantity;
+      });
+
+    if (sameItems) {
+      return;
+    }
+
+    console.log("✅ [CartCheckout] Items synced to form (with cloudId as id):", items);
+    setValue("items", items as any, { shouldValidate: false });
+  }, [cartItems, setValue, watchedItems]);
 
   // Synchronize totals to form state
   useEffect(() => {
-    setValue("total", totals.total);
-    setValue("subtotal", totals.subtotal);
-    setValue("taxAmount", totals.taxAmount);
-    setValue("discountAmount", totals.discountAmount);
-  }, [totals, setValue]);
+    setValue("total", cartTotals.total);
+    setValue("subtotal", cartTotals.subtotal);
+    setValue("taxAmount", cartTotals.taxAmount);
+    setValue("discountAmount", cartTotals.discountAmount);
+  }, [cartTotals, setValue]);
 
   // Synchronize payment method
   useEffect(() => {
@@ -132,7 +161,7 @@ export function useCartCheckout({
   useEffect(() => {
     if (paymentMethod === "Cash") {
       const cash = typeof cashGiven === "number" ? cashGiven : 0;
-      const changeVal = cash >= totals.total ? cash - totals.total : 0;
+      const changeVal = cash >= cartTotals.total ? cash - cartTotals.total : 0;
       const safeChange = isNaN(changeVal) ? 0 : Number(changeVal.toFixed(2));
 
       setChange(safeChange);
@@ -140,10 +169,10 @@ export function useCartCheckout({
       setValue("change", safeChange, { shouldValidate: true });
     } else {
       setChange(0);
-      setValue("receivedValue", totals.total);
+      setValue("receivedValue", cartTotals.total);
       setValue("change", 0, { shouldValidate: true });
     }
-  }, [cashGiven, totals.total, paymentMethod, setValue]);
+  }, [cashGiven, cartTotals.total, paymentMethod, setValue]);
 
   const handleQuickCash = (amount: number) => {
     setCashGiven(amount);
@@ -162,11 +191,28 @@ export function useCartCheckout({
       return;
     }
 
-    // Prepare payload
-    const simplifiedItems = data.items.map((item: any) => ({
-      id: item.cloudId || item.id, // Ensure we send the Cloud API ID, not the local SQLite UUID
-      quantity: item.quantity,
-    }));
+    const simplifiedItems = await Promise.all(
+      cartItems.map(async (item) => {
+        const cloudId = (item as any).cloudId ||
+          (typeof window !== "undefined" && window.ipc?.db?.getItemCloudId
+            ? await window.ipc.db.getItemCloudId(item.id)
+            : item.id);
+
+        if (!cloudId) {
+          console.warn(
+            "⚠️ [CartCheckout] Não foi possível resolver cloudId para o item:",
+            item.id,
+          );
+        }
+
+        return {
+          id: cloudId,
+          quantity: item.qty,
+        };
+      }),
+    );
+
+    console.log("✅ [CartCheckout] Items ready for cloud (id=cloudId):", simplifiedItems);
 
     let finalClient = undefined;
     if (data.client && (data.client.id || (data.client.name && data.client.name.trim() !== ""))) {
@@ -187,6 +233,10 @@ export function useCartCheckout({
       items: simplifiedItems,
       client: finalClient,
       storeId: currentStore?.id || user?.store?.id || data.storeId,
+      subtotal: cartTotals.subtotal,
+      taxAmount: cartTotals.taxAmount,
+      discountAmount: cartTotals.discountAmount,
+      total: cartTotals.total,
       change:
         typeof data.change === "number" && !isNaN(data.change)
           ? Number(data.change.toFixed(2))
