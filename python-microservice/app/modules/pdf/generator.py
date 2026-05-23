@@ -1137,7 +1137,7 @@ class PDFGenerator(BaseDocumentGenerator):
     def _prepare_qr_code_data(self, header: dict, company: dict, footer: dict) -> str:
         """Prepare document verification URL for QR code."""
         try:
-            base_url = os.getenv("BASE_URL", "http://localhost:3000")
+            base_url = os.getenv("BASE_URL", "http://localhost:3001")
             # Remove trailing slash if exists
             base_url = base_url.rstrip("/")
 

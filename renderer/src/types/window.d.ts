@@ -50,6 +50,10 @@ export interface IpcBridge {
     // Métodos para persistência de dados quando offline
     persistCashSession: (params: { session: any }) => Promise<any>;
     processOutbox: (params: { token: string, userId: string }) => Promise<{ processed: number; error?: string }>;
+    startAutoSync: (params: { token: string, storeId: string, userId: string, intervalMs?: number }) => Promise<{ started: true; intervalMs: number }>;
+    stopAutoSync: () => Promise<{ stopped: true }>;
+    triggerSync: (params: { token: string, storeId: string, userId: string }) => Promise<any>;
+    getSyncStatus: () => Promise<{ running: boolean; lastSyncAt?: string; nextSyncAt?: string; lastResult?: any }>;
   };
 }
 

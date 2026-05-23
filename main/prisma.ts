@@ -5,17 +5,9 @@ import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import { app } from 'electron';
 
-// No Electron de produção, o Prisma precisa saber o caminho exato e seguro do SQLite.
-const isProd = process.env.NODE_ENV === "production";
-
-// Define o caminho dinâmico para a base de dados dependendo do ambiente
-const dbPath = isProd
-  ? path.join(app.getPath("userData"), "dev.db")
-  : path.join(__dirname, "..", "dev.db");
-
-console.log("💾 [Prisma] Path inicial da base de dados:", dbPath);
-
-// Força a variável de ambiente para o PrismaClient usar o caminho correto
+// No Electron de produção, o Prisma precisa saber o caminho exato do SQLite.
+const dbPath = path.join(__dirname, "..", "dev.db");
+console.log("💾 [Prisma] Forçando uso de SQLite local unificado em:", dbPath);
 process.env.DATABASE_URL = `file:${dbPath}`;
 
 // Instancia o cliente do Prisma com logs ativados para vermos as queries no terminal
@@ -161,6 +153,128 @@ export async function testPrismaConnection() {
     // Forçar o índice único se a tabela já existia sem ele
     await prisma.$executeRawUnsafe(`
       CREATE UNIQUE INDEX IF NOT EXISTS "Category_cloudId_key" ON "Category"("cloudId");
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "User" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "cloudId" TEXT UNIQUE,
+        "name" TEXT NOT NULL,
+        "email" TEXT NOT NULL UNIQUE,
+        "role" TEXT NOT NULL,
+        "password" TEXT,
+        "isActive" BOOLEAN NOT NULL DEFAULT 1,
+        "storeId" TEXT NOT NULL,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Settings" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "storeId" TEXT,
+        "hardwareId" TEXT,
+        "offlineLicense" TEXT,
+        "lastSync" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Client" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "cloudId" TEXT UNIQUE,
+        "name" TEXT NOT NULL,
+        "nif" TEXT,
+        "email" TEXT,
+        "phone" TEXT,
+        "address" TEXT,
+        "storeId" TEXT NOT NULL,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Item" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "cloudId" TEXT UNIQUE,
+        "code" TEXT UNIQUE,
+        "name" TEXT NOT NULL,
+        "description" TEXT,
+        "price" REAL NOT NULL,
+        "taxPercent" REAL NOT NULL DEFAULT 14.0,
+        "stock" REAL NOT NULL DEFAULT 0.0,
+        "barcode" TEXT UNIQUE,
+        "categoryId" TEXT,
+        "storeId" TEXT NOT NULL,
+        "isActive" BOOLEAN NOT NULL DEFAULT 1,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Invoice" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "localNo" TEXT NOT NULL UNIQUE,
+        "agtNo" TEXT UNIQUE,
+        "status" TEXT NOT NULL DEFAULT 'DRAFT',
+        "issueDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "netTotal" REAL NOT NULL,
+        "taxTotal" REAL NOT NULL,
+        "grossTotal" REAL NOT NULL,
+        "hash" TEXT,
+        "hashControl" TEXT,
+        "userId" TEXT NOT NULL,
+        "clientId" TEXT,
+        "storeId" TEXT NOT NULL,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL,
+        FOREIGN KEY ("userId") REFERENCES "User" ("id"),
+        FOREIGN KEY ("clientId") REFERENCES "Client" ("id")
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "InvoiceLine" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "invoiceId" TEXT NOT NULL,
+        "itemId" TEXT NOT NULL,
+        "quantity" REAL NOT NULL,
+        "unitPrice" REAL NOT NULL,
+        "taxPercent" REAL NOT NULL,
+        "discount" REAL NOT NULL DEFAULT 0.0,
+        "netTotal" REAL NOT NULL,
+        "grossTotal" REAL NOT NULL,
+        FOREIGN KEY ("invoiceId") REFERENCES "Invoice" ("id") ON DELETE CASCADE,
+        FOREIGN KEY ("itemId") REFERENCES "Item" ("id")
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "User_cloudId_key" ON "User"("cloudId");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "Client_cloudId_key" ON "Client"("cloudId");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "Item_cloudId_key" ON "Item"("cloudId");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "Item_code_key" ON "Item"("code");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "Item_barcode_key" ON "Item"("barcode");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_localNo_key" ON "Invoice"("localNo");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_agtNo_key" ON "Invoice"("agtNo");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "InvoiceLine_invoiceId_itemId_key" ON "InvoiceLine"("invoiceId", "itemId");
     `);
 
     await prisma.$executeRawUnsafe(`

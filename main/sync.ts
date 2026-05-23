@@ -2,7 +2,7 @@ import { prisma } from "./prisma";
 import axios from "axios";
 
 // Configurações da API Cloud (Poderia vir de variáveis de ambiente)
-const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api";
+const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"; // VPS
 
 export const syncService = {
   /**
@@ -96,7 +96,7 @@ export const syncService = {
    */
   syncCategories: async (token: string, storeId: string) => {
     try {
-      console.log("🔄 [Sync] A iniciar sincronização de categorias...");
+      console.log("🔄🔄🔄 [Sync] A iniciar sincronização de categorias...");
 
       const response = await axios.get(`${CLOUD_API_URL}/categories`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -142,15 +142,34 @@ export const syncService = {
    * Sincroniza clientes da Cloud para Local
    */
   syncClients: async (token: string, storeId: string) => {
+    const makeRequest = async (params: Record<string, any>) => {
+      console.log(`🔄 [Sync] Solicitando clientes Cloud com params: ${JSON.stringify(params)}`);
+      return await axios.get(`${CLOUD_API_URL}/clients`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params,
+      });
+    };
+
     try {
       console.log("🔄 [Sync] A iniciar sincronização de clientes...");
 
-      const response = await axios.get(`${CLOUD_API_URL}/clients`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { limit: 1000 }
-      });
+      let response;
+      try {
+        response = await makeRequest({ limit: 1000, storeId });
+      } catch (error: any) {
+        const status = error?.response?.status;
+        console.warn(`⚠️ [Sync] Falha ao buscar clientes com storeId: ${status} ${error?.message}`);
+        if (status === 400) {
+          console.log("🔄 [Sync] Re-tentando busca de clientes sem storeId...");
+          response = await makeRequest({ limit: 1000 });
+        } else {
+          throw error;
+        }
+      }
 
-      const cloudClients = response.data.data;
+      console.log("🔄 [Sync] Resposta clientes Cloud:", response.data);
+
+      const cloudClients = response.data.data || [];
 
       for (const client of cloudClients) {
         await prisma.client.upsert({
@@ -161,7 +180,7 @@ export const syncService = {
             email: client.email,
             phone: client.phone,
             address: client.address,
-            storeId: storeId
+            storeId: storeId,
           },
           create: {
             cloudId: client.id,
@@ -170,22 +189,35 @@ export const syncService = {
             email: client.email,
             phone: client.phone,
             address: client.address,
-            storeId: storeId
-          }
+            storeId: storeId,
+          },
         });
       }
 
       console.log(`✅ [Sync] ${cloudClients.length} clientes sincronizados.`);
       return { success: true, count: cloudClients.length };
     } catch (error: any) {
-      console.error("❌ [Sync] Erro ao sincronizar clientes:", error.message);
+      console.error("❌ [Sync] Erro ao sincronizar clientes:", error.message, error?.response?.data || "");
       throw error;
     }
   },
 
-  /**
-   * Processa a fila de saída (Outbox) - Local -> Cloud
-   */
+  syncAll: async function (token: string, storeId: string, userId: string) {
+    console.log("🔄 [Sync] Iniciando sincronização completa (upload + download)...");
+    const uploadResult = await this.processOutbox(token, userId);
+    const categoryResult = await this.syncCategories(token, storeId);
+    const clientResult = await this.syncClients(token, storeId);
+    const productResult = await this.syncProducts(token, storeId);
+
+    return {
+      success: true,
+      upload: uploadResult,
+      categories: categoryResult,
+      clients: clientResult,
+      products: productResult
+    };
+  },
+
   /**
    * Processa a fila de saída (Outbox) - Local -> Cloud
    */

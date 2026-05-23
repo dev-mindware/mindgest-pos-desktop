@@ -6,7 +6,7 @@ import axios from "axios";
  */
 export const publicApi = axios.create({
   baseURL:
-     "https://mindgest.mindware-vps.cloud/api",
+     "http://localhost:3001/api", // VPS
   headers: {
     "Content-Type": "application/json",
   },

@@ -79,5 +79,11 @@ contextBridge.exposeInMainWorld("ipc", {
       ipcRenderer.invoke("sync:add-cash-movement", params),
     processOutbox: (params: { token: string, userId: string }) =>
       ipcRenderer.invoke("sync:process-outbox", params),
+    startAutoSync: (params: { token: string, storeId: string, userId: string, intervalMs?: number }) =>
+      ipcRenderer.invoke("sync:start-auto-sync", params),
+    stopAutoSync: () => ipcRenderer.invoke("sync:stop-auto-sync"),
+    triggerSync: (params: { token: string, storeId: string, userId: string }) =>
+      ipcRenderer.invoke("sync:trigger-sync", params),
+    getSyncStatus: () => ipcRenderer.invoke("sync:get-sync-status")
   }
 });

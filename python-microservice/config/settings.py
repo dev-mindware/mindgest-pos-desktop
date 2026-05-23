@@ -46,7 +46,7 @@ LOG_FILE = LOGS_DIR / "mindgest-doc-generator.log"
 
 # CORS
 ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS", "http://localhost:3000,http://api:3000"
+    "ALLOWED_ORIGINS", "http://localhost:3001,http://api:3000"
 ).split(",")
 
 # Output formats

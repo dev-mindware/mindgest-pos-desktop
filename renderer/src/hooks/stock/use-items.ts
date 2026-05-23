@@ -33,27 +33,30 @@ export function useGetItems(params?: {
   const { currentStore } = currentStoreStore();
 
   async function loadItems() {
-    // 1. Tentar sempre buscar do SQLite Local primeiro (Velocidade e Offline-First)
+    let localItems: any[] = [];
+
     if (typeof window !== "undefined" && window.ipc?.sync?.searchItems) {
       try {
-        const localItems = await window.ipc.sync.searchItems({
+        localItems = await window.ipc.sync.searchItems({
           search: params?.search,
           categoryId: params?.categoryId,
-          storeId: currentStore?.id
+          storeId: currentStore?.id,
         });
 
         if (localItems && localItems.length > 0) {
+          console.log(`🔁 [POS] Carregando itens locais: ${localItems.length} items encontrados`);
           setItems(localItems);
+          return;
         }
       } catch (e) {
         console.error("Erro na busca local:", e);
       }
     }
 
-    // 2. Se a API Cloud devolver dados (online), usamos esses como fonte de verdade mais recente
     if (data?.data || data?.items) {
       const fetchedItems = data?.data || data?.items || [];
       if (fetchedItems.length > 0) {
+        console.log(`🌐 [POS] Carregando itens da Cloud: ${fetchedItems.length} items encontrados`);
         setItems(fetchedItems);
       }
     } else if (!isLoading && items.length === 0) {
@@ -69,16 +72,23 @@ export function useGetItems(params?: {
       loadItems();
     };
 
+    const handleLocalDataUpdated = () => {
+      console.log("🔄 [Sync] Evento 'local-data-updated' recebido. Recarregando itens locais...");
+      loadItems();
+    };
+
     if (typeof window !== "undefined") {
       window.addEventListener("local-stock-updated", handleStockUpdate);
+      window.addEventListener("local-data-updated", handleLocalDataUpdated);
     }
 
     return () => {
       if (typeof window !== "undefined") {
         window.removeEventListener("local-stock-updated", handleStockUpdate);
+        window.removeEventListener("local-data-updated", handleLocalDataUpdated);
       }
     };
-  }, [data, isLoading, params?.search, params?.categoryId]);
+  }, [data, isLoading, params?.search, params?.categoryId, currentStore?.id]);
 
   return { items, error, isLoading, refetch: loadItems };
 }

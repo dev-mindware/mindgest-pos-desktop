@@ -52,7 +52,7 @@ class ThermalPDFGenerator(BaseDocumentGenerator):
         safe_invoice_number = request.invoiceNumber.replace("/", "_").replace("\\", "_")
         qr_path = str(get_temp_file_path(f"temp_qr_{safe_invoice_number}.png"))
 
-        base_url = os.getenv("BASE_URL", "http://localhost:3000").rstrip("/")
+        base_url = os.getenv("BASE_URL", "http://localhost:3001").rstrip("/")
         document_token = getattr(
             request, "verificationToken", None
         )  # Using getattr just in case

@@ -20,7 +20,13 @@ export function useGetClients(params?: {
           storeId: currentStore?.id
         });
 
-        setClients(localClients || []);
+        if (localClients && localClients.length > 0) {
+          console.log(`🔁 [POS] Carregando clientes locais: ${localClients.length}`);
+          setClients(localClients || []);
+        } else {
+          console.log("🌐 [POS] Sem clientes locais — mantendo lista vazia (cloud fallback não acionado aqui)");
+          setClients(localClients || []);
+        }
       } catch (e) {
         console.error("❌ [Hook] Erro na busca local de clientes:", e);
       } finally {
@@ -34,6 +40,23 @@ export function useGetClients(params?: {
   useEffect(() => {
     loadClients();
   }, [params?.search, currentStore?.id]);
+
+  useEffect(() => {
+    const handleLocalDataUpdated = () => {
+      console.log("🔄 [Sync] Evento 'local-data-updated' recebido. Recarregando clientes locais...");
+      loadClients();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("local-data-updated", handleLocalDataUpdated);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("local-data-updated", handleLocalDataUpdated);
+      }
+    };
+  }, []);
 
   return { clients, isLoading, refetch: loadClients };
 }

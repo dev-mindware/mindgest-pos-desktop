@@ -5,6 +5,7 @@ import { database } from "./database";
 import { getHardwareFingerprint } from "./security";
 import { prisma } from "./prisma";
 import { syncService } from "./sync";
+import { syncManager } from "./sync-manager";
 import crypto from "crypto";
 import { spawn, ChildProcess } from "child_process";
 import fs from "fs";
@@ -42,6 +43,22 @@ ipcMain.handle("sync:clients", async (_, { token, storeId }) => {
 
 ipcMain.handle("sync:process-outbox", async (_, { token, userId }) => {
   return syncService.processOutbox(token, userId);
+});
+
+ipcMain.handle("sync:start-auto-sync", async (_, params) => {
+  return syncManager.start(params);
+});
+
+ipcMain.handle("sync:stop-auto-sync", async () => {
+  return syncManager.stop();
+});
+
+ipcMain.handle("sync:trigger-sync", async (_, params) => {
+  return syncManager.triggerSync(params);
+});
+
+ipcMain.handle("sync:get-sync-status", async () => {
+  return syncManager.getStatus();
 });
 
 ipcMain.handle("sync:get-categories", async (_, { storeId }) => {

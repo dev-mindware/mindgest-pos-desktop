@@ -214,7 +214,7 @@ NESTJS_API_URL=http://api:3000
 LOG_LEVEL=INFO
 
 # CORS
-ALLOWED_ORIGINS=http://localhost:3000,http://api:3000
+ALLOWED_ORIGINS=http://localhost:3001,http://api:3000
 ```
 
 ## Estrutura de Módulos
