@@ -6,7 +6,7 @@ import { useCreateInvoiceReceipt, useCreateProforma } from "@/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { currentStoreStore, useAuthStore, useModal } from "@/stores";
 import { ErrorMessage, formatCurrency, parseCurrency } from "@/utils";
-import { useInvoiceTotals, useClientSelection } from "@/hooks/invoice";
+import { useClientSelection } from "@/hooks/invoice";
 import { PosSalesFormData, PosSalesSchema } from "@/schemas";
 import { Product } from "@/types";
 
@@ -78,11 +78,6 @@ export function useCartCheckout({
     useClientSelection(setValue);
 
   const watchedItems = watch("items") as any[];
-  const totals = useInvoiceTotals({
-    items: watchedItems || [],
-    retention: 0,
-    discount: 0, // POS não usa desconto global
-  });
 
   const cartTotals = useMemo(() => {
     const subtotal = cartItems.reduce((acc, item) => {
@@ -95,7 +90,7 @@ export function useCartCheckout({
     const taxAmount = cartItems.reduce((acc, item) => {
       const price = Number(item.price) || 0;
       const qty = Number(item.qty) || 0;
-      const rate = Number(item.tax?.rate) || 0;
+      const rate = Number(item.tax?.rate ?? (item as any).taxPercent ?? 0) || 0;
       return acc + price * qty * (rate / 100);
     }, 0);
 
@@ -108,6 +103,8 @@ export function useCartCheckout({
       total: Number(total.toFixed(2)),
     };
   }, [cartItems]);
+
+  const totals = cartTotals;
 
   // Synchronize cartItems with form items
   useEffect(() => {

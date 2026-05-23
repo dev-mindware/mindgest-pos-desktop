@@ -77,7 +77,11 @@ export function CounterContent() {
       description: p.description,
       barcode: p.barcode,
       sku: p.sku,
-      tax: p.tax,
+      tax:
+        p.tax ||
+        ((typeof p.taxPercent === "number" || typeof p.taxPercent === "string")
+          ? { id: "", name: "", rate: Number(p.taxPercent) }
+          : undefined),
     })), [apiProducts]);
 
   const cartItemsMap = useMemo(() =>
