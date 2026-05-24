@@ -18,6 +18,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { currentStore } = currentStoreStore();
   const token = typeof window !== "undefined" ? localStorage.getItem("session-accessToken") : null;
   const { queue, setSyncing, isSyncing } = useOfflineStore();
+  const { initialize } = useOfflineStore();
   const lastSyncRef = useRef<number>(0);
   const autoSyncStartedRef = useRef(false);
   const lastAutoSyncStoreIdRef = useRef<string | null>(null);
@@ -90,7 +91,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           token,
           userId: user.id,
           storeId: requestedStoreId,
-          intervalMs: 5 * 60 * 1000,
+          intervalMs: 2 * 60 * 1000,
         });
 
         if (result?.started) {
@@ -149,6 +150,31 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       processSync();
     }
   }, [isOnline]);
+
+  // Force a more immediate response to OS-level "online" events
+  useEffect(() => {
+    const handleOnlineEvent = () => {
+      try {
+        if (user?.id) initialize(user.id);
+      } catch (err) {
+        console.warn("[SyncProvider] initialize failed on online event:", err);
+      }
+      processSync();
+    };
+
+    window.addEventListener("online", handleOnlineEvent);
+
+    // also attempt sync when the window regains focus
+    const handleVisibility = () => {
+      if (!document.hidden) processSync();
+    };
+    window.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("online", handleOnlineEvent);
+      window.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [initialize, processSync, user?.id]);
 
   useEffect(() => {
     // Check queue periodically if online

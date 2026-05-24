@@ -17,7 +17,7 @@ type CreditNotesProps = {
 export function CreditNotes({ invoiceId, invoiceType }: CreditNotesProps) {
   const { data, isLoading, isError, refetch } = useFetchById<InvoiceDetails>(
     "invoice",
-    invoiceType === "invoice-receipt" ? "/invoice/receipt" : "/invoice/normal",
+    invoiceType === "invoice-receipt" ? "/invoice/invoice-receipt" : "/invoice/normal",
     invoiceId
   );
 

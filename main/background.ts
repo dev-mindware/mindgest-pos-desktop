@@ -302,7 +302,8 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
     // 1. Processar cliente se fornecido no payload
     let clientId = null;
     if (invoiceData.client) {
-      if (!invoiceData.client.id || invoiceData.client.id.includes('-new-') || invoiceData.client.__isNew__) {
+      const isNewClient = !invoiceData.client.id || invoiceData.client.id.includes('-new-') || invoiceData.client.__isNew__;
+      if (isNewClient) {
         const clientUuid = crypto.randomUUID();
         const clientResult = await prisma.client.create({
           data: {
@@ -317,16 +318,8 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
         });
         clientId = clientResult.id;
 
-        // Criar outbox para este novo cliente
-        await prisma.syncOutbox.create({
-          data: {
-            entityType: "CLIENT",
-            entityId: clientResult.id,
-            action: "CREATE",
-            payload: JSON.stringify(clientResult),
-            storeId
-          }
-        });
+        // Não registrar cliente como um documento separado no outbox.
+        // O cliente novo será enviado dentro do payload da própria fatura.
       } else {
         const localClient = await prisma.client.findFirst({
           where: {
@@ -426,12 +419,13 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
     if (clientName) {
       if (createdInvoice.client?.cloudId) {
         cloudClient.id = createdInvoice.client.cloudId;
+      } else {
+        cloudClient.name = clientName;
+        if (createdInvoice.client?.nif) cloudClient.nif = createdInvoice.client.nif;
+        if (createdInvoice.client?.email) cloudClient.email = createdInvoice.client.email;
+        if (createdInvoice.client?.phone) cloudClient.phone = createdInvoice.client.phone;
+        if (createdInvoice.client?.address) cloudClient.address = createdInvoice.client.address;
       }
-      cloudClient.name = clientName;
-      if (createdInvoice.client?.nif) cloudClient.nif = createdInvoice.client.nif;
-      if (createdInvoice.client?.email) cloudClient.email = createdInvoice.client.email;
-      if (createdInvoice.client?.phone) cloudClient.phone = createdInvoice.client.phone;
-      if (createdInvoice.client?.address) cloudClient.address = createdInvoice.client.address;
     }
 
     const cloudPayload = {
@@ -441,16 +435,15 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       client: Object.keys(cloudClient).length > 0 ? cloudClient : undefined,
     };
 
-    // 5. Adicionar ao Outbox com rastreamento de dependência
+    console.log("📤 [sync:create-invoice] Payload final a guardar no outbox para invoice:", JSON.stringify(cloudPayload, null, 2));
+
     await prisma.syncOutbox.create({
       data: {
         entityType: "INVOICE",
         entityId: createdInvoice.id,
         action: "CREATE",
         payload: JSON.stringify(cloudPayload),
-        storeId,
-        dependsOnType: clientId ? "CLIENT" : undefined,
-        dependsOnId: clientId ? clientId : undefined
+        storeId
       }
     });
 

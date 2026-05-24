@@ -4,6 +4,84 @@ import axios from "axios";
 // Configurações da API Cloud (Poderia vir de variáveis de ambiente)
 const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"; // VPS
 
+async function normalizeInvoicePayload(payload: any) {
+  const invoice = typeof payload === "string" ? JSON.parse(payload) : { ...payload };
+
+  if (invoice.client) {
+    const clientId = invoice.client.id;
+    let clientCloudId: string | null = null;
+    let localClient: any = null;
+
+    if (clientId) {
+      localClient = await prisma.client.findFirst({
+        where: {
+          OR: [
+            { id: clientId },
+            { cloudId: clientId }
+          ]
+        },
+        select: { cloudId: true }
+      });
+      clientCloudId = localClient?.cloudId || null;
+    }
+
+    const normalizedClient: any = {};
+    if (clientCloudId) {
+      normalizedClient.id = clientCloudId;
+    }
+
+    const clientName = invoice.client.name?.trim();
+    if (!clientCloudId && clientName) {
+      normalizedClient.name = clientName;
+      if (invoice.client.phone?.trim()) normalizedClient.phone = invoice.client.phone.trim();
+      if (invoice.client.email?.trim()) normalizedClient.email = invoice.client.email.trim();
+      if (invoice.client.address?.trim()) normalizedClient.address = invoice.client.address.trim();
+      const taxNumber = invoice.client.taxNumber?.trim() || invoice.client.nif?.trim();
+      if (taxNumber) normalizedClient.taxNumber = taxNumber;
+    }
+
+    if (Object.keys(normalizedClient).length === 0) {
+      delete invoice.client;
+    } else {
+      invoice.client = normalizedClient;
+    }
+  }
+
+  if (Array.isArray(invoice.items)) {
+    const normalizedItems = [];
+    for (const item of invoice.items) {
+      if (!item || typeof item !== "object") {
+        normalizedItems.push(item);
+        continue;
+      }
+
+      let itemId = item.id;
+      if (itemId) {
+        const localItem = await prisma.item.findFirst({
+          where: {
+            OR: [
+              { id: itemId },
+              { cloudId: itemId }
+            ]
+          },
+          select: { cloudId: true }
+        });
+        if (localItem?.cloudId) {
+          itemId = localItem.cloudId;
+        }
+      }
+
+      normalizedItems.push({
+        ...item,
+        id: itemId
+      });
+    }
+    invoice.items = normalizedItems;
+  }
+
+  return invoice;
+}
+
 export const syncService = {
   /**
    * Sincroniza todos os produtos da Cloud para o SQLite Local  
@@ -256,28 +334,45 @@ export const syncService = {
               }
             });
 
-            if (!dep || dep.status === "PENDING" || dep.status === "FAILED") {
+            let dependencySatisfied = false;
+            if (dep && !["PENDING", "PENDING_DEPENDENCIES", "FAILED"].includes(dep.status)) {
+              dependencySatisfied = true;
+            }
+
+            if (!dependencySatisfied) {
+              if (doc.dependsOnType === "CLIENT") {
+                const clientDependency = await prisma.client.findUnique({
+                  where: { id: doc.dependsOnId },
+                  select: { cloudId: true }
+                });
+                if (clientDependency?.cloudId) {
+                  dependencySatisfied = true;
+                }
+              }
+            }
+
+            if (!dependencySatisfied) {
               console.warn(`⏳ [SyncWorker] ${doc.entityType} ${doc.entityId} aguardando ${doc.dependsOnType} (Status atual: ${dep?.status})`);
               await prisma.syncOutbox.update({ where: { id: doc.id }, data: { status: "PENDING_DEPENDENCIES" } });
               continue; // Passa para o próximo documento no batch
             }
           }
 
-          const payload = typeof doc.payload === "string" ? JSON.parse(doc.payload) : doc.payload;
+          const rawPayload = typeof doc.payload === "string" ? JSON.parse(doc.payload) : doc.payload;
+          let payload = rawPayload;
           let endpoint = "";
           let method: "post" | "put" = "post";
 
           if (doc.entityType === "CLIENT") {
             endpoint = doc.action === "CREATE" ? "/clients" : `/clients/${doc.entityId}`;
             method = doc.action === "CREATE" ? "post" : "put";
-          } else if (doc.entityType === "INVOICE") {
-            endpoint = "/invoice/normal"; // Corrigido o endpoint!
-            method = "post";
-
-            const localInvoice = await prisma.invoice.findUnique({ where: { id: doc.entityId }, include: { client: true } });
-            if (localInvoice?.client?.cloudId && payload.client) {
-              payload.client.id = localInvoice.client.cloudId; // Injecta a Cloud ID real antes de enviar
+            if (doc.action === "CREATE" && payload && typeof payload === "object") {
+              delete payload.id;
             }
+          } else if (doc.entityType === "INVOICE") {
+            endpoint = "/invoice/invoice-receipt"; // Corrigido o endpoint!
+            method = "post";
+            payload = await normalizeInvoicePayload(rawPayload);
           } else if (doc.entityType === "PROFORMA") {
             endpoint = "/invoice/proforma";
             method = "post";
@@ -286,6 +381,7 @@ export const syncService = {
           if (!endpoint) continue;
 
           console.log(`📡 [SyncWorker] A enviar ${doc.entityType} ${doc.entityId} -> ${endpoint}`);
+          console.log(`📡 [SyncWorker] Payload final para envio (${doc.entityType} ${doc.entityId}):`, JSON.stringify(payload, null, 2));
           const response = await axios({
             method,
             url: `${CLOUD_API_URL}${endpoint}`,
