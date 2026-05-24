@@ -184,6 +184,7 @@ export async function testPrismaConnection() {
       CREATE TABLE IF NOT EXISTS "Client" (
         "id" TEXT NOT NULL PRIMARY KEY,
         "cloudId" TEXT UNIQUE,
+        "offlineId" TEXT UNIQUE,
         "name" TEXT NOT NULL,
         "nif" TEXT,
         "email" TEXT,
@@ -193,6 +194,11 @@ export async function testPrismaConnection() {
         "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" DATETIME NOT NULL
       );
+    `);
+
+    // Ensure unique index for offlineId exists if the column was just added or already present
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "Client_offlineId_key" ON "Client"("offlineId");
     `);
 
     await prisma.$executeRawUnsafe(`

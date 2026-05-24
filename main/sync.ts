@@ -1,11 +1,13 @@
 import { prisma } from "./prisma";
 import axios from "axios";
+import { InvoiceClient, InvoiceItem, InvoiceReceiptCloudPayload } from "./types";
 
 // Configurações da API Cloud (Poderia vir de variáveis de ambiente)
-const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"; // VPS
+const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"; // VPS
 
-async function normalizeInvoicePayload(payload: any) {
+async function normalizeInvoicePayload(payload: any): Promise<InvoiceReceiptCloudPayload> {
   const invoice = typeof payload === "string" ? JSON.parse(payload) : { ...payload };
+  let finalPayload: any = {};
 
   if (invoice.client) {
     const clientId = invoice.client.id;
@@ -25,7 +27,7 @@ async function normalizeInvoicePayload(payload: any) {
       clientCloudId = localClient?.cloudId || null;
     }
 
-    const normalizedClient: any = {};
+    const normalizedClient: InvoiceClient = {};
     if (clientCloudId) {
       normalizedClient.id = clientCloudId;
     }
@@ -33,6 +35,7 @@ async function normalizeInvoicePayload(payload: any) {
     const clientName = invoice.client.name?.trim();
     if (!clientCloudId && clientName) {
       normalizedClient.name = clientName;
+      if (invoice.client.offlineId?.trim()) normalizedClient.offlineId = invoice.client.offlineId.trim();
       if (invoice.client.phone?.trim()) normalizedClient.phone = invoice.client.phone.trim();
       if (invoice.client.email?.trim()) normalizedClient.email = invoice.client.email.trim();
       if (invoice.client.address?.trim()) normalizedClient.address = invoice.client.address.trim();
@@ -40,20 +43,15 @@ async function normalizeInvoicePayload(payload: any) {
       if (taxNumber) normalizedClient.taxNumber = taxNumber;
     }
 
-    if (Object.keys(normalizedClient).length === 0) {
-      delete invoice.client;
-    } else {
-      invoice.client = normalizedClient;
+    if (!(Object.keys(normalizedClient).length === 0)) {
+      console.log(`🔍🔍🔍🔍🔍🔍 [Sync] « Payload para envio:`, normalizedClient);
+      finalPayload.client = normalizedClient;
     }
   }
 
   if (Array.isArray(invoice.items)) {
-    const normalizedItems = [];
+    const normalizedItems: InvoiceItem[] = [];
     for (const item of invoice.items) {
-      if (!item || typeof item !== "object") {
-        normalizedItems.push(item);
-        continue;
-      }
 
       let itemId = item.id;
       if (itemId) {
@@ -70,16 +68,81 @@ async function normalizeInvoicePayload(payload: any) {
           itemId = localItem.cloudId;
         }
       }
+      console.log(`🔍 [Sync] Normalizando item. Original ID: ${item.id}, Resolved Cloud ID: ${itemId}`);
+      if (item && typeof item === "object" && itemId) {
+        normalizedItems.push({
+          id: itemId,
+          quantity: item.quantity || 0,
+        });
 
-      normalizedItems.push({
-        ...item,
-        id: itemId
-      });
+        console.log(`✅ [Sync] Item normalizado para envio:`, normalizedItems[normalizedItems.length - 1]);
+      }
     }
-    invoice.items = normalizedItems;
+    finalPayload.items = normalizedItems;
   }
 
-  return invoice;
+  if (invoice.issueDate) finalPayload.issueDate = invoice.issueDate;
+  if (invoice.total) finalPayload.total = invoice.total;
+  if (invoice.taxAmount) finalPayload.taxAmount = invoice.taxAmount;
+  if (invoice.subtotal) finalPayload.subtotal = invoice.subtotal;
+  if (invoice.discountAmount) finalPayload.discountAmount = invoice.discountAmount;
+  if (invoice.retentionAmount) finalPayload.retentionAmount = invoice.retentionAmount;
+  if (invoice.paymentMethod) finalPayload.paymentMethod = invoice.paymentMethod;
+  if (invoice.receivedValue) finalPayload.receivedValue = invoice.receivedValue;
+  if (invoice.change) finalPayload.change = invoice.change;
+  if (invoice.notes) finalPayload.notes = invoice.notes;
+  if (invoice.currencyCode) finalPayload.currencyCode = invoice.currencyCode;
+  if (invoice.exchangeRate) finalPayload.exchangeRate = invoice.exchangeRate;
+  if (invoice.currencyTotal) finalPayload.currencyTotal = invoice.currencyTotal;
+  if (invoice.storeId) finalPayload.storeId = invoice.storeId;
+  if (invoice.companyId) finalPayload.companyId = invoice.companyId;
+  if (invoice.cashSessionId) finalPayload.cashSessionId = invoice.cashSessionId;
+
+  return finalPayload as InvoiceReceiptCloudPayload;
+}
+
+async function mergeLocalClientRecords(primaryId: string, duplicateId: string) {
+  if (primaryId === duplicateId) return;
+
+  const primaryClient = await prisma.client.findUnique({ where: { id: primaryId } });
+  const duplicateClient = await prisma.client.findUnique({ where: { id: duplicateId } });
+
+  if (!primaryClient || !duplicateClient) return;
+
+  await prisma.client.update({
+    where: { id: primaryId },
+    data: {
+      cloudId: primaryClient.cloudId || duplicateClient.cloudId,
+      offlineId: primaryClient.offlineId || duplicateClient.offlineId,
+      name: primaryClient.name || duplicateClient.name,
+      nif: primaryClient.nif || duplicateClient.nif,
+      email: primaryClient.email || duplicateClient.email,
+      phone: primaryClient.phone || duplicateClient.phone,
+      address: primaryClient.address || duplicateClient.address,
+      storeId: primaryClient.storeId || duplicateClient.storeId,
+    }
+  });
+
+  await prisma.invoice.updateMany({
+    where: { clientId: duplicateId },
+    data: { clientId: primaryId }
+  });
+
+  await prisma.client.delete({ where: { id: duplicateId } });
+}
+
+async function findLocalClientMatch(client: any) {
+  if (client.offlineId) {
+    const offlineMatch = await prisma.client.findUnique({ where: { offlineId: client.offlineId } });
+    if (offlineMatch) return offlineMatch;
+  }
+
+  if (client.id) {
+    const cloudMatch = await prisma.client.findUnique({ where: { cloudId: client.id } });
+    if (cloudMatch) return cloudMatch;
+  }
+
+  return null;
 }
 
 export const syncService = {
@@ -248,31 +311,57 @@ export const syncService = {
       console.log("🔄 [Sync] Resposta clientes Cloud:", response.data);
 
       const cloudClients = response.data.data || [];
-
+      let clientResult = [];
       for (const client of cloudClients) {
-        await prisma.client.upsert({
-          where: { cloudId: client.id },
-          update: {
-            name: client.name,
-            nif: client.nif,
-            email: client.email,
-            phone: client.phone,
-            address: client.address,
-            storeId: storeId,
-          },
-          create: {
-            cloudId: client.id,
-            name: client.name,
-            nif: client.nif,
-            email: client.email,
-            phone: client.phone,
-            address: client.address,
-            storeId: storeId,
-          },
-        });
+        const clientData: any = {
+          name: client.name,
+          nif: client.nif,
+          email: client.email,
+          phone: client.phone,
+          address: client.address,
+          storeId: storeId,
+        };
+
+        let existing = await findLocalClientMatch(client);
+
+        if (existing && client.offlineId && existing.offlineId !== client.offlineId) {
+          const duplicateByOffline = await prisma.client.findUnique({ where: { offlineId: client.offlineId } });
+          if (duplicateByOffline && duplicateByOffline.id !== existing.id) {
+            await mergeLocalClientRecords(duplicateByOffline.id, existing.id);
+            existing = duplicateByOffline;
+          }
+        }
+
+        if (existing) {
+          const cloudDuplicate = await prisma.client.findUnique({ where: { cloudId: client.id } });
+          if (cloudDuplicate && cloudDuplicate.id !== existing.id) {
+            await mergeLocalClientRecords(existing.id, cloudDuplicate.id);
+          }
+
+          const clientUpdate = await prisma.client.update({
+            where: { id: existing.id },
+            data: {
+              ...clientData,
+              cloudId: client.id,
+              offlineId: client.offlineId || existing.offlineId,
+            }
+          });
+
+          clientResult.push(clientUpdate);
+        } else {
+          const clientCreate = await prisma.client.create({
+            data: {
+              cloudId: client.id,
+              offlineId: client.offlineId,
+              ...clientData,
+            },
+          });
+          clientResult.push(clientCreate);
+        }
       }
 
-      console.log(`✅ [Sync] ${cloudClients.length} clientes sincronizados.`);
+      console.log(`✅ [Sync] ${clientResult.length} clientes sincronizados.`);
+      console.log(`✅✅✅✅✅✅✅✅ [Sync] clientes sincronizados. ${JSON.stringify(clientResult)}`);
       return { success: true, count: cloudClients.length };
     } catch (error: any) {
       console.error("❌ [Sync] Erro ao sincronizar clientes:", error.message, error?.response?.data || "");
@@ -359,6 +448,7 @@ export const syncService = {
           }
 
           const rawPayload = typeof doc.payload === "string" ? JSON.parse(doc.payload) : doc.payload;
+          console.log(`📡📡📡📡📡 [SyncWorker] Preparando para sincronizar ${doc.entityType} ${doc.entityId}. Payload original:`, rawPayload);
           let payload = rawPayload;
           let endpoint = "";
           let method: "post" | "put" = "post";
@@ -395,7 +485,15 @@ export const syncService = {
           if (doc.entityType === "CLIENT") {
             const cloudId = responseData?.id || responseData?.cloudId;
             if (cloudId) {
-              await prisma.client.update({ where: { id: doc.entityId }, data: { cloudId } });
+              const currentClient = await prisma.client.findUnique({ where: { id: doc.entityId } });
+              if (currentClient) {
+                const cloudDuplicate = await prisma.client.findUnique({ where: { cloudId } });
+                if (cloudDuplicate && cloudDuplicate.id !== doc.entityId) {
+                  await mergeLocalClientRecords(doc.entityId, cloudDuplicate.id);
+                }
+
+                await prisma.client.update({ where: { id: doc.entityId }, data: { cloudId } });
+              }
             }
           } else if (doc.entityType === "INVOICE") {
             await prisma.invoice.update({
@@ -418,7 +516,7 @@ export const syncService = {
           console.error(`❌ [SyncWorker] Erro na API ao sincronizar ${doc.entityType} ${doc.id}:`, apiError);
 
           const newRetry = (doc.retryCount ?? 0) + 1;
-          const maxRetries = 5;
+          const maxRetries = 8;
 
           if (newRetry >= maxRetries) {
             await prisma.syncOutbox.update({

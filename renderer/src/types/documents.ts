@@ -54,35 +54,35 @@ export type InvoicePayload = {
   issueDate: string;
   dueDate: string;
   client:
-    | {
-        id: string;
-        name?: undefined;
-        phone?: undefined;
-        address?: undefined;
-        vatNumber?: undefined;
-      }
-    | {
-        name: string;
-        phone: string | undefined;
-        address: string | undefined;
-        vatNumber?: string | undefined;
-        id?: undefined;
-      };
+  | {
+    id: string;
+    name?: undefined;
+    phone?: undefined;
+    address?: undefined;
+    vatNumber?: undefined;
+  }
+  | {
+    name: string;
+    phone: string | undefined;
+    address: string | undefined;
+    vatNumber?: string | undefined;
+    id?: undefined;
+  };
   items: (
     | {
-        id: string;
-        quantity: number;
-        name?: undefined;
-        price?: undefined;
-        type?: undefined;
-      }
+      id: string;
+      quantity: number;
+      name?: undefined;
+      price?: undefined;
+      type?: undefined;
+    }
     | {
-        name: string | undefined;
-        price: number;
-        quantity: number;
-        type: "PRODUCT" | "SERVICE";
-        id?: undefined;
-      }
+      name: string | undefined;
+      price: number;
+      quantity: number;
+      type: "PRODUCT" | "SERVICE";
+      id?: undefined;
+    }
   )[];
   total: number;
   taxAmount: number;
@@ -93,35 +93,35 @@ export type InvoicePayload = {
 export type InvoiceReceiptPayload = {
   issueDate: string;
   client:
-    | {
-        id: string;
-        name?: undefined;
-        phone?: undefined;
-        address?: undefined;
-        email?: undefined;
-      }
-    | {
-        name: string;
-        phone: string | undefined;
-        address: string | undefined;
-        email?: string | undefined;
-        id?: undefined;
-      };
+  | {
+    id: string;
+    name?: undefined;
+    phone?: undefined;
+    address?: undefined;
+    email?: undefined;
+  }
+  | {
+    name: string;
+    phone: string | undefined;
+    address: string | undefined;
+    email?: string | undefined;
+    id?: undefined;
+  };
   items: (
     | {
-        id: string;
-        quantity: number;
-        name?: undefined;
-        price?: undefined;
-        type?: undefined;
-      }
+      id: string;
+      quantity: number;
+      name?: undefined;
+      price?: undefined;
+      type?: undefined;
+    }
     | {
-        name: string | undefined;
-        price: number;
-        quantity: number;
-        type: "PRODUCT" | "SERVICE";
-        id?: undefined;
-      }
+      name: string | undefined;
+      price: number;
+      quantity: number;
+      type: "PRODUCT" | "SERVICE";
+      id?: undefined;
+    }
   )[];
   total: number;
   taxAmount: number;

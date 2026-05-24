@@ -242,21 +242,26 @@ ipcMain.handle("sync:upsert-client", async (_, { client, storeId }) => {
     const result = await prisma.client.upsert({
       where: { id: clientUuid },
       update: { ...client, id: clientUuid, storeId },
-      create: { ...client, id: clientUuid, storeId }
+      create: { ...client, id: clientUuid, storeId, offlineId: clientUuid }
     });
 
+    const finalPayload = {
+      ...result,
+      offlineId: result.offlineId || result.id
+    };
+    console.log("📤 [sync:upsert-client] Cliente salvo localmente, preparando payload para outbox:", finalPayload);
     // Registar no Outbox local para sincronizar com a cloud
     await prisma.syncOutbox.create({
       data: {
         entityType: "CLIENT",
         entityId: result.id,
         action: isNew ? "CREATE" : "UPDATE",
-        payload: JSON.stringify(result),
+        payload: JSON.stringify(finalPayload),
         storeId
       }
     });
 
-    return result;
+    return finalPayload;
   } catch (error) {
     console.error("❌ [DB] Erro ao salvar cliente localmente:", error);
     throw error;
@@ -313,7 +318,8 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
             email: invoiceData.client.email || null,
             phone: invoiceData.client.phone || null,
             address: invoiceData.client.address || null,
-            storeId
+            storeId,
+            offlineId: clientUuid
           }
         });
         clientId = clientResult.id;
@@ -420,7 +426,9 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       if (createdInvoice.client?.cloudId) {
         cloudClient.id = createdInvoice.client.cloudId;
       } else {
+        console.log("/*/*///**////**/**//*/***/*/*/*** ", cloudClient)
         cloudClient.name = clientName;
+        if (createdInvoice.client?.id) cloudClient.offlineId = createdInvoice.client.id;
         if (createdInvoice.client?.nif) cloudClient.nif = createdInvoice.client.nif;
         if (createdInvoice.client?.email) cloudClient.email = createdInvoice.client.email;
         if (createdInvoice.client?.phone) cloudClient.phone = createdInvoice.client.phone;

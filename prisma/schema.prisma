@@ -45,6 +45,7 @@ model Settings {
 model Client {
   id          String   @id @default(uuid())
   cloudId     String?  @unique
+  offlineId   String?  @unique
   name        String
   nif         String?
   email       String?
