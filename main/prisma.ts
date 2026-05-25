@@ -176,7 +176,10 @@ export async function testPrismaConnection() {
         "storeId" TEXT,
         "hardwareId" TEXT,
         "offlineLicense" TEXT,
-        "lastSync" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        "lastSync" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "lastOperationTime" DATETIME,
+        "lastFraudAttempt" DATETIME,
+        "fraudAttemptCount" INTEGER NOT NULL DEFAULT 0,
       );
     `);
 

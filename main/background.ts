@@ -2,7 +2,7 @@ import path from "path";
 import { app, BrowserWindow, ipcMain } from "electron";
 import serve from "electron-serve";
 import { database } from "./database";
-import { getHardwareFingerprint } from "./security";
+import { getHardwareFingerprint, validateMonotonicClock, validateOfflineLicense } from "./security";
 import { prisma } from "./prisma";
 import { syncService } from "./sync";
 import { syncManager } from "./sync-manager";
@@ -138,6 +138,13 @@ ipcMain.handle("sync:search-clients", async (_, { search }) => {
 
 ipcMain.handle("sync:upsert-item", async (_, { item, storeId }) => {
   try {
+    // ✅ VALIDAÇÃO DE SEGURANÇA - Relógio Monotónico
+    const clockValidation = await validateMonotonicClock();
+    if (!clockValidation.valid) {
+      console.error(`🚫 [sync:upsert-item] Operação bloqueada: ${clockValidation.reason}`);
+      throw new Error(`Operação bloqueada por segurança: ${clockValidation.reason}`);
+    }
+
     return await prisma.item.upsert({
       where: { id: item.id || 'new-id' },
       update: { ...item, storeId },
@@ -236,6 +243,13 @@ ipcMain.handle("db:get-client-cloud-id", async (_, params: { id?: string; nif?: 
 
 ipcMain.handle("sync:upsert-client", async (_, { client, storeId }) => {
   try {
+    // ✅ VALIDAÇÃO DE SEGURANÇA - Relógio Monotónico
+    const clockValidation = await validateMonotonicClock();
+    if (!clockValidation.valid) {
+      console.error(`🚫 [sync:upsert-client] Operação bloqueada: ${clockValidation.reason}`);
+      throw new Error(`Operação bloqueada por segurança: ${clockValidation.reason}`);
+    }
+
     const isNew = !client.id;
     const clientUuid = client.id || crypto.randomUUID();
 
@@ -270,6 +284,13 @@ ipcMain.handle("sync:upsert-client", async (_, { client, storeId }) => {
 
 ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, user }) => {
   try {
+    // ✅ VALIDAÇÃO DE SEGURANÇA - Relógio Monotónico (ANTES DE QUALQUER OPERAÇÃO)
+    const clockValidation = await validateMonotonicClock();
+    if (!clockValidation.valid) {
+      console.error(`🚫 [sync:create-invoice] Criação de fatura bloqueada: ${clockValidation.reason}`);
+      throw new Error(`Operação bloqueada por segurança: ${clockValidation.reason}`);
+    }
+
     if (!userId) {
       throw new Error("userId obrigatório para criar a fatura localmente.");
     }
@@ -574,6 +595,13 @@ ipcMain.handle("sync:get-current-session", async (_, { storeId, userId }) => {
 
 ipcMain.handle("sync:open-cash-session", async (_, { storeId, userId, openingBalance }) => {
   try {
+    // ✅ VALIDAÇÃO DE SEGURANÇA - Relógio Monotónico
+    const clockValidation = await validateMonotonicClock();
+    if (!clockValidation.valid) {
+      console.error(`🚫 [sync:open-cash-session] Abertura de sessão bloqueada: ${clockValidation.reason}`);
+      throw new Error(`Operação bloqueada por segurança: ${clockValidation.reason}`);
+    }
+
     return await prisma.cashSession.create({
       data: {
         storeId,
@@ -621,6 +649,13 @@ ipcMain.handle("sync:persist-cash-session", async (_, { session }) => {
 
 ipcMain.handle("sync:close-cash-session", async (_, { sessionId, closingBalance, totalSales, totalExpenses }) => {
   try {
+    // ✅ VALIDAÇÃO DE SEGURANÇA - Relógio Monotónico
+    const clockValidation = await validateMonotonicClock();
+    if (!clockValidation.valid) {
+      console.error(`🚫 [sync:close-cash-session] Fecho de sessão bloqueado: ${clockValidation.reason}`);
+      throw new Error(`Operação bloqueada por segurança: ${clockValidation.reason}`);
+    }
+
     return await prisma.cashSession.update({
       where: { id: sessionId },
       data: {
@@ -639,6 +674,13 @@ ipcMain.handle("sync:close-cash-session", async (_, { sessionId, closingBalance,
 
 ipcMain.handle("sync:add-cash-movement", async (_, { sessionId, type, description, amount }) => {
   try {
+    // ✅ VALIDAÇÃO DE SEGURANÇA - Relógio Monotónico
+    const clockValidation = await validateMonotonicClock();
+    if (!clockValidation.valid) {
+      console.error(`🚫 [sync:add-cash-movement] Movimento de caixa bloqueado: ${clockValidation.reason}`);
+      throw new Error(`Operação bloqueada por segurança: ${clockValidation.reason}`);
+    }
+
     return await prisma.$transaction([
       prisma.cashMovement.create({
         data: {
@@ -711,8 +753,6 @@ if (isProd) {
 } else {
   app.setPath("userData", `${app.getPath("userData")} (development)`);
 }
-
-import { validateOfflineLicense } from "./security";
 
 async function createWindow() {
   console.log("Attempting to create window...");

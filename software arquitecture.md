@@ -100,7 +100,7 @@ Esta checklist assegura um desenvolvimento iterativo. A regra é: **Não avança
 - [x] Visualização de Base de Clientes (Sincronizado da Cloud).
 - [x] Implementar Gestão de Sessões de Caixa (Abertura/Fecho de Turnos Local).
 - [x] Redesenhar Arquivo de Documentos (Tabs FR/PP/NC) com leitura SQLite.
-- [ ] Implementar SyncWorker (Background process para enviar SyncOutbox para API).
+- [x] Implementar SyncWorker (Background process para enviar SyncOutbox para API).
 - [ ] Teste F3: Sincronizar 1000 itens da Cloud e consultar offline com performance.
 
 ### Fase 4: O Coração do POS (Invoicing & AGT)

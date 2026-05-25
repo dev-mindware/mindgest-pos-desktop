@@ -24,53 +24,45 @@ import { database } from './database';
 /**
  * 2. PROTEÇÃO ANTI TIME-TRAVEL (Relógio Monotónico)
  * Compara a data/hora do Sistema Operativo com a data da última operação guardada no SQLite.
+ * Mantém um timestamp persistente na tabela Settings para validação contínua.
  */
-export async function validateMonotonicClock(): Promise<boolean> {
+export async function validateMonotonicClock(): Promise<{ valid: boolean; reason?: string }> {
   try {
-    // Verifica a última transação em várias tabelas críticas do Prisma
-    const [lastInvoice, lastSession, lastClient, lastOutbox] = await Promise.all([
-      prisma.invoice.findFirst({ orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
-      prisma.cashSession.findFirst({ orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
-      prisma.client.findFirst({ orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
-      prisma.syncOutbox.findFirst({ orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
-    ]);
+    // 1. Obter o timestamp persistente guardado (ou nula se primeira vez)
+    const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+    const savedTimestamp = settings?.lastOperationTime ? new Date(settings.lastOperationTime) : null;
 
-    const timestamps: number[] = [];
-    if (lastInvoice) timestamps.push(lastInvoice.createdAt.getTime());
-    if (lastSession) timestamps.push(lastSession.createdAt.getTime());
-    if (lastClient) timestamps.push(lastClient.createdAt.getTime());
-    if (lastOutbox) timestamps.push(lastOutbox.createdAt.getTime());
-
-    // Também verifica a base legado onde as faturas e proformas offline são guardadas temporariamente
-    try {
-      const allDocs = await database.getAllDocuments('unknown');
-      if (allDocs && allDocs.length > 0) {
-        const lastDoc = allDocs[allDocs.length - 1];
-        if (lastDoc && lastDoc.created_at) {
-          timestamps.push(new Date(lastDoc.created_at).getTime());
-        }
-      }
-    } catch (err) {
-      console.error("⚠️ [Security] Erro ao ler documentos offline legados para o relógio:", err);
-    }
-
-    // Se a base de dados for completamente nova e vazia
-    if (timestamps.length === 0) return true;
-
-    // A operação mais recente feita no POS
-    const lastOperationTime = new Date(Math.max(...timestamps));
-
+    // 2. Comparar com a hora atual
     const currentTime = new Date();
 
-    if (currentTime < lastOperationTime) {
-      console.error(`🚨 [ALERTA DE FRAUDE] O relógio do sistema (${currentTime.toISOString()}) está atrasado em relação à última operação registada (${lastOperationTime.toISOString()}).`);
-      return false;
+    // 3. Se já havia uma operação guardada e o relógio voltou para trás = FRAUDE
+    if (savedTimestamp && currentTime < savedTimestamp) {
+      const timeDiff = Math.round((savedTimestamp.getTime() - currentTime.getTime()) / 1000);
+      console.error(`🚨 [ALERTA DE FRAUDE] Relógio do sistema voltou ${timeDiff}s para trás!`);
+      console.error(`   Última operação: ${savedTimestamp.toISOString()}`);
+      console.error(`   Hora atual: ${currentTime.toISOString()}`);
+      
+      // Registar tentativa de fraude na Settings (para auditoria)
+      await prisma.settings.upsert({
+        where: { id: 'singleton' },
+        update: { lastFraudAttempt: currentTime, fraudAttemptCount: (settings?.fraudAttemptCount ?? 0) + 1 },
+        create: { id: 'singleton', lastFraudAttempt: currentTime, fraudAttemptCount: 1 }
+      });
+      
+      return { valid: false, reason: 'Adulteração do relógio do sistema detetada. Time-travel não é permitido.' };
     }
 
-    return true;
+    // 4. Se passou a validação, guardar o novo timestamp
+    await prisma.settings.upsert({
+      where: { id: 'singleton' },
+      update: { lastOperationTime: currentTime },
+      create: { id: 'singleton', lastOperationTime: currentTime }
+    });
+
+    return { valid: true };
   } catch (error) {
     console.error("❌ [Security] Erro na validação do relógio:", error);
-    return false;
+    return { valid: false, reason: 'Erro interno na validação de segurança.' };
   }
 }
 
@@ -80,10 +72,10 @@ export async function validateMonotonicClock(): Promise<boolean> {
  */
 export async function validateOfflineLicense(): Promise<{ valid: boolean; reason?: string }> {
   try {
-    // 1. Validar o Relógio (Anti-Time-Travel)
-    const clockOk = await validateMonotonicClock();
-    if (!clockOk) {
-      return { valid: false, reason: 'Relógio do sistema inconsistente. Possível tentativa de fraude.' };
+    // 1. Validar o Relógio (Anti-Time-Travel) - PRIMEIRA VALIDAÇÃO
+    const clockValidation = await validateMonotonicClock();
+    if (!clockValidation.valid) {
+      return { valid: false, reason: clockValidation.reason };
     }
 
     const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
@@ -94,10 +86,10 @@ export async function validateOfflineLicense(): Promise<{ valid: boolean; reason
 
     const currentHwid = getHardwareFingerprint();
 
-    // 2. Validar a assinatura do JWT com jsonwebtoken (substitui o 'jose')
+    // 2. Validar a assinatura do JWT com jsonwebtoken
     const payload = jwt.verify(settings.offlineLicense, MINDGEST_SECRET) as any;
 
-    // 3. Validar a expiração do JWT (O jwt.verify já faz isto por defeito, mas reforçamos)
+    // 3. Validar a expiração do JWT
     if (payload.exp && payload.exp * 1000 < Date.now()) {
       return { valid: false, reason: 'A licença offline expirou.' };
     }
@@ -105,12 +97,6 @@ export async function validateOfflineLicense(): Promise<{ valid: boolean; reason
     // 4. Validar Hardware ID
     if (payload.hardwareId !== currentHwid) {
       return { valid: false, reason: 'Cópia ilegal detetada. Hardware ID não corresponde à licença deste PC.' };
-    }
-
-    // 4. Validar Relógio Monotónico (Impede Time-Travel)
-    const clockValid = await validateMonotonicClock();
-    if (!clockValid) {
-      return { valid: false, reason: 'Adulteração do relógio do sistema detetada.' };
     }
 
     console.log("✅ [Security] Licença Offline Válida e Assinatura Confirmada.");
