@@ -346,16 +346,17 @@ export const syncService = {
               offlineId: client.offlineId || existing.offlineId,
             }
           });
-
+          console.log(`✅ [Sync] Cliente atualizado: ${JSON.stringify(clientData)}, ID: ${client.id}, OfflineID: ${client.offlineId}`);
           clientResult.push(clientUpdate);
         } else {
           const clientCreate = await prisma.client.create({
             data: {
               cloudId: client.id,
-              offlineId: client.offlineId,
+              offlineId: client.offlineId, 
               ...clientData,
             },
           });
+          console.log(`✅ [Sync] Cliente criado: ${JSON.stringify(clientData)}, ID: ${client.id}, OfflineID: ${client.offlineId}`);
           clientResult.push(clientCreate);
         }
       }
