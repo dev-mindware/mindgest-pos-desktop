@@ -39,7 +39,7 @@ model Settings {
   
   // Relógio Monotónico (Anti-Time-Travel)
   lastOperationTime  DateTime? // Timestamp da última operação válida (para validação contínua)
-  lastFraudAttempt   DateTime? // Última vez que foi detetada uma tentativa de fraude
+  lastFraudAttempt   DateTime? // Última vez que foi detectada uma tentativa de fraude
   fraudAttemptCount  Int       @default(0) // Contador de tentativas de fraude
 }
 

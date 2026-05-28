@@ -45,7 +45,7 @@ Camada de segurança física ligada à WebCam da loja.
 
 - Ativa silenciosamente durante comportamentos de risco (cancelamento de artigos, abertura de gaveta sem venda).
 - A IA **YOLOv8n** conta quantas pessoas estão presentes no campo visual.
-- Se apenas 1 pessoa for detetada (sem cliente à frente), um **Alerta de Fraude** é reportado na gestão central.
+- Se apenas 1 pessoa for detectada (sem cliente à frente), um **Alerta de Fraude** é reportado na gestão central.
 
 > Obrigatório pelo sistema. Não pode ser desativado pelo Operador local.
 

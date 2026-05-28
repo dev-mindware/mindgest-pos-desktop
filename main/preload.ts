@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld("ipc", {
     getHardwareId: () => ipcRenderer.invoke("security:get-hwid"),
     saveOfflineLicense: (licenseJwt: string, storeId: string) => 
       ipcRenderer.invoke("security:save-license", { licenseJwt, storeId }),
+    checkClock: () => ipcRenderer.invoke("security:check-clock"),
   },
   // Sync Bridge (Cloud to Local)
   sync: {

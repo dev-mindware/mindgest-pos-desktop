@@ -26,6 +26,11 @@ ipcMain.handle("security:save-license", async (_, { licenseJwt, storeId }) => {
   return true;
 });
 
+ipcMain.handle("security:check-clock", async () => {
+  return validateMonotonicClock();
+});
+
+
 // ==========================================
 // Data Sync IPC Handlers
 // ==========================================

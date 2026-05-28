@@ -8,6 +8,7 @@ import { SidebarProvider } from "@/components";
 import { AuthProvider, SyncProvider } from "@/contexts";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { NotificationDetail } from "@/components/shared/notifications";
+import { TimeTravelLock } from "@/components/shared/security/time-travel-lock";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -55,6 +56,7 @@ export default function RootLayout({
                   <SidebarProvider>{children}</SidebarProvider>
                   <CustomToaster />
                   <NotificationDetail />
+                  <TimeTravelLock />
                 </NuqsAdapter>
               </SyncProvider>
             </AuthProvider>

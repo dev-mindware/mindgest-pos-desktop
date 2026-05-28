@@ -22,6 +22,7 @@ export interface IpcBridge {
   security: {
     getHardwareId: () => Promise<string>;
     saveOfflineLicense: (licenseJwt: string, storeId: string) => Promise<boolean>;
+    checkClock: () => Promise<{ valid: boolean; reason?: string }>;
   };
   sync: {
     products: (token: string, storeId: string) => Promise<{ success: boolean; count: number }>;

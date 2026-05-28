@@ -46,7 +46,7 @@ O ambiente offline é altamente suscetível a pirataria. Foram desenhados três 
 
 ### 4.2. Relógio Monotónico (Proteção contra Time-Travel)
 Para evitar que o utilizador atrase a data do Windows para não pagar a subscrição ou falsificar datas na AGT:
-*   Cada transação no SQLite regista o timestamp absoluto. Se o sistema detetar que a hora do Sistema Operativo atual é **inferior** à hora da última fatura emitida, a aplicação é bloqueada.
+*   Cada transação no SQLite regista o timestamp absoluto. Se o sistema detectar que a hora do Sistema Operativo atual é **inferior** à hora da última fatura emitida, a aplicação é bloqueada.
 
 ### 4.3. Encriptação de Chaves Fiscais
 A Chave RSA Privada da Empresa (para assinar os hashes da AGT localmente) nunca fica exposta em texto limpo. É encriptada usando AES-256 e protegida no Windows Credential Manager.

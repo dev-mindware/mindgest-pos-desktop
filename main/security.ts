@@ -49,7 +49,16 @@ export async function validateMonotonicClock(): Promise<{ valid: boolean; reason
         create: { id: 'singleton', lastFraudAttempt: currentTime, fraudAttemptCount: 1 }
       });
       
-      return { valid: false, reason: 'Adulteração do relógio do sistema detetada. Time-travel não é permitido.' };
+      try {
+        const { webContents } = require('electron');
+        webContents.getAllWebContents().forEach((wc: any) => {
+          wc.send('security:tamper-detected', 'Adulteração do relógio do sistema detectada. Time-travel não é permitido.');
+        });
+      } catch (e) {
+        console.error("Erro ao notificar webContents sobre adulteração:", e);
+      }
+
+      return { valid: false, reason: 'Adulteração do relógio do sistema detectada. Time-travel não é permitido.' };
     }
 
     // 4. Se passou a validação, guardar o novo timestamp
@@ -96,7 +105,7 @@ export async function validateOfflineLicense(): Promise<{ valid: boolean; reason
 
     // 4. Validar Hardware ID
     if (payload.hardwareId !== currentHwid) {
-      return { valid: false, reason: 'Cópia ilegal detetada. Hardware ID não corresponde à licença deste PC.' };
+      return { valid: false, reason: 'Cópia ilegal detectada. Hardware ID não corresponde à licença deste PC.' };
     }
 
     console.log("✅ [Security] Licença Offline Válida e Assinatura Confirmada.");
