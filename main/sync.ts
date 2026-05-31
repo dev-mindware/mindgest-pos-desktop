@@ -3,7 +3,7 @@ import axios from "axios";
 import { InvoiceClient, InvoiceItem, InvoiceReceiptCloudPayload } from "./types";
 
 // Configurações da API Cloud (Poderia vir de variáveis de ambiente)
-const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"; // VPS
+const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"; // VPS
 
 async function normalizeInvoicePayload(payload: any): Promise<InvoiceReceiptCloudPayload> {
   const invoice = typeof payload === "string" ? JSON.parse(payload) : { ...payload };
@@ -96,6 +96,9 @@ async function normalizeInvoicePayload(payload: any): Promise<InvoiceReceiptClou
   if (invoice.currencyTotal) finalPayload.currencyTotal = invoice.currencyTotal;
   if (invoice.storeId) finalPayload.storeId = invoice.storeId;
   if (invoice.companyId) finalPayload.companyId = invoice.companyId;
+  if (invoice.establishmentNumber) finalPayload.establishmentNumber = invoice.establishmentNumber;
+  if (invoice.agtNo) finalPayload.agtNo = invoice.agtNo;
+  if (invoice.offline) finalPayload.offline = invoice.offline;
   if (invoice.cashSessionId) finalPayload.cashSessionId = invoice.cashSessionId;
 
   return finalPayload as InvoiceReceiptCloudPayload;
@@ -370,19 +373,94 @@ export const syncService = {
     }
   },
 
+  /**
+   * Sincroniza as séries AGT da Cloud para o SQLite Local
+   */
+  syncAgtSeries: async (token: string, storeId: string) => {
+    try {
+      console.log("🔄 [Sync] A iniciar sincronização de AGT series...");
+      const response = await axios.get(`${CLOUD_API_URL}/agt/series`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { storeId }
+      });
+
+      console.log("🔍 [Sync] AGT series response status:", response.status);
+      console.log("🔍 [Sync] AGT series response data:", response.data);
+
+      const cloudSeries = Array.isArray(response.data.data)
+        ? response.data.data
+        : Array.isArray(response.data)
+          ? response.data
+          : response.data.data?.items || response.data?.items || [];
+
+      console.log(`🔢 [Sync] AGT series resolved count: ${cloudSeries.length}`);
+
+      for (const s of cloudSeries) {
+        try {
+          const id = s.id || s.seriesCode || `${s.seriesCode}-${s.companyId}-${s.establishmentNumber}`;
+          const seriesCode = s.seriesCode || s.code || null;
+          const documentType = s.documentType || s.type || 'FR';
+          const seriesYear = s.seriesYear || s.year || new Date().getFullYear().toString();
+          const companyId = s.companyId || s.company || null;
+          const establishmentNumber = s.establishmentNumber || s.establishment || s.storeCode || 'SEDE';
+          const currentSequence = Number(s.currentSequence || s.current || 0) || 0;
+          const lastDocumentNo = s.lastDocumentNo || s.lastDocument || null;
+          const isActive = s.isActive === false ? 0 : 1;
+
+          await prisma.agtSeries.upsert({
+            where: { id: id },
+            update: {
+              seriesCode: seriesCode,
+              documentType: documentType,
+              seriesYear: seriesYear,
+              companyId: companyId,
+              establishmentNumber: establishmentNumber,
+              storeId: storeId,
+              currentSequence: currentSequence,
+              lastDocumentNo: lastDocumentNo,
+              isActive: Boolean(isActive)
+            },
+            create: {
+              id: id,
+              seriesCode: seriesCode,
+              documentType: documentType,
+              seriesYear: seriesYear,
+              companyId: companyId,
+              establishmentNumber: establishmentNumber,
+              storeId: storeId,
+              currentSequence: currentSequence,
+              lastDocumentNo: lastDocumentNo,
+              isActive: Boolean(isActive)
+            }
+          });
+        } catch (seriesErr: any) {
+          console.error("⚠️ [Sync] Erro ao persistir serie AGT localmente:", seriesErr?.message || seriesErr);
+        }
+      }
+
+      console.log(`✅ [Sync] ${cloudSeries.length} AGT series sincronizadas.`);
+      return { success: true, count: cloudSeries.length };
+    } catch (error: any) {
+      console.error("❌ [Sync] Erro ao sincronizar AGT series:", error.message);
+      throw error;
+    }
+  },
+
   syncAll: async function (token: string, storeId: string, userId: string) {
     console.log("🔄 [Sync] Iniciando sincronização completa (upload + download)...");
     const uploadResult = await this.processOutbox(token, userId);
     const categoryResult = await this.syncCategories(token, storeId);
     const clientResult = await this.syncClients(token, storeId);
     const productResult = await this.syncProducts(token, storeId);
+    const agtSeriesResult = await this.syncAgtSeries(token, storeId);
 
     return {
       success: true,
       upload: uploadResult,
       categories: categoryResult,
       clients: clientResult,
-      products: productResult
+      products: productResult,
+      AGTSeries: agtSeriesResult
     };
   },
 

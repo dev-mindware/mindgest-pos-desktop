@@ -88,6 +88,7 @@ export type InvoicePayload = {
   taxAmount: number;
   discountAmount: number;
   storeId?: string;
+  establishmentNumber?: string;
 };
 
 export type InvoiceReceiptPayload = {
@@ -127,6 +128,9 @@ export type InvoiceReceiptPayload = {
   taxAmount: number;
   discountAmount: number;
   storeId?: string;
+  establishmentNumber?: string;
+  agtNo?: string;
+  offline?: boolean;
   amountReceived?: number;
   change?: number;
   user?: {

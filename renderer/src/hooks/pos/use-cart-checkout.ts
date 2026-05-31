@@ -232,6 +232,7 @@ export function useCartCheckout({
       storeId: currentStore?.id || user?.store?.id || data.storeId,
       subtotal: cartTotals.subtotal,
       taxAmount: cartTotals.taxAmount,
+      documentType: "FR",
       discountAmount: cartTotals.discountAmount,
       total: cartTotals.total,
       change:

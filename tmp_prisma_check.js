@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
-process.env.DATABASE_URL = 'file:dev.db';
+process.env.DATABASE_URL = 'file:../dev.db';
 const prisma = new PrismaClient();
 (async () => {
   try {

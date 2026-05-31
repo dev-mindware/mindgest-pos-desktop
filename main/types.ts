@@ -33,5 +33,9 @@ export type InvoiceReceiptCloudPayload = {
     currencyTotal?: number;
     storeId?: string;
     companyId?: string;
-    cashSessionId?: string
+    establishmentNumber?: string;
+    localNo?: string;
+    agtNo?: string;
+    offline?: boolean;
+    cashSessionId?: string;
 };

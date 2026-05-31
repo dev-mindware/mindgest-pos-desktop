@@ -43,13 +43,11 @@ export function useCancelInvoice() {
 export function useCreateInvoice() {
   const queryClient = useQueryClient();
   const { isOnline } = useNetworkStatus();
-  const { addDocument } = useOfflineStore();
   const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (data: InvoicePayload) => {
       if (!isOnline) {
-        // Substituir o addDocument pelo novo IPC do Prisma
         if (window.ipc?.sync?.createInvoice) {
           const response = await window.ipc.sync.createInvoice({
             invoiceData: data,

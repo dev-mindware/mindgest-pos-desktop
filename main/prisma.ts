@@ -5,10 +5,6 @@ import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import { app } from 'electron';
 
-// No Electron de produção, o Prisma precisa saber o caminho exato do SQLite.
-const dbPath = path.join(__dirname, "..", "dev.db");
-console.log("💾 [Prisma] Forçando uso de SQLite local unificado em:", dbPath);
-process.env.DATABASE_URL = `file:${dbPath}`;
 
 // Instancia o cliente do Prisma com logs ativados para vermos as queries no terminal
 export const prisma = new PrismaClient({
@@ -116,7 +112,6 @@ async function ensureSyncOutboxSchema() {
 
 export async function testPrismaConnection() {
   try {
-    console.log('🔄 [Prisma] A tentar conectar à base de dados em:', dbPath);
     
     // Emergência: Criar tabelas se não existirem (SQLite não suporta migrations automáticas no Electron empacotado facilmente)
     await prisma.$executeRawUnsafe(`
@@ -244,6 +239,28 @@ export async function testPrismaConnection() {
         FOREIGN KEY ("clientId") REFERENCES "Client" ("id")
       );
     `);
+
+      // AGT Series local table (persisted when Cloud sends series to POS)
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "AgtSeries" (
+          "id" TEXT NOT NULL PRIMARY KEY,
+          "seriesCode" TEXT UNIQUE,
+          "documentType" TEXT NOT NULL,
+          "seriesYear" TEXT NOT NULL,
+          "companyId" TEXT NOT NULL,
+          "establishmentNumber" TEXT NOT NULL DEFAULT 'SEDE',
+          "storeId" TEXT,
+          "currentSequence" INTEGER NOT NULL DEFAULT 0,
+          "lastDocumentNo" TEXT,
+          "isActive" BOOLEAN NOT NULL DEFAULT 1,
+          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" DATETIME NOT NULL
+        );
+      `);
+
+      await prisma.$executeRawUnsafe(`
+        CREATE UNIQUE INDEX IF NOT EXISTS "AgtSeries_documentType_seriesYear_companyId_establishmentNumber_key" ON "AgtSeries"("documentType","seriesYear","companyId","establishmentNumber");
+      `);
 
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "InvoiceLine" (

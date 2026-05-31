@@ -8,6 +8,7 @@ export type storesFilters = {
 
 export type StoreData = {
   name: string;
+  code?: string;
   email?: string;
   phone?: string;
   address: string;

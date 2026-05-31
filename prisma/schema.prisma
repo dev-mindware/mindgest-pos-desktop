@@ -203,3 +203,21 @@ model SyncOutbox {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+// AGT Series local model (permitirá operações atômicas via Prisma)
+model AgtSeries {
+  id                String   @id @default(uuid())
+  seriesCode        String?  @unique
+  documentType      String
+  seriesYear        String
+  companyId         String
+  establishmentNumber String
+  storeId           String?
+  currentSequence   Int      @default(0)
+  lastDocumentNo    String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([documentType, seriesYear, companyId, establishmentNumber], name: "AgtSeries_documentType_seriesYear_companyId_establishmentNumber_key")
+}

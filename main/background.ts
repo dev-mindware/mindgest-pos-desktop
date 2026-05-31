@@ -302,6 +302,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
 
     const invoiceId = crypto.randomUUID();
     const localNo = `FT-DRAFT-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    const issueDate = invoiceData.issueDate ? new Date(invoiceData.issueDate) : new Date();
 
     let localUser = await prisma.user.findUnique({
       where: { id: userId }
@@ -421,13 +422,54 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
 
     const calculatedGrossTotal = calculatedNetTotal + calculatedTaxTotal;
 
-    // 3. Criar a Fatura no SQLite
+    // 3. Tentar gerar AGT number localmente (se a fatura não tiver agtNo fornecido)
+    let localAgtNo: string | undefined = invoiceData.agtNo || undefined;
+
+    try {
+      if (!localAgtNo) {
+        const storeIdLocal = invoiceData.storeId || null;
+        const documentType = (invoiceData.documentType || invoiceData.type || 'FR').toString().toUpperCase();
+        console.log(documentType +" - "+ storeIdLocal)
+        if (documentType && storeIdLocal) {
+          const currentYear = new Date().getFullYear().toString();
+          const seriesRow = await prisma.agtSeries.findFirst({
+            where: {
+              documentType,
+              seriesYear: currentYear,
+              storeId: storeIdLocal,
+              isActive: true
+            }
+          });
+          console.log(`------🔢 [sync:create-invoice] AGT number gerado localmente: ${{
+            documentType: documentType,
+            seriesYear: currentYear,
+            storeId: storeIdLocal,
+            isActive: true,
+            seriesRow
+          }}`);
+
+          if (seriesRow) {
+            const updated = await prisma.agtSeries.update({
+              where: { id: seriesRow.id },
+              data: { currentSequence: { increment: 1 } }
+            });
+            localAgtNo = `${documentType} ${updated.seriesCode}/${updated.currentSequence}`;
+            console.log(`------🔢 [sync:create-invoice] AGT number gerado localmente: ${localAgtNo}`);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn('⚠️ [sync:create-invoice] Não foi possível gerar agtNo localmente:', err?.message || err);
+    }
+
+    // 4. Criar a Fatura no SQLite
     const createdInvoice = await prisma.invoice.create({
       data: {
         id: invoiceId,
         localNo,
+        agtNo: localAgtNo,
         status: "DRAFT",
-        issueDate: new Date(),
+        issueDate,
         netTotal: calculatedNetTotal,
         taxTotal: calculatedTaxTotal,
         grossTotal: calculatedGrossTotal,
@@ -461,11 +503,15 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
         if (createdInvoice.client?.address) cloudClient.address = createdInvoice.client.address;
       }
     }
+    console.log("📤📤📤📤📤📤 [sync:create-invoice] Número de AGT:", localAgtNo);
+    console.log(`------🔢 [sync:create-invoice] AGT number gerado localmente: ${invoiceData}`);
 
     const cloudPayload = {
       ...invoiceData,
-      localNo,
+      agtNo: localAgtNo,
+      offline: true,
       items: itemsForCloud,
+      establishmentNumber: invoiceData.establishmentNumber,
       client: Object.keys(cloudClient).length > 0 ? cloudClient : undefined,
     };
 
@@ -485,7 +531,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
     return {
       data: {
         id: createdInvoice.id,
-        localNo: createdInvoice.localNo,
+        localNo: createdInvoice.agtNo,
         offline: true,
         invoice: createdInvoice
       }
