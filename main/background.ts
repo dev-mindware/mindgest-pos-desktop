@@ -911,6 +911,10 @@ import { startLocalServer } from "./server";
 // ====================================================
 let pySubprocess: ChildProcess | null = null;
 
+// ====================================================
+// Subprocesso do Microserviço de Documentos (Python) - Document Generator
+// ====================================================
+let docGenSubprocess: ChildProcess | null = null;
 function startPythonSubprocess() {
   const isProd = process.env.NODE_ENV === "production";
   let pyPath = "";
@@ -962,6 +966,56 @@ function killPythonSubprocess() {
   }
 }
 
+function startDocGeneratorSubprocess() {
+  const isProd = process.env.NODE_ENV === "production";
+  let pyPath = "";
+  let pyArgs: string[] = [];
+
+  if (isProd) {
+    // In production we'd expect a packaged binary or a managed service; try to run bundled exe
+    pyPath = path.join(process.resourcesPath, "bin", "doc-generator", "doc-generator.exe");
+  } else {
+    // Development: prefer venv inside python-microservice
+    const venvPython = path.join(app.getAppPath(), "python-microservice", "venv", "Scripts", "python.exe");
+
+    if (fs.existsSync(venvPython)) {
+      pyPath = venvPython;
+      pyArgs = ["-m", "uvicorn", "app.main:app", "--port", "3002"];
+    } else {
+      // Fallback to global python
+      pyPath = "python";
+      pyArgs = ["-m", "uvicorn", "app.main:app", "--port", "3002"];
+    }
+  }
+
+  console.log(`🚀 [Launcher] A tentar iniciar serviço Document Generator em: ${pyPath}`);
+
+  try {
+    docGenSubprocess = spawn(pyPath, pyArgs, {
+      stdio: "ignore",
+      windowsHide: true,
+    });
+
+    docGenSubprocess.on("error", (err) => {
+      console.error("❌ [Launcher] Erro ao iniciar subprocesso Document Generator:", err);
+    });
+
+    docGenSubprocess.on("close", (code) => {
+      console.log(`🔌 [Launcher] Subprocesso Document Generator fechado com código: ${code}`);
+    });
+  } catch (err) {
+    console.error("❌ [Launcher] Erro crítico ao fazer spawn do subprocesso Document Generator:", err);
+  }
+}
+
+function killDocGeneratorSubprocess() {
+  if (docGenSubprocess) {
+    console.log("🔌 [Launcher] A encerrar serviço Document Generator em background...");
+    docGenSubprocess.kill();
+    docGenSubprocess = null;
+  }
+}
+
 app.on("ready", async () => {
   console.log("Main process READY EVENT triggered");
   await testPrismaConnection();
@@ -974,6 +1028,8 @@ app.on("ready", async () => {
 
   // Iniciar automaticamente o microserviço de IA da MIND
   startPythonSubprocess();
+    // Iniciar automaticamente o microserviço de geração de documentos (Python)
+    startDocGeneratorSubprocess();
 
   createWindow();
 });
@@ -981,18 +1037,22 @@ app.on("ready", async () => {
 app.on("window-all-closed", () => {
   console.log("Shutdown: All windows closed");
   killPythonSubprocess();
+    killDocGeneratorSubprocess();
   app.quit();
 });
 
 process.on("exit", () => {
   killPythonSubprocess();
+    killDocGeneratorSubprocess();
 });
 
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION:", err);
   killPythonSubprocess();
+    killDocGeneratorSubprocess();
 });
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error("UNHANDLED REJECTION at:", promise, "reason:", reason);
+    killDocGeneratorSubprocess();
 });

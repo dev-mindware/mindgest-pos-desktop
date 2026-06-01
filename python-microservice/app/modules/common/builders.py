@@ -42,6 +42,7 @@ class DocumentBuilder:
             DocumentType.PROFORMA_INVOICE: "FACTURA PROFORMA",
             DocumentType.CREDIT_NOTE: "NOTA DE CRÉDITO",
             DocumentType.SUBSCRIPTION_INVOICE: "FACTURA DE SUBSCRIPÇÃO",
+            DocumentType.GLOBAL_INVOICE: "FACTURA GLOBAL",
         }
 
         return {
@@ -60,6 +61,8 @@ class DocumentBuilder:
             ),
             "verificationToken": request.verificationToken,
             "total": request.total,
+            "currencyCode": request.currencyCode or "AOA",
+            "qrCode": request.qrCode,
         }
 
     @staticmethod
@@ -111,6 +114,8 @@ class DocumentBuilder:
                 "taxRate": taxDetail.taxRate,
                 "taxableAmount": taxDetail.taxableAmount,
                 "taxAmount": taxDetail.taxAmount,
+                "taxCode": taxDetail.taxCode,
+                "exemptionReason": taxDetail.exemptionReason,
             }
             for taxDetail in request.taxDetails
         ]
@@ -125,6 +130,16 @@ class DocumentBuilder:
             "retentionAmount": round(request.retentionAmount or 0, 2),
             "total": round(request.total, 2),
             "paymentTerms": request.paymentTerms,
+            "currencyCode": request.currencyCode or "AOA",
+            "exchangeRate": request.exchangeRate or 1.0,
+            "currencyTotal": round(
+                (
+                    request.currencyTotal
+                    if request.currencyTotal is not None
+                    else request.total
+                ),
+                2,
+            ),
         }
 
     @staticmethod

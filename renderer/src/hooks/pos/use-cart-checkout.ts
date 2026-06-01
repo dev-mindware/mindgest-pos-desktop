@@ -289,13 +289,14 @@ export function useCartCheckout({
       console.log("FINAL PAYLOAD:", JSON.stringify(pendingPayload, null, 2));
       if (type === "invoice") {
         const response = await createInvoiceReceipt(pendingPayload as any);
-        const invoiceId = response?.data?.id;
+        const invoiceId = response?.data?.id || response?.localId;
 
         if (invoiceId) {
           openModal("document-success", {
             id: invoiceId,
             type: "invoice-receipt",
             format: "thermal",
+            payload: pendingPayload,
           });
         }
       } else {
@@ -317,6 +318,7 @@ export function useCartCheckout({
             id: proformaId,
             type: "proforma",
             format: "thermal",
+            payload: pendingPayload,
           });
         }
       }

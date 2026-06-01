@@ -14,6 +14,7 @@ interface DocumentSuccessModalData {
     id: string;
     type: DocumentType;
     format?: "pdf" | "thermal";
+    payload?: any;
 }
 
 export function DocumentSuccessModal() {
@@ -39,42 +40,43 @@ export function DocumentSuccessModal() {
                     const isOffline = !window.navigator.onLine;
                     const offlineDoc = offlineQueue.find(doc => doc.internalId === data.id);
 
-                    if (offlineDoc && isOffline) {
-                        console.log("Sistema Offline: Gerando documento pelo microserviço Python local...");
+                    const payloadToUse = data.payload || offlineDoc?.payload;
+                    if (payloadToUse) {
+                        console.log("Gerando documento localmente via microserviço Python (payload disponível)...");
                         // Call local python-microservice
                         const mappedPayload = {
                             format: "pdf",
                             documentType: data.type === "invoice-receipt" ? "INVOICE_RECEIPT" : data.type === "proforma" ? "PROFORMA_INVOICE" : "NORMAL_INVOICE",
-                            invoiceNumber: "PENDENTE OFFLINE",
-                            invoiceDate: offlineDoc.payload.issueDate || new Date().toISOString(),
-                            dueDate: (offlineDoc.payload as any).dueDate,
+                            invoiceNumber: payloadToUse.invoiceNumber || "PENDENTE OFFLINE",
+                            invoiceDate: payloadToUse.invoiceDate || new Date().toISOString(),
+                            dueDate: payloadToUse.dueDate,
                             company: {
-                                name: "A Minha Empresa", // Ideally from store, fallback for offline demo
-                                taxNumber: "000000000",
-                                address: "Endereço da Empresa",
-                                email: "geral@empresa.com",
-                                phone: "900000000"
+                                name: payloadToUse.company?.name || "A Minha Empresa",
+                                taxNumber: payloadToUse.company?.taxNumber || "000000000",
+                                address: payloadToUse.company?.address || "Endereço da Empresa",
+                                email: payloadToUse.company?.email || "geral@empresa.com",
+                                phone: payloadToUse.company?.phone || "900000000"
                             },
                             client: {
-                                name: (offlineDoc.payload as any).client?.name || "Consumidor Final",
-                                taxNumber: (offlineDoc.payload as any).client?.taxNumber || "999999999",
-                                address: (offlineDoc.payload as any).client?.address,
-                                phone: (offlineDoc.payload as any).client?.phone,
+                                name: payloadToUse.client?.name || "Consumidor Final",
+                                taxNumber: payloadToUse.client?.taxNumber || payloadToUse.client?.nif || "999999999",
+                                address: payloadToUse.client?.address,
+                                phone: payloadToUse.client?.phone,
                             },
-                            items: (offlineDoc.payload as any).items?.map((item: any) => ({
+                            items: (payloadToUse.items || []).map((item: any) => ({
                                 description: item.name || item.description || "Item",
                                 quantity: item.quantity || 1,
                                 unitPrice: item.price || item.unitPrice || 0,
                                 totalPrice: (item.quantity || 1) * (item.price || item.unitPrice || 0),
-                                tax: 0
-                            })) || [],
-                            taxDetails: [],
-                            subtotal: (offlineDoc.payload as any).subtotal || 0,
-                            tax: (offlineDoc.payload as any).taxAmount || 0,
-                            total: (offlineDoc.payload as any).total || 0,
-                            retentionAmount: (offlineDoc.payload as any).retentionAmount || 0,
-                            discountAmount: (offlineDoc.payload as any).discountAmount || 0,
-                            notes: (offlineDoc.payload as any).notes,
+                                tax: item.tax || 0
+                            })),
+                            taxDetails: payloadToUse.taxDetails || [],
+                            subtotal: payloadToUse.subtotal || 0,
+                            tax: payloadToUse.tax || payloadToUse.taxAmount || 0,
+                            total: payloadToUse.total || 0,
+                            retentionAmount: payloadToUse.retentionAmount || 0,
+                            discountAmount: payloadToUse.discountAmount || 0,
+                            notes: payloadToUse.notes,
                             metadata: { layout: format }
                         };
 

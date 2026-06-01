@@ -55,6 +55,31 @@ def cleanup_old_files(days: int = 7):
                     print(f"Error removing file {file_path}: {e}")
 
 
+def save_base64_image(base64_string: str, prefix: str = "qr") -> Path | None:
+    """Save base64 image string to temp file and return path."""
+    if not base64_string:
+        return None
+
+    try:
+        import base64
+
+        # Remove data:image/png;base64, prefix if present
+        if "," in base64_string:
+            base64_string = base64_string.split(",")[1]
+
+        image_data = base64.b64decode(base64_string)
+        filename = f"temp_{prefix}_{uuid.uuid4()}.png"
+        file_path = get_temp_file_path(filename)
+
+        with open(file_path, "wb") as f:
+            f.write(image_data)
+
+        return file_path
+    except Exception as e:
+        print(f"Failed to save base64 image: {e}")
+        return None
+
+
 def download_image_from_url(url: str) -> Path | None:
     """Download image from URL to temp file and return path."""
     print(f"Downloading image from {url}")

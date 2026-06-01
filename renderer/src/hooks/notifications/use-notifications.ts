@@ -48,7 +48,7 @@ export function useNotifications(
 
   // Socket.IO Connection
   useEffect(() => {
-    socket = io("http://localhost:3001/api", { // VPS
+    socket = io("https://mindgest.mindware-vps.cloud/api", { // VPS
       transports: ["websocket"],
     });
 

@@ -27,7 +27,7 @@
 - [1/2] UI do Counter (Carrinho, Pesquisa Rápida de Produtos).
 - [1/2] Fluxo de Checkout (Métodos de Pagamento, Troco).
 - [x] Lógica de Hashes AGT (Gerar Chaves RSA offline, encadear Hashes de faturas).
-- [ ] Comunicação com o Python Microservice para gerar e imprimir o PDF da Fatura.
+- [ ] Comunicação com o Python Microservice Offline para gerar e imprimir o PDF da Fatura.
 - [ ] Teste F4: Emitir 10 faturas seguidas. Validar Hashes AGT e integridade da impressão térmica.
 
 ### Fase 5: Sincronização Bidirecional (Outbox & Sync)

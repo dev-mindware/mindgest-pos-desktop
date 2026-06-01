@@ -140,18 +140,18 @@ class SAFTGenerator(BaseDocumentGenerator):
         end_date = min(last_day_of_month, now.date())
         self._add_element(header, "EndDate", end_date.isoformat())
 
-        self._add_element(header, "CurrencyCode", "AOA")
+        self._add_element(header, "CurrencyCode", request.currencyCode or "AOA")
         self._add_element(header, "DateCreated", now.isoformat().split(".")[0])
         self._add_element(header, "TaxEntity", "Global")
         self._add_element(header, "ProductCompanyTaxID", "5002464497")
-        self._add_element(header, "SoftwareValidationNumber", "190/AGT/2019")
+        self._add_element(header, "SoftwareValidationNumber", "000/AGT/2024")
         self._add_element(
             header,
             "ProductID",
-            "ANGODOO/EUROGOLD- COM.DE MAT. INFORMATICO E CONEXOSLDA",
+            "MindGest/MINDWARE - COMÉRCIO E SERVIÇOS, LDA",
         )
         self._add_element(header, "ProductVersion", "1.0")
-        self._add_element(header, "HeaderComment", "MindGest SAF-T Generation")
+        self._add_element(header, "HeaderComment", "MindGest/MINDWARE - COMÉRCIO E SERVIÇOS, LDA")
 
     def _add_master_files(
         self, master_files: Element, request: GenerateDocumentRequest
@@ -269,17 +269,17 @@ class SAFTGenerator(BaseDocumentGenerator):
         final_hash = ""
         if HAS_CRYPTO:
             try:
-                # Load private key (In production, load from file src/certs/privada.pem or ENV)
-                key_path = Path("src/certs/privada.pem")
+                # Load private key (In production, load from file src/certs/private.pem or ENV)
+                key_path = Path("src/certs/private.pem")
                 pem_data = None
 
                 if key_path.exists():
                     with open(key_path, "rb") as key_file:
                         pem_data = key_file.read()
                     logger.info("SAF-T: Private key loaded from file.")
-                elif os.getenv("SAFT_PRIVATE_KEY"):
+                elif os.getenv("PRIVATE_KEY"):
                     pem_data = (
-                        os.getenv("SAFT_PRIVATE_KEY")
+                        os.getenv("PRIVATE_KEY")
                         .replace("\\n", "\n")
                         .encode("utf-8")
                     )
@@ -334,6 +334,22 @@ class SAFTGenerator(BaseDocumentGenerator):
         if len(ct_nif) < 9:
             ct_nif = "999999999"
         self._add_element(invoice, "CustomerID", ct_nif)
+
+        # --- CURRENCY SUPPORT (AGT - Ponto 7) ---
+        currency_code = request.currencyCode or "AOA"
+        if currency_code != "AOA":
+            currency = SubElement(invoice, "Currency")
+            self._add_element(currency, "CurrencyCode", currency_code)
+            currency_amount = (
+                request.currencyTotal
+                if request.currencyTotal is not None
+                else request.total
+            )
+            self._add_element(
+                currency, "CurrencyAmount", f"{float(currency_amount):.2f}"
+            )
+            ex_rate = request.exchangeRate or 1.0
+            self._add_element(currency, "ExchangeRate", f"{float(ex_rate):.6f}")
 
         # ShipTo Placeholder
         ship_to = SubElement(invoice, "ShipTo")

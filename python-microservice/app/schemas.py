@@ -1,4 +1,3 @@
-# pyrefly: ignore [missing-import]
 from pydantic import BaseModel, Field
 from typing import Optional, List, Any
 from datetime import datetime, timezone
@@ -19,6 +18,7 @@ class DocumentType(str, Enum):
     PROFORMA_INVOICE = "PROFORMA_INVOICE"
     CREDIT_NOTE = "CREDIT_NOTE"
     SUBSCRIPTION_INVOICE = "SUBSCRIPTION_INVOICE"
+    GLOBAL_INVOICE = "GLOBAL_INVOICE"
 
 
 class InvoiceItem(BaseModel):
@@ -33,6 +33,8 @@ class TaxDetail(BaseModel):
     taxRate: float  # taxa de imposto
     taxableAmount: float  # valor sobre o qual o imposto é calculado
     taxAmount: float  # valor do imposto
+    taxCode: Optional[str] = "NOR"
+    exemptionReason: Optional[str] = None
 
 
 class Company(BaseModel):
@@ -73,6 +75,13 @@ class GenerateDocumentRequest(BaseModel):
     discountAmount: Optional[float] = None
     metadata: Optional[dict] = Field(default_factory=dict)
     verificationToken: Optional[str] = None
+    hash: Optional[str] = None
+    period: Optional[int] = None
+    status: Optional[str] = None  # Added to support watermark logic
+    currencyCode: Optional[str] = "AOA"
+    exchangeRate: Optional[float] = 1.0
+    currencyTotal: Optional[float] = None
+    qrCode: Optional[str] = None
 
 
 def utc_now():

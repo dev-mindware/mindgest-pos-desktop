@@ -3,7 +3,7 @@ import axios from "axios";
 import { InvoiceClient, InvoiceItem, InvoiceReceiptCloudPayload } from "./types";
 
 // Configurações da API Cloud (Poderia vir de variáveis de ambiente)
-const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"; // VPS
+const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"; // VPS
 
 async function normalizeInvoicePayload(payload: any): Promise<InvoiceReceiptCloudPayload> {
   const invoice = typeof payload === "string" ? JSON.parse(payload) : { ...payload };
