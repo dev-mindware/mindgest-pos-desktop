@@ -1,2 +1,8 @@
 2026-05-19 16:37:33,385 - app.modules.ai.assistant - ERROR - GEMINI_API_KEY is missing from environment variables.
 
+2026-06-02 12:01:08,390 - app.modules.ai.fraud_detection - INFO - Triggered fraud analysis for event: Cancelamento de Artigo
+2026-06-02 12:01:12,500 - app.modules.ai.fraud_detection - WARNING - Fraud alert saved to C:\Users\arqui\Documents\GitHub\mindgest-pos-desktop\mind-microservice\app\temp\fraud_snapshots\alert_Cancelamento de Artigo_20260602_120112.jpg
+2026-06-02 12:01:27,454 - app.modules.ai.fraud_detection - INFO - Triggered fraud analysis for event: Cancelamento de Artigo
+2026-06-02 12:01:30,591 - app.modules.ai.fraud_detection - WARNING - Fraud alert saved to C:\Users\arqui\Documents\GitHub\mindgest-pos-desktop\mind-microservice\app\temp\fraud_snapshots\alert_Cancelamento de Artigo_20260602_120130.jpg
+2026-06-02 12:04:29,842 - app.modules.ai.fraud_detection - INFO - Triggered fraud analysis for event: Cancelamento de Artigo
+2026-06-02 12:04:33,867 - app.modules.ai.fraud_detection - WARNING - Fraud alert saved to C:\Users\arqui\Documents\GitHub\mindgest-pos-desktop\mind-microservice\app\temp\fraud_snapshots\alert_Cancelamento de Artigo_20260602_120433.jpg

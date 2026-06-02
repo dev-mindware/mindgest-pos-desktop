@@ -57,7 +57,7 @@ export function InvoicePreviewDrawer({
         <DynamicDrawer
             open={open}
             onOpenChange={onOpenChange}
-            title={`Confirmar ${type === 'invoice' ? 'Fatura' : 'Proforma'}`}
+            title={`Confirmar ${type === 'invoice' ? 'Factura' : 'Proforma'}`}
             description="Verifique os dados antes de finalizar."
             className="max-w-4xl"
         >
