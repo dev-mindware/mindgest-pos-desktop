@@ -5,7 +5,6 @@ import { InvoicePreviewDrawer as PosInvoicePreviewDrawer } from "../../modals/in
 import { ErrorMessage } from "@/utils";
 import { useCartCheckout, CartItem } from "@/hooks";
 import { PaymentSummary } from "./payment-summary";
-import { CustomerSelection } from "./customer-selection";
 import { PaymentMethods } from "./payment-methods";
 import { DocumentSuccessModal } from "@/components/client/documents/modals/document-success-modal";
 
@@ -49,7 +48,7 @@ export function CartCheckoutForm({
 
     return (
         <>
-            <div className="mt-4 p-4 border border-dashed rounded-test-md bg-muted/30">
+            <div className="p-2 border border-dashed rounded-test-md bg-muted/30">
                 <PaymentSummary
                     subtotal={totals.subtotal}
                     taxAmount={totals.taxAmount}
@@ -59,16 +58,7 @@ export function CartCheckoutForm({
                     paymentMethod={paymentMethod}
                 />
 
-                <CustomerSelection
-                    isExpanded={isCustomerExpanded}
-                    onToggleExpand={() => setIsCustomerExpanded(!isCustomerExpanded)}
-                    selectedClient={selectedClient}
-                    onClientChange={handleClientChange}
-                    newCustomerPhone={newCustomerPhone}
-                    onPhoneChange={setNewCustomerPhone}
-                    newCustomerNif={newCustomerNif}
-                    onNifChange={setNewCustomerNif}
-                />
+                {/* CustomerSelection moved to main Counter layout for improved spacing */}
 
                 <PaymentMethods
                     paymentMethod={paymentMethod}

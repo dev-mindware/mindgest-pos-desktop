@@ -277,7 +277,7 @@ export const syncService = {
       console.log(`✅ [Sync] ${cloudCategories.length} categorias sincronizadas.`);
       return { success: true, count: cloudCategories.length };
     } catch (error: any) {
-      console.error("❌ [Sync] Erro ao sincronizar categorias:", error.message);
+    console.error("❌ [Sync] Erro ao sincronizar categorias:", error.message);
       throw error;
     }
   },
