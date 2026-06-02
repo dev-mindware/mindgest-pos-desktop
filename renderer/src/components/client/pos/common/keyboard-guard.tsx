@@ -7,14 +7,10 @@ import { useWorkspaceStore } from "@/stores/pos/workspace-store";
 export function KeyboardGuard({ children }: { children: React.ReactNode }) {
     const { disableVirtualKeyboard } = useWorkspaceStore();
 
-    if (disableVirtualKeyboard) {
-        return <>{children}</>;
-    }
-
     return (
         <KeyboardProvider>
             {children}
-            <VirtualKeyboard />
+            {!disableVirtualKeyboard && <VirtualKeyboard />}
         </KeyboardProvider>
     );
 }

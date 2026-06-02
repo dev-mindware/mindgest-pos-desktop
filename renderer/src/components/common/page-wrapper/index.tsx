@@ -45,7 +45,7 @@ export function PageWrapper({
   }, [initialize, user?.id]);
 
   return (
-    <div className="bg-background">
+    <div className={variant === "counter" ? "bg-background h-screen flex flex-col overflow-hidden" : "bg-background"}>
       <header className="flex h-16 sticky top-0 z-50 shrink-0 bg-sidebar border-b items-center gap-2 transition-[width,height] ease-linear justify-between">
         {/* Default Variant Left side */}
         {variant === "default" && (
@@ -97,11 +97,17 @@ export function PageWrapper({
           <NotificationDropdown />
         </div>
       </header>
-      <div className={`flex flex-col flex-1 ${variant === "counter" ? "w-full max-w-[98%]" : "w-full"} mx-auto space-y-4 md:space-y-6`}>
-        <div className={`@container/main flex flex-1 ${variant === "counter" ? "p-2 md:p-4" : "p-4 md:p-8 lg:p-12"} flex-col gap-2`}>
+      {variant === "counter" ? (
+        <div className="flex-1 overflow-hidden">
           {children}
         </div>
-      </div>
+      ) : (
+        <div className={`flex flex-col flex-1 w-full mx-auto space-y-4 md:space-y-6`}>
+          <div className={`@container/main flex flex-1 p-4 md:p-8 lg:p-12 flex-col gap-2`}>
+            {children}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

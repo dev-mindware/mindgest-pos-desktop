@@ -9,7 +9,7 @@ interface WorkspaceState {
 export const useWorkspaceStore = create<WorkspaceState>()(
   persist(
     (set) => ({
-      disableVirtualKeyboard: false,
+      disableVirtualKeyboard: true,
       setDisableVirtualKeyboard: (disableVirtualKeyboard) =>
         set({ disableVirtualKeyboard }),
     }),
