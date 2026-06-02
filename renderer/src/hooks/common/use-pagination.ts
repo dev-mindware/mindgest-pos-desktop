@@ -38,26 +38,53 @@ export function usePagination<T>({
       ? [...queryKey, page, queryParams]
       : [queryKey, page, queryParams],
     queryFn: async () => {
-      const response = await api.get(endpoint, {
-        params: { page, ...queryParams },
-      });
+      try {
+        const response = await api.get(endpoint, {
+          params: { page, ...queryParams },
+        });
 
-      const raw = response.data;
+        const raw = response.data;
 
-      // 🔹 Normaliza para sempre devolver o mesmo shape
-      const dataKey = Object.keys(raw).find(
-        (key) => Array.isArray(raw[key])
-      ) as keyof typeof raw;
+        // 🔹 Normaliza para sempre devolver o mesmo shape
+        const dataKey = Object.keys(raw).find(
+          (key) => Array.isArray(raw[key])
+        ) as keyof typeof raw;
 
-      return {
-        data: (raw[dataKey] as T[]) ?? [],
-        total: raw.total ?? 0,
-        page: raw.page ?? page,
-        limit: raw.limit ?? queryParams.limit ?? 10,
-        totalPages:
-          raw.totalPages ??
-          (raw.total && raw.limit ? Math.ceil(raw.total / raw.limit) : 1),
-      } satisfies PaginationResponse<T>;
+        return {
+          data: (raw[dataKey] as T[]) ?? [],
+          total: raw.total ?? 0,
+          page: raw.page ?? page,
+          limit: raw.limit ?? queryParams.limit ?? 10,
+          totalPages:
+            raw.totalPages ??
+            (raw.total && raw.limit ? Math.ceil(raw.total / raw.limit) : 1),
+        } satisfies PaginationResponse<T>;
+      } catch (error: any) {
+        // Se for erro de rede e estivermos no Desktop, tenta fallback local
+        if (!error.response && typeof window !== "undefined" && window.ipc?.sync) {
+          console.warn(`🌐 [Offline] Falha ao carregar paginado ${endpoint}. Tentando SQLite...`);
+          
+          let localData: any[] = [];
+          const storeId = queryParams.storeId;
+
+          if (endpoint.includes("/items")) {
+            localData = await window.ipc.sync.searchItems({ storeId, categoryId: queryParams.categoryId });
+          } else if (endpoint.includes("/categories")) {
+            localData = await window.ipc.sync.getCategories({ storeId });
+          } else if (endpoint.includes("/clients")) {
+            localData = await window.ipc.sync.searchClients({ storeId });
+          }
+
+          return {
+            data: localData as T[],
+            total: localData.length,
+            page: 1,
+            limit: localData.length || 10,
+            totalPages: 1,
+          };
+        }
+        throw error;
+      }
     },
     enabled,
     gcTime: 300_000, // cache: 5min

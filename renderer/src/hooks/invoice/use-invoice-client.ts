@@ -37,6 +37,7 @@ export function useClientSelection(setValue: UseFormSetValue<any>) {
         setValue(
           "client",
           {
+            id: option.data.id,
             name: option.data.name,
             taxNumber: option.data.taxNumber || "",
             address: option.data.address || "",

@@ -1,5 +1,6 @@
 import { LoginResponse, Role, User } from "@/types";
 import api from "./api";
+import publicApi from "./public-api";
 import { createSession, destroySession } from "@/lib/session";
 import { getRouteByRole } from "@/utils/role-redirects";
 
@@ -22,11 +23,29 @@ export const authService = {
     message?: string;
   }> => {
     try {
-      const res = await api.post<LoginResponse>("/auth/login", credentials);
+      // 1. OBTENÇÃO DA IMPRESSÃO DIGITAL FÍSICA PARA POS DESKTOP
+      if (typeof window !== 'undefined' && (window as any).ipc) {
+        try {
+          const hwid = await (window as any).ipc.security.getHardwareId();
+          credentials.hardwareId = hwid;
+        } catch (e) {
+          console.warn("Não foi possível obter HWID. Ambiente não-Electron?");
+        }
+      }
+
+      const res = await publicApi.post<LoginResponse>("/auth/login", credentials);
       const { user, tokens, message } = res.data;
 
       if (!user) {
         throw new Error("Usuário não autorizado");
+      }
+
+      // 2. GUARDA A LICENÇA OFFLINE NO SQLITE LOCAL (POS DESKTOP)
+      // O storeId pode vir na raiz do user ou dentro de company.stores[0]
+      const storeId = user.storeId || user.company?.stores?.[0]?.id;
+      
+      if (typeof window !== 'undefined' && (window as any).ipc && tokens.offlineLicense && storeId) {
+        await (window as any).ipc.security.saveOfflineLicense(tokens.offlineLicense, storeId);
       }
 
       await createSession({

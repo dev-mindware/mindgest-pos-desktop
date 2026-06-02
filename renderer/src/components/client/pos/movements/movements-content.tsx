@@ -6,40 +6,54 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  TitleList,
+  Icon,
 } from "@/components";
-import { InvoiceReceiptList } from "@/components/client/documents/invoice-receipt/invoice-receipt-list";
-import { ProformaList } from "@/components/client/documents/invoice-proforma/proforma-list";
-import { CreditNotesList } from "@/components/client/documents/credits-notes/credit-note-list";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { currentStoreStore } from "@/stores";
+
+import { CashSessionsList } from "./cash-sessions-list";
 
 export function MovementsContent() {
   const { user } = useAuth();
-  const storeId = user?.store?.id;
+  const { currentStore } = currentStoreStore();
+  const [activeTab, setActiveTab] = useState("sessions");
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-2">
       <div className="flex flex-col gap-2">
-        <TitleList
-          title="Movimentos de Caixa"
-          suTitle="Gerencie faturas-recibo e notas de crédito emitidas nesta loja."
-        />
+        <h1 className="text-3xl font-outfit font-black tracking-tight">Movimentações</h1>
+        <p className="text-muted-foreground font-medium">
+          Controle os turnos de caixa, entradas e saídas de valores do terminal.
+        </p>
       </div>
 
-      <Tabs defaultValue="invoices" className="w-full">
-        <TabsList className="grid w-full max-w-[600px] grid-cols-3">
-          <TabsTrigger value="invoices">Faturas-Recibo</TabsTrigger>
-          <TabsTrigger value="proformas">Faturas Proforma</TabsTrigger>
-          <TabsTrigger value="notes">Notas de Crédito</TabsTrigger>
+      <Tabs defaultValue="sessions" className="w-full" onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-[400px] grid-cols-2 bg-muted/50 p-1">
+          <TabsTrigger value="sessions" className="font-bold">Sessões de Caixa</TabsTrigger>
+          <TabsTrigger value="expenses" className="font-bold">Despesas/Sangrias</TabsTrigger>
         </TabsList>
-        <TabsContent value="invoices" className="mt-6">
-          <InvoiceReceiptList storeId={storeId} />
-        </TabsContent>
-        <TabsContent value="proformas" className="mt-6">
-          <ProformaList storeId={storeId} />
-        </TabsContent>
-        <TabsContent value="notes" className="mt-6">
-          <CreditNotesList storeId={storeId} />
-        </TabsContent>
+
+        <div className="mt-8">
+          <TabsContent value="sessions">
+            <CashSessionsList />
+          </TabsContent>
+          <TabsContent value="expenses">
+            <div className="h-40 flex items-center justify-center border rounded-test-2xl border-dashed text-muted-foreground italic">
+              Registo de despesas e sangrias local em breve...
+            </div>
+          </TabsContent>
+        </div>
       </Tabs>
     </div>
   );

@@ -34,6 +34,8 @@ export function CartCheckoutForm({
         setIsCustomerExpanded,
         newCustomerPhone,
         setNewCustomerPhone,
+        newCustomerNif,
+        setNewCustomerNif,
         selectedClient,
         handleClientChange,
         handleQuickCash,
@@ -64,6 +66,8 @@ export function CartCheckoutForm({
                     onClientChange={handleClientChange}
                     newCustomerPhone={newCustomerPhone}
                     onPhoneChange={setNewCustomerPhone}
+                    newCustomerNif={newCustomerNif}
+                    onNifChange={setNewCustomerNif}
                 />
 
                 <PaymentMethods

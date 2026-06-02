@@ -43,20 +43,37 @@ export const useOfflineStore = create<OfflineState>((set) => ({
   lastCacheUpdate: null,
 
   initialize: async (userId: string) => {
-    if (typeof window === "undefined" || !window.ipc?.db) return;
-    const [queue, products, clients] = await Promise.all([
-      window.ipc.db.getAllDocuments(userId),
-      window.ipc.db.getCachedProducts(),
-      window.ipc.db.getCachedClients(),
-    ]);
+    if (typeof window === "undefined") return;
+
+    let queueLength = 0;
+    let products: any[] = [];
+    let clients: any[] = [];
+
+    // Tentar obter a contagem do novo Prisma SyncOutbox se disponível
+    if (window.ipc?.sync?.getPendingOutboxCount) {
+      queueLength = await window.ipc.sync.getPendingOutboxCount();
+    } else if (window.ipc?.db?.getAllDocuments) {
+      const legacyQueue = await window.ipc.db.getAllDocuments(userId);
+      queueLength = legacyQueue.length;
+    }
+
+    if (window.ipc?.db?.getCachedProducts) {
+      products = await window.ipc.db.getCachedProducts();
+    }
+    if (window.ipc?.db?.getCachedClients) {
+      clients = await window.ipc.db.getCachedClients();
+    }
+
+    // Criar uma fila mockada reativa com base no tamanho real do Outbox do Prisma
+    const mockQueue = Array.from({ length: queueLength }, (_, index) => ({
+      internalId: `mock-${index}`,
+      type: "invoice-receipt" as any,
+      payload: {} as any,
+      createdAt: new Date().toISOString(),
+    }));
 
     set({
-      queue: queue.map((d: any) => ({
-        internalId: d.id,
-        type: d.type,
-        payload: d.payload,
-        createdAt: d.created_at,
-      })),
+      queue: mockQueue,
       products: products as any,
       clients: clients as any,
     });

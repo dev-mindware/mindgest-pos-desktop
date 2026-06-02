@@ -28,6 +28,7 @@ export interface StoresResponse {
 export interface Stores {
   id: string;
   name: string;
+  code?: string;
   email: string;
   phone: string;
   address: string;

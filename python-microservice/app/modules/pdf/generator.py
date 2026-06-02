@@ -22,7 +22,7 @@ from app.schemas import GenerateDocumentRequest, DocumentType
 from app.modules.common.document_base import BaseDocumentGenerator
 from app.modules.common.builders import DocumentBuilder
 from app.modules.common.logger import get_logger
-from app.modules.common.utils import generate_filename, get_temp_file_path
+from app.modules.common.utils import generate_filename, get_temp_file_path, save_base64_image
 from app.config.logo_config import LogoManager
 from PIL import Image as PILImage, ImageDraw
 import os
@@ -132,6 +132,8 @@ class PDFGenerator(BaseDocumentGenerator):
         self.margin = 18 * mm
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
+        # AGT Certification Message
+        self.agt_certification = "Processado por programa certificado n.º FE/332/AGT/2026"
         # Ensure logos directory exists
         LogoManager.ensure_logos_dir_exists()
 
@@ -369,20 +371,37 @@ class PDFGenerator(BaseDocumentGenerator):
             bottomMargin=self.margin,
         )
 
+        # Pass metadata to doc for canvas drawing
+        doc._invoice_hash = getattr(request, "hash", None)
+        doc._invoice_status = getattr(request, "status", None)
+
         story = []
 
-        # 1. Header (Logo)
         # 1. Header (Logo)
         story.extend(self._build_section_logo(context["company"], context["header"]))
         story.append(Spacer(1, 10 * mm))
 
+        # 1.5 AGT Period (Novos Requisitos do Ofício)
+        if request.period:
+            period_style = ParagraphStyle(
+                name="PeriodStyle",
+                parent=self.styles["CustomMetadata"],
+                alignment=TA_RIGHT,
+                fontSize=10,
+                fontName="Courier-Bold",
+            )
+            story.append(
+                Paragraph(f"Período Contabilístico: {request.period}", period_style)
+            )
+            story.append(Spacer(1, 5 * mm))
+
         # 2. Invoice Metadata (Invoice no, Issue date, Due date)
         story.extend(self._build_section_invoice_details(context["header"]))
-        story.append(Spacer(1, 10 * mm))
+        story.append(Spacer(1, 8 * mm))
 
         # 3. Client/Company Info (From/To)
         story.extend(self._build_section_client(context["company"], context["client"]))
-        story.append(Spacer(1, 15 * mm))
+        story.append(Spacer(1, 4 * mm))
 
         # 4. Items table
         story.extend(self._build_section_items(context["items"]))
@@ -391,7 +410,7 @@ class PDFGenerator(BaseDocumentGenerator):
         # 5. Tax Details
         if request.taxDetails:
             story.extend(self._build_section_tax_details(request.taxDetails))
-            story.append(Spacer(1, 2 * mm))
+            story.append(Spacer(1, 1 * mm))
 
         # 6. Totals
         story.extend(self._build_section_totals(context["summary"]))
@@ -417,8 +436,8 @@ class PDFGenerator(BaseDocumentGenerator):
 
         doc.build(
             story,
-            onFirstPage=self._draw_footer_brand,
-            onLaterPages=self._draw_footer_brand,
+            onFirstPage=self._draw_page_decorations,
+            onLaterPages=self._draw_page_decorations,
         )
         return filepath
 
@@ -687,19 +706,31 @@ class PDFGenerator(BaseDocumentGenerator):
             )
         if client.get("email"):
             to_details.append(
-                Paragraph(safe_str(client.get("email")), self.styles["CustomBody"])
+                Paragraph(
+                    f"Email: {safe_str(client.get('email'))}",
+                    self.styles["CustomBody"],
+                )
             )
         if client.get("phone"):
             to_details.append(
-                Paragraph(safe_str(client.get("phone")), self.styles["CustomBody"])
+                Paragraph(
+                    f"Telefone: {safe_str(client.get('phone'))}",
+                    self.styles["CustomBody"],
+                )
             )
         if client.get("address"):
             to_details.append(
-                Paragraph(safe_str(client.get("address")), self.styles["CustomBody"])
+                Paragraph(
+                    f"Endereço: {safe_str(client.get('address'))}",
+                    self.styles["CustomBody"],
+                )
             )
         if client.get("taxNumber"):
             to_details.append(
-                Paragraph(safe_str(client.get("taxNumber")), self.styles["CustomBody"])
+                Paragraph(
+                    f"NIF: {safe_str(client.get('taxNumber'))}",
+                    self.styles["CustomBody"],
+                )
             )
 
         # Build table data pairing details with spacers
@@ -760,7 +791,7 @@ class PDFGenerator(BaseDocumentGenerator):
             data.append(
                 [
                     Paragraph(item["description"], self.styles["CustomBody"]),
-                    Paragraph(str(int(item["tax"])), self.styles["CustomBody"]),  # Taxa
+                    Paragraph(str(item["tax"]), self.styles["CustomBody"]),  # Taxa
                     Paragraph(
                         str(int(item["quantity"])), self.styles["CustomTableData"]
                     ),
@@ -809,41 +840,92 @@ class PDFGenerator(BaseDocumentGenerator):
         return [table]
 
     def _build_section_totals(self, summary: dict) -> list:
-        usable_width = self.page_width - (self.margin * 2)
+        usable_width = self.page_width - (self.margin * 1)
 
         data = []
 
-        # Add discount if present
+        # Desconto
         if summary.get("discountAmount", 0) > 0:
             data.append(
                 [
                     Paragraph("Desconto", self.styles["CustomLabelRight"]),
                     Paragraph(
-                        f"-{self.format_currency(summary['discountAmount'])}",
+                        self.format_currency(summary["discountAmount"], "AOA"),
                         self.styles["CustomValueSmall"],
                     ),
                 ]
             )
 
+        # Subtotal
         data.append(
             [
-                Paragraph("IVA", self.styles["CustomLabelRight"]),
+                Paragraph("Subtotal", self.styles["CustomLabelRight"]),
                 Paragraph(
-                    f"{self.format_currency(summary['tax'])}",
+                    self.format_currency(summary["subtotal"], "AOA"),
                     self.styles["CustomValueSmall"],
                 ),
             ]
         )
 
+        # IVA
         data.append(
             [
-                Paragraph("Total", self.styles["CustomLabelRight"]),
+                Paragraph("IVA", self.styles["CustomLabelRight"]),
                 Paragraph(
-                    f"{self.format_currency(summary['total'])}",
-                    self.styles["CustomValueLarge"],
+                    self.format_currency(summary["tax"], "AOA"),
+                    self.styles["CustomValueSmall"],
                 ),
             ]
         )
+
+        currency_code = summary.get("currencyCode", "AOA")
+        if currency_code != "AOA":
+            # Total in Base Currency (Kz)
+            data.append(
+                [
+                    Paragraph("Total (Kz)", self.styles["CustomLabelRight"]),
+                    Paragraph(
+                        self.format_currency(summary["total"], "AOA"),
+                        self.styles["CustomValueSmall"],
+                    ),
+                ]
+            )
+
+            # Gross Total in Foreign Currency
+            data.append(
+                [
+                    Paragraph(
+                        f"Total ({currency_code})", self.styles["CustomLabelRight"]
+                    ),
+                    Paragraph(
+                        self.format_currency(summary["currencyTotal"], currency_code),
+                        self.styles["CustomValueLarge"],
+                    ),
+                ]
+            )
+
+            # Exchange Rate
+            exchange_rate = summary.get("exchangeRate", 1.0)
+            data.append(
+                [
+                    Paragraph("Câmbio", self.styles["CustomLabelRight"]),
+                    Paragraph(
+                        f"1 {currency_code} = {self.format_currency(exchange_rate, 'AOA')}",
+                        self.styles["CustomValueSmall"],
+                    ),
+                ]
+            )
+        else:
+            # Standard Total
+            data.append(
+                [
+                    Paragraph("Total", self.styles["CustomLabelRight"]),
+                    Paragraph(
+                        self.format_currency(summary["total"], "AOA"),
+                        self.styles["CustomValueLarge"],
+                    ),
+                ]
+            )
 
         table = Table(
             data,
@@ -863,7 +945,7 @@ class PDFGenerator(BaseDocumentGenerator):
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                     ("FONTSIZE", (0, 0), (1, 0), 10),
                     ("FONTNAME", (0, 0), (1, 0), "Courier"),
-                    ("TOPPADDING", (0, 0), (1, 0), 54),
+                    ("TOPPADDING", (0, 0), (1, 0), 20),
                     ("BOTTOMPADDING", (0, 0), (1, 0), 6),
                     ("FONTSIZE", (0, 1), (1, 1), 20),
                     ("FONTNAME", (0, 1), (1, 1), "Courier-Bold"),
@@ -1007,7 +1089,15 @@ class PDFGenerator(BaseDocumentGenerator):
                 )
             )
 
-        qr_img = self._generate_qr_code(qr_data, size=25, company_id=company.get("id"))
+        fiscal_qr_path = save_base64_image(header.get("qrCode"), prefix="fiscal_qr")
+        if fiscal_qr_path:
+            qr_img = Image(str(fiscal_qr_path), width=25 * mm, height=25 * mm)
+            qr_label = "QR Code de Validação AGT"
+            qr_hint = "Digitalize para confirmar a submissão fiscal deste documento."
+        else:
+            qr_img = self._generate_qr_code(qr_data, size=25, company_id=company.get("id"))
+            qr_label = "QR Code de Verificação"
+            qr_hint = "Digitalize para verificar a autenticidade deste documento no portal oficial."
 
         data = []
 
@@ -1039,14 +1129,14 @@ class PDFGenerator(BaseDocumentGenerator):
         if qr_img is not None:
             qr_container = [
                 Paragraph(
-                    "<b>QR Code de Verificação</b>",
+                    f"<b>{qr_label}</b>",
                     self.styles["CustomBody"],
                 ),
                 Spacer(1, 2 * mm),
                 qr_img,
                 Spacer(1, 1 * mm),
                 Paragraph(
-                    "<font size=7><i>Digitalize para verificar a autenticidade deste documento no portal oficial.</i></font>",
+                    f"<font size=7><i>{qr_hint}</i></font>",
                     self.styles["CustomBody"],
                 ),
             ]
@@ -1078,30 +1168,60 @@ class PDFGenerator(BaseDocumentGenerator):
         """Build tax breakdown table."""
         usable_width = self.page_width - (self.margin * 2)
 
+        # Prepare currency labels
+        currency_code = "Kz"
+        # We can try to get currency code from summary if needed, but for tax details Kz is usually standard for reporting
+
         data = [
             [
                 Paragraph("Taxa %", self.styles["CustomTableHead"]),
                 Paragraph(
-                    "Base de Incidência (Kz)", self.styles["CustomTableHeadRight"]
+                    f"Base de Incidência ({currency_code})",
+                    self.styles["CustomTableHeadRight"],
                 ),
-                Paragraph("Valor do IVA (Kz)", self.styles["CustomTableHeadRight"]),
+                Paragraph(
+                    f"Valor do IVA ({currency_code})",
+                    self.styles["CustomTableHeadRight"],
+                ),
             ]
         ]
 
         for detail in tax_details:
-            data.append(
-                [
-                    Paragraph(f"{int(detail.taxRate)}", self.styles["CustomBody"]),
-                    Paragraph(
-                        self.format_currency(detail.taxableAmount),
-                        self.styles["CustomTableData"],
-                    ),
-                    Paragraph(
-                        self.format_currency(detail.taxAmount),
-                        self.styles["CustomTableData"],
-                    ),
-                ]
-            )
+            # Determine label (Code or Exemption)
+            tax_label = str(detail.taxRate)
+            if hasattr(detail, "taxCode") and detail.taxCode:
+                tax_label = f"{detail.taxCode} ({detail.taxRate}%)"
+
+            row = [
+                Paragraph(tax_label, self.styles["CustomBody"]),
+                Paragraph(
+                    self.format_currency(detail.taxableAmount),
+                    self.styles["CustomTableData"],
+                ),
+                Paragraph(
+                    self.format_currency(detail.taxAmount),
+                    self.styles["CustomTableData"],
+                ),
+            ]
+
+            data.append(row)
+
+            # If there's an exemption reason, add a sub-row or smaller text
+            if (
+                hasattr(detail, "exemptionReason")
+                and detail.exemptionReason
+                and detail.taxRate == 0
+            ):
+                data.append(
+                    [
+                        Paragraph(
+                            f"<font size=8 color=gray>Motivo: {detail.exemptionReason}</font>",
+                            self.styles["CustomBody"],
+                        ),
+                        Paragraph("", self.styles["CustomBody"]),
+                        Paragraph("", self.styles["CustomBody"]),
+                    ]
+                )
 
         # Use full width but with specific ratios to align with totals if possible,
         # or just visually distinct.
@@ -1153,8 +1273,13 @@ class PDFGenerator(BaseDocumentGenerator):
             logger.error(f"Error preparing QR code data: {str(e)}")
             return f"Factura: {header.get('documentNumber', 'Desconhecido')}"
 
+    def _draw_page_decorations(self, canvas, doc):
+        """Draw footer brand, AGT certification, and 'ANULADO' watermark."""
+        self._draw_footer_brand(canvas, doc)
+        self._draw_watermark(canvas, doc)
+
     def _draw_footer_brand(self, canvas, doc):
-        """Draw the fixed software brand footer on every page."""
+        """Draw the fixed software brand footer and AGT certification on every page."""
         canvas.saveState()
         canvas.setFont("Courier-Oblique", 7)
         canvas.setFillColorRGB(0.5, 0.5, 0.5)
@@ -1164,14 +1289,44 @@ class PDFGenerator(BaseDocumentGenerator):
         canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
         canvas.line(18 * mm, 12 * mm, 192 * mm, 12 * mm)
 
-        # Centered text
+        # Centered text - SOFTWARE BRAND
         footer_text = "Software de Gestão MINDGEST | Tel: +244 926 665 793 | E-mail: minwareofficial@gmail.com"
         canvas.drawCentredString(self.page_width / 2.0, 8 * mm, footer_text)
 
+        # AGT CERTIFICATION - MANDATORY FORMAT
+        # Format: [Extracto] - Processado por programa válido n31.1/AGT/20
+        hash_val = getattr(doc, "_invoice_hash", None)
+        hash_extract = self._get_hash_extract(hash_val)
+
+        agt_msg = f"{hash_extract} - {self.agt_certification}"
+        canvas.setFont("Courier-Bold", 8)
+        canvas.setFillColor(colors.black)
+        canvas.drawCentredString(self.page_width / 2.0, 14 * mm, agt_msg)
+
         canvas.restoreState()
 
+    def _draw_watermark(self, canvas, doc):
+        """Draw 'ANULADO' watermark if applicable."""
+        status = getattr(doc, "_invoice_status", None)
+        if status == "CANCELLED":
+            canvas.saveState()
+            canvas.setFont("Courier-Bold", 60)
+            canvas.setFillColorRGB(0.9, 0.2, 0.2, alpha=0.3)  # Light transparent red
+            canvas.translate(self.page_width / 2, self.page_height / 2)
+            canvas.rotate(45)
+            canvas.drawCentredString(0, 0, "ANULADO")
+            canvas.restoreState()
+
     # Adicionado helper para evitar erro se não estiver na BaseClass
-    def format_currency(self, value: any) -> str:
+    def format_currency(self, value: any, currency_code: str = "AOA") -> str:
         if value is None:
             value = 0.0
-        return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        formatted = (
+            f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        )
+
+        if currency_code == "AOA":
+            return f"{formatted} Kz"
+        elif currency_code:
+            return f"{formatted} {currency_code}"
+        return formatted

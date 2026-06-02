@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/stores";
 import { api } from "@/services/api";
 import { User } from "@/types";
+import { getSession } from "@/lib/session";
 
 interface UseFetchUserOptions {
   enabled?: boolean;
@@ -42,9 +43,22 @@ export function useFetchUser({ enabled = true }: UseFetchUserOptions = {}) {
       } catch (error: any) {
         if (!isMounted) return;
 
-        if (error.response?.status !== 401) {
+        const isNetworkError = !error.response;
+        
+        if (isNetworkError) {
+          console.warn("🌐 [Offline] Erro de rede ao buscar perfil. Tentando recuperar sessão local...");
+          const session = await getSession();
+          
+          if (session?.user) {
+            setUser(session.user);
+            return;
+          }
+        }
+
+        if (error.response?.status !== 401 && !isNetworkError) {
           console.error("Erro ao buscar usuário:", error);
         }
+        
         setUser(null);
       } finally {
         if (isMounted) {

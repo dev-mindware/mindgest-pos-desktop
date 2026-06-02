@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useNetworkStatus } from "@/hooks/common/use-network-status";
 import { useOfflineStore } from "@/stores/offline/offline-store";
 import { invoiceReceiptService } from "@/services/invoice-receipt-service";
@@ -10,54 +10,70 @@ import { useAuth } from "@/hooks/auth/use-auth";
 
 export function useOfflineSync() {
   const { isOnline } = useNetworkStatus();
-  const { queue, isSyncing, setSyncing, removeFromQueue } = useOfflineStore();
+  const { queue, isSyncing, setSyncing, initialize } = useOfflineStore();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const token = typeof window !== "undefined" ? localStorage.getItem("session-accessToken") : null;
+  const lastQueueLengthRef = useRef<number>(0);
+  const lastAttemptRef = useRef<number>(0);
 
   const sync = useCallback(async () => {
-    if (isSyncing || queue.length === 0 || !isOnline) return;
+    if (isSyncing || queue.length === 0 || !isOnline || !token || !user?.id) return;
 
     setSyncing(true);
-    console.log(`Starting sync for ${queue.length} documents...`);
+    console.log(`🔄 [SyncWorker] Iniciando sincronização em background para ${queue.length} documento(s)...`);
 
-    let syncedCount = 0;
+    try {
+      if (window.ipc?.sync?.processOutbox) {
+        const result = await window.ipc.sync.processOutbox({
+          token,
+          userId: user.id
+        });
 
-    for (const doc of queue) {
-      try {
-        if (doc.type === "invoice-receipt") {
-          await invoiceReceiptService.createInvoiceReceipt(doc.payload as any);
-        } else if (doc.type === "proforma") {
-          await proformaService.createProforma(doc.payload as any);
+        if (result && result.processed > 0) {
+          console.log(`✅ [SyncWorker] ${result.processed} documento(s) sincronizado(s) com sucesso.`);
+          await initialize(user.id);
+          SucessMessage(`${result.processed} documento(s) sincronizado(s) com sucesso!`);
+          queryClient.invalidateQueries({ queryKey: ["invoice-receipt"] });
+          queryClient.invalidateQueries({ queryKey: ["proforma"] });
+        } else {
+          console.warn(`⚠️ [SyncWorker] Nenhum documento processado. Aguardando nova verificação.`);
+          await initialize(user.id);
         }
-
-        removeFromQueue(doc.internalId, user?.id ?? "unknown");
-        syncedCount++;
-        console.log(`Synced document ${doc.internalId} successfully.`);
-      } catch (error) {
-        console.error(`Failed to sync document ${doc.internalId}:`, error);
-        // We stop sync for other documents if one fails to maintain order/consistency?
-        // Or should we continue? Given it's automatic, let's continue with others if they are independent.
-        // For now, let's continue to attempt syncing the rest.
       }
+    } catch (error: any) {
+      console.error("❌ [SyncWorker] Erro ao sincronizar outbox em background:", error);
+      ErrorMessage("Erro ao sincronizar documentos com o servidor.");
+    } finally {
+      setSyncing(false);
     }
-
-    // Only show success message if at least 1 document was actually synced
-    if (syncedCount > 0) {
-      SucessMessage(`${syncedCount} documento(s) sincronizado(s) com sucesso!`);
-      queryClient.invalidateQueries({ queryKey: ["invoice-receipt"] });
-      queryClient.invalidateQueries({ queryKey: ["proforma"] });
-    }
-
-    setSyncing(false);
-    // Use queue.length (primitive) instead of queue (array ref) to avoid infinite re-trigger
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOnline, queue.length, isSyncing]);
+  }, [isOnline, queue.length, isSyncing, token, user?.id, initialize, queryClient]);
 
   useEffect(() => {
-    if (isOnline && queue.length > 0 && !isSyncing) {
-      sync();
+    if (!isOnline || queue.length === 0 || isSyncing || !token) return;
+
+    const now = Date.now();
+    const sameQueue = lastQueueLengthRef.current === queue.length;
+    const recentAttempt = now - lastAttemptRef.current < 10000;
+
+    if (sameQueue && recentAttempt) {
+      return;
     }
-  }, [isOnline, queue.length, isSyncing, sync]);
+
+    lastQueueLengthRef.current = queue.length;
+    lastAttemptRef.current = now;
+    sync();
+  }, [isOnline, queue.length, isSyncing, sync, token]);
+
+  useEffect(() => {
+    if (!user?.id || !isOnline) return;
+
+    const intervalId = window.setInterval(() => {
+      initialize(user.id);
+    }, 30000);
+
+    return () => window.clearInterval(intervalId);
+  }, [user?.id, initialize, isOnline]);
 
   return { isSyncing, sync, pendingCount: queue.length };
 }

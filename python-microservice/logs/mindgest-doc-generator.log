@@ -1,40 +1,856 @@
-2026-02-27 10:50:32,870 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
-2026-02-27 10:51:09,753 - app.main - INFO - Generating and downloading pdf for invoice PENDENTE OFFLINE
-2026-02-27 10:51:09,753 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
-2026-02-27 10:51:09,754 - app.main - INFO - PDF Download Layout requested: thermal
-2026-02-27 10:51:09,755 - app.main - INFO - Using ThermalPDFGenerator for download
-2026-02-27 10:52:04,201 - app.main - INFO - Generating and downloading pdf for invoice PENDENTE OFFLINE
-2026-02-27 10:52:04,202 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
-2026-02-27 10:52:04,202 - app.main - INFO - PDF Download Layout requested: thermal
-2026-02-27 10:52:04,202 - app.main - INFO - Using ThermalPDFGenerator for download
-2026-02-27 11:50:32,945 - app.main - INFO - Cleanup task completed
-2026-02-27 12:50:32,980 - app.main - INFO - Cleanup task completed
-2026-02-27 23:33:20,617 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
-2026-02-27 23:33:55,163 - app.main - INFO - Generating and downloading pdf for invoice PENDENTE OFFLINE
-2026-02-27 23:33:55,164 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
-2026-02-27 23:33:55,165 - app.main - INFO - PDF Download Layout requested: thermal
-2026-02-27 23:33:55,166 - app.main - INFO - Using ThermalPDFGenerator for download
-2026-02-27 23:57:32,949 - app.main - INFO - MindGest Document Generator shutting down...
-2026-02-28 00:34:12,436 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
-2026-02-28 01:34:12,459 - app.main - INFO - Cleanup task completed
-2026-02-28 02:34:12,474 - app.main - INFO - Cleanup task completed
-2026-02-28 03:34:12,480 - app.main - INFO - Cleanup task completed
-2026-03-02 10:19:07,434 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
-2026-03-02 11:19:07,445 - app.main - INFO - Cleanup task completed
-2026-03-02 12:19:07,456 - app.main - INFO - Cleanup task completed
-2026-03-02 13:19:07,222 - app.main - INFO - Cleanup task completed
-2026-03-02 15:19:44,412 - app.main - INFO - Cleanup task completed
-2026-03-02 16:28:14,198 - app.main - INFO - Cleanup task completed
-2026-03-02 17:55:32,094 - app.main - INFO - Cleanup task completed
-2026-03-02 18:55:32,204 - app.main - INFO - Cleanup task completed
-2026-03-02 21:44:07,894 - app.main - INFO - Cleanup task completed
-2026-03-02 22:44:07,815 - app.main - INFO - Cleanup task completed
-2026-03-02 23:44:07,756 - app.main - INFO - Cleanup task completed
-2026-03-03 03:11:06,214 - app.main - INFO - Cleanup task completed
-2026-03-03 05:55:32,717 - app.main - INFO - Cleanup task completed
-2026-03-03 09:41:25,366 - app.main - INFO - Cleanup task completed
-2026-03-03 10:53:59,284 - app.main - INFO - Cleanup task completed
-2026-03-03 11:53:59,434 - app.main - INFO - Cleanup task completed
-2026-03-06 10:44:19,344 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
-2026-03-06 11:44:19,386 - app.main - INFO - Cleanup task completed
-2026-03-06 12:44:19,406 - app.main - INFO - Cleanup task completed
+2026-03-07 14:49:33,668 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-07 13:53:38,483 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-07 13:54:09,839 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-07 14:27:13,323 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-07 15:49:33,711 - app.main - INFO - Cleanup task completed
+2026-03-07 15:10:14,827 - app.main - INFO - Generating and downloading pdf for invoice FT A/1
+2026-03-07 15:10:14,859 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-07 15:10:14,865 - app.main - INFO - PDF Download Layout requested: None
+2026-03-07 15:10:14,867 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-07 15:10:14,928 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT A/1
+2026-03-07 15:10:15,877 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-07 15:10:16,113 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT A_1_20260307_151015.pdf
+2026-03-07 15:15:41,393 - app.main - INFO - Generating and downloading pdf for invoice FT A/2
+2026-03-07 15:15:41,397 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-07 15:15:41,398 - app.main - INFO - PDF Download Layout requested: None
+2026-03-07 15:15:41,401 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-07 15:15:41,421 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT A/2
+2026-03-07 15:15:41,602 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-07 15:15:41,747 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT A_2_20260307_151541.pdf
+2026-03-07 15:16:40,399 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-07 16:16:46,596 - app.main - INFO - MindGest Document Generator shutting down...
+2026-03-07 16:16:53,351 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-07 15:17:24,814 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-07 15:20:15,414 - app.main - INFO - Generating and downloading pdf for invoice FT A/3
+2026-03-07 15:20:15,423 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-07 15:20:15,426 - app.main - INFO - PDF Download Layout requested: None
+2026-03-07 15:20:15,427 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-07 15:20:15,442 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT A/3
+2026-03-07 15:20:15,752 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-07 15:20:15,927 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT A_3_20260307_152015.pdf
+2026-03-07 16:23:23,017 - app.main - INFO - MindGest Document Generator shutting down...
+2026-03-07 16:23:26,510 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-07 15:25:30,294 - app.main - INFO - Generating and downloading pdf for invoice FT A/4
+2026-03-07 15:25:30,295 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-07 15:25:30,297 - app.main - INFO - PDF Download Layout requested: None
+2026-03-07 15:25:30,299 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-07 15:25:30,333 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT A/4
+2026-03-07 15:25:30,567 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-07 15:25:30,718 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT A_4_20260307_152530.pdf
+2026-03-07 15:27:35,150 - app.main - INFO - Generating and downloading pdf for invoice FT A/5
+2026-03-07 15:27:35,151 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-07 15:27:35,158 - app.main - INFO - PDF Download Layout requested: None
+2026-03-07 15:27:35,159 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-07 15:27:35,211 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT A/5
+2026-03-07 15:27:35,405 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-07 15:27:35,536 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT A_5_20260307_152735.pdf
+2026-03-07 15:33:04,447 - app.main - INFO - Generating and downloading pdf for invoice FT A/1
+2026-03-07 15:33:04,448 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-07 15:33:04,449 - app.main - INFO - PDF Download Layout requested: None
+2026-03-07 15:33:04,452 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-07 15:33:04,474 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT A/1
+2026-03-07 15:33:04,589 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-07 15:33:04,684 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT A_1_20260307_153304.pdf
+2026-03-07 15:39:27,568 - app.main - INFO - Generating and downloading pdf for invoice FT MI001/1
+2026-03-07 15:39:27,569 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-07 15:39:27,570 - app.main - INFO - PDF Download Layout requested: None
+2026-03-07 15:39:27,571 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-07 15:39:27,588 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001/1
+2026-03-07 15:39:27,704 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-07 15:39:27,836 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001_1_20260307_153927.pdf
+2026-03-07 15:40:23,859 - app.main - INFO - Generating and downloading pdf for invoice FT MI001/2
+2026-03-07 15:40:23,860 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-07 15:40:23,861 - app.main - INFO - PDF Download Layout requested: None
+2026-03-07 15:40:23,864 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-07 15:40:23,903 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001/2
+2026-03-07 15:40:24,022 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-07 15:40:24,120 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001_2_20260307_154023.pdf
+2026-03-07 15:40:54,823 - app.main - INFO - Generating and downloading pdf for invoice FT MI001/3
+2026-03-07 15:40:54,825 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-07 15:40:54,833 - app.main - INFO - PDF Download Layout requested: None
+2026-03-07 15:40:54,834 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-07 15:40:54,845 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001/3
+2026-03-07 15:40:54,954 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-07 15:40:55,051 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001_3_20260307_154054.pdf
+2026-03-07 15:56:24,387 - app.main - INFO - Generating and downloading pdf for invoice FT MI001/1
+2026-03-07 15:56:24,388 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-07 15:56:24,389 - app.main - INFO - PDF Download Layout requested: None
+2026-03-07 15:56:24,394 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-07 15:56:24,420 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001/1
+2026-03-07 15:56:24,602 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-07 15:56:24,794 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001_1_20260307_155624.pdf
+2026-03-07 15:57:10,496 - app.main - INFO - Generating and downloading pdf for invoice FT MI001/2
+2026-03-07 15:57:10,501 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-07 15:57:10,514 - app.main - INFO - PDF Download Layout requested: None
+2026-03-07 15:57:10,515 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-07 15:57:10,532 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001/2
+2026-03-07 15:57:10,735 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-07 15:57:10,894 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001_2_20260307_155710.pdf
+2026-03-07 16:17:24,859 - app.main - INFO - Cleanup task completed
+2026-03-07 17:23:26,568 - app.main - INFO - Cleanup task completed
+2026-03-07 17:17:24,490 - app.main - INFO - Cleanup task completed
+2026-03-07 18:23:26,608 - app.main - INFO - Cleanup task completed
+2026-03-07 18:17:24,546 - app.main - INFO - Cleanup task completed
+2026-03-07 19:23:26,629 - app.main - INFO - Cleanup task completed
+2026-03-07 19:17:24,653 - app.main - INFO - Cleanup task completed
+2026-03-07 20:23:26,671 - app.main - INFO - Cleanup task completed
+2026-03-07 20:17:13,580 - app.main - INFO - Cleanup task completed
+2026-03-07 21:23:26,708 - app.main - INFO - Cleanup task completed
+2026-03-08 13:30:30,227 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-09 18:09:43,964 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-09 19:09:57,078 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-09 20:09:57,111 - app.main - INFO - Cleanup task completed
+2026-03-09 19:13:01,701 - app.main - INFO - Cleanup task completed
+2026-03-09 21:09:57,145 - app.main - INFO - Cleanup task completed
+2026-03-09 20:16:43,727 - app.main - INFO - Cleanup task completed
+2026-03-09 22:09:57,165 - app.main - INFO - Cleanup task completed
+2026-03-09 21:19:39,188 - app.main - INFO - Cleanup task completed
+2026-03-09 23:09:57,182 - app.main - INFO - Cleanup task completed
+2026-03-09 22:22:23,874 - app.main - INFO - Cleanup task completed
+2026-03-10 19:29:19,021 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-10 20:29:19,064 - app.main - INFO - Cleanup task completed
+2026-03-10 21:29:18,698 - app.main - INFO - Cleanup task completed
+2026-03-10 22:29:18,319 - app.main - INFO - Cleanup task completed
+2026-03-14 09:59:56,078 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-14 10:59:56,106 - app.main - INFO - Cleanup task completed
+2026-03-14 11:59:56,144 - app.main - INFO - Cleanup task completed
+2026-03-14 12:59:56,177 - app.main - INFO - Cleanup task completed
+2026-03-14 13:59:55,767 - app.main - INFO - Cleanup task completed
+2026-03-14 14:59:52,603 - app.main - INFO - Cleanup task completed
+2026-03-14 15:59:17,564 - app.main - INFO - Cleanup task completed
+2026-03-14 16:57:52,471 - app.main - INFO - Cleanup task completed
+2026-03-14 17:56:10,907 - app.main - INFO - Cleanup task completed
+2026-03-14 18:54:17,353 - app.main - INFO - Cleanup task completed
+2026-03-14 19:52:42,317 - app.main - INFO - Cleanup task completed
+2026-03-15 15:13:14,502 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-15 16:11:21,796 - app.main - INFO - Cleanup task completed
+2026-03-15 17:09:08,588 - app.main - INFO - Cleanup task completed
+2026-03-15 18:06:21,121 - app.main - INFO - Cleanup task completed
+2026-03-15 19:03:51,579 - app.main - INFO - Cleanup task completed
+2026-03-15 20:18:07,419 - app.main - INFO - Cleanup task completed
+2026-03-15 21:24:57,567 - app.main - INFO - Cleanup task completed
+2026-03-15 22:21:56,613 - app.main - INFO - Cleanup task completed
+2026-03-18 19:03:30,473 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-18 20:03:50,741 - app.main - INFO - Cleanup task completed
+2026-03-18 21:04:04,865 - app.main - INFO - Cleanup task completed
+2026-03-22 08:14:42,909 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-22 08:15:29,806 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-22 08:44:28,975 - app.main - INFO - MindGest Document Generator shutting down...
+2026-03-22 08:44:42,742 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-22 09:54:03,602 - app.main - INFO - Cleanup task completed
+2026-03-22 09:57:59,167 - app.main - INFO - Cleanup task completed
+2026-03-22 10:54:03,655 - app.main - INFO - Cleanup task completed
+2026-03-22 11:09:32,237 - app.main - INFO - Cleanup task completed
+2026-03-22 11:54:03,673 - app.main - INFO - Cleanup task completed
+2026-03-22 12:09:32,253 - app.main - INFO - Cleanup task completed
+2026-03-22 12:54:03,686 - app.main - INFO - Cleanup task completed
+2026-03-22 13:09:32,271 - app.main - INFO - Cleanup task completed
+2026-03-22 13:54:03,698 - app.main - INFO - Cleanup task completed
+2026-03-22 14:09:32,284 - app.main - INFO - Cleanup task completed
+2026-03-22 14:54:03,718 - app.main - INFO - Cleanup task completed
+2026-03-22 15:09:32,297 - app.main - INFO - Cleanup task completed
+2026-03-22 15:54:03,728 - app.main - INFO - Cleanup task completed
+2026-03-22 16:09:32,303 - app.main - INFO - Cleanup task completed
+2026-03-22 16:54:03,733 - app.main - INFO - Cleanup task completed
+2026-03-22 17:09:32,318 - app.main - INFO - Cleanup task completed
+2026-03-22 17:54:03,742 - app.main - INFO - Cleanup task completed
+2026-03-22 18:09:32,334 - app.main - INFO - Cleanup task completed
+2026-03-22 18:54:03,751 - app.main - INFO - Cleanup task completed
+2026-03-22 19:09:32,349 - app.main - INFO - Cleanup task completed
+2026-03-22 19:54:03,768 - app.main - INFO - Cleanup task completed
+2026-03-22 20:09:32,368 - app.main - INFO - Cleanup task completed
+2026-03-22 20:54:03,781 - app.main - INFO - Cleanup task completed
+2026-03-22 21:09:32,390 - app.main - INFO - Cleanup task completed
+2026-03-28 20:28:54,728 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-28 21:28:54,762 - app.main - INFO - Cleanup task completed
+2026-03-28 22:28:54,795 - app.main - INFO - Cleanup task completed
+2026-03-28 23:28:54,820 - app.main - INFO - Cleanup task completed
+2026-03-29 00:11:25,151 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-29 00:28:54,831 - app.main - INFO - Cleanup task completed
+2026-03-29 00:35:15,111 - app.main - INFO - Generating and downloading pdf for invoice FR KA001032026/1
+2026-03-29 00:35:15,114 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-03-29 00:35:15,118 - app.main - INFO - PDF Download Layout requested: None
+2026-03-29 00:35:15,119 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-29 00:35:15,140 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR KA001032026/1
+2026-03-29 00:35:15,436 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-29 00:35:15,514 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR KA001032026_1_20260329_003515.pdf
+2026-03-29 00:38:03,585 - app.main - INFO - Generating and downloading pdf for invoice FR KA001032026/1
+2026-03-29 00:38:03,586 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-03-29 00:38:03,587 - app.main - INFO - PDF Download Layout requested: thermal
+2026-03-29 00:38:03,589 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-03-29 00:40:18,970 - app.main - INFO - Generating and downloading pdf for invoice FR KA001032026/1
+2026-03-29 00:40:18,972 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-03-29 00:40:18,973 - app.main - INFO - PDF Download Layout requested: None
+2026-03-29 00:40:18,974 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-29 00:40:18,988 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR KA001032026/1
+2026-03-29 00:40:19,041 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-29 00:40:19,078 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR KA001032026_1_20260329_004018.pdf
+2026-03-29 01:11:25,219 - app.main - INFO - Cleanup task completed
+2026-03-29 01:28:54,468 - app.main - INFO - Cleanup task completed
+2026-03-29 02:11:25,255 - app.main - INFO - Cleanup task completed
+2026-03-29 02:28:54,512 - app.main - INFO - Cleanup task completed
+2026-03-29 13:54:40,661 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-29 13:57:05,202 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-29 13:57:05,418 - app.main - INFO - MindGest Document Generator shutting down...
+2026-03-29 13:57:15,877 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-29 14:47:06,240 - app.main - INFO - Generating and downloading pdf for invoice FT KA002032026/1
+2026-03-29 14:47:06,252 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-29 14:47:06,253 - app.main - INFO - PDF Download Layout requested: None
+2026-03-29 14:47:06,253 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-29 14:47:06,287 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT KA002032026/1
+2026-03-29 14:47:06,592 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-29 14:47:06,665 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT KA002032026_1_20260329_144706.pdf
+2026-03-29 14:57:15,919 - app.main - INFO - Cleanup task completed
+2026-03-29 14:57:51,960 - app.main - INFO - Cleanup task completed
+2026-03-29 14:59:33,046 - app.main - INFO - Generating and downloading pdf for invoice FT KA001032026/1
+2026-03-29 14:59:33,048 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-29 14:59:33,049 - app.main - INFO - PDF Download Layout requested: None
+2026-03-29 14:59:33,052 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-29 14:59:33,064 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT KA001032026/1
+2026-03-29 14:59:33,157 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-29 14:59:33,222 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT KA001032026_1_20260329_145933.pdf
+2026-03-29 15:57:15,952 - app.main - INFO - Cleanup task completed
+2026-03-29 16:00:54,137 - app.main - INFO - Cleanup task completed
+2026-03-29 16:57:15,968 - app.main - INFO - Cleanup task completed
+2026-03-29 17:04:17,538 - app.main - INFO - Cleanup task completed
+2026-03-29 17:57:16,003 - app.main - INFO - Cleanup task completed
+2026-03-29 18:07:39,518 - app.main - INFO - Cleanup task completed
+2026-03-29 18:34:04,099 - app.main - INFO - Generating and downloading pdf for invoice FT KA001032026/2
+2026-03-29 18:34:04,110 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-29 18:34:04,111 - app.main - INFO - PDF Download Layout requested: None
+2026-03-29 18:34:04,112 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-29 18:34:04,147 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT KA001032026/2
+2026-03-29 18:34:04,459 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-29 18:34:04,781 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT KA001032026_2_20260329_183404.pdf
+2026-03-29 18:37:19,258 - app.main - INFO - Generating and downloading pdf for invoice FR KA001032026/2
+2026-03-29 18:37:19,263 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-03-29 18:37:19,268 - app.main - INFO - PDF Download Layout requested: None
+2026-03-29 18:37:19,280 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-29 18:37:19,378 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR KA001032026/2
+2026-03-29 18:37:19,808 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-29 18:37:19,957 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR KA001032026_2_20260329_183719.pdf
+2026-03-29 18:57:16,034 - app.main - INFO - Cleanup task completed
+2026-03-29 18:58:24,593 - app.main - INFO - Generating and downloading pdf for invoice FR KA001032026/3
+2026-03-29 18:58:24,606 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-03-29 18:58:24,615 - app.main - INFO - PDF Download Layout requested: None
+2026-03-29 18:58:24,617 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-29 18:58:24,661 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR KA001032026/3
+2026-03-29 18:58:25,073 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-29 18:58:25,414 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR KA001032026_3_20260329_185824.pdf
+2026-03-29 19:10:54,387 - app.main - INFO - Cleanup task completed
+2026-03-29 19:13:10,013 - app.main - INFO - Generating and downloading pdf for invoice FR KA001032026/4
+2026-03-29 19:13:10,040 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-03-29 19:13:10,053 - app.main - INFO - PDF Download Layout requested: None
+2026-03-29 19:13:10,065 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-29 19:13:10,105 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR KA001032026/4
+2026-03-29 19:13:10,573 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-29 19:13:10,848 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR KA001032026_4_20260329_191310.pdf
+2026-03-29 19:57:16,084 - app.main - INFO - Cleanup task completed
+2026-03-29 20:13:55,059 - app.main - INFO - Cleanup task completed
+2026-03-29 20:57:16,113 - app.main - INFO - Cleanup task completed
+2026-03-29 21:16:23,555 - app.main - INFO - Cleanup task completed
+2026-03-30 20:30:51,148 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-30 20:31:52,083 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-30 20:59:23,400 - app.main - INFO - Generating and downloading pdf for invoice FT KA001032026/3
+2026-03-30 20:59:23,412 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-30 20:59:23,413 - app.main - INFO - PDF Download Layout requested: None
+2026-03-30 20:59:23,413 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-30 20:59:23,449 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT KA001032026/3
+2026-03-30 20:59:23,812 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-30 20:59:23,878 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT KA001032026_3_20260330_205923.pdf
+2026-03-30 21:03:54,206 - app.main - INFO - Generating and downloading pdf for invoice FT KA001032026/4
+2026-03-30 21:03:54,207 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-30 21:03:54,208 - app.main - INFO - PDF Download Layout requested: None
+2026-03-30 21:03:54,209 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-30 21:03:54,223 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT KA001032026/4
+2026-03-30 21:03:54,322 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-30 21:03:54,362 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT KA001032026_4_20260330_210354.pdf
+2026-03-30 21:30:51,183 - app.main - INFO - Cleanup task completed
+2026-03-30 21:31:52,148 - app.main - INFO - Cleanup task completed
+2026-03-30 21:44:08,017 - app.main - INFO - Generating and downloading pdf for invoice FR KA001032026/5
+2026-03-30 21:44:08,022 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-03-30 21:44:08,022 - app.main - INFO - PDF Download Layout requested: None
+2026-03-30 21:44:08,023 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-30 21:44:08,030 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR KA001032026/5
+2026-03-30 21:44:08,117 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-30 21:44:08,176 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR KA001032026_5_20260330_214408.pdf
+2026-03-30 21:45:50,578 - app.main - INFO - Generating and downloading pdf for invoice FR KA001032026/6
+2026-03-30 21:45:50,581 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-03-30 21:45:50,582 - app.main - INFO - PDF Download Layout requested: None
+2026-03-30 21:45:50,583 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-30 21:45:50,596 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR KA001032026/6
+2026-03-30 21:45:50,661 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-30 21:45:50,732 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR KA001032026_6_20260330_214550.pdf
+2026-03-30 22:30:51,209 - app.main - INFO - Cleanup task completed
+2026-03-30 22:31:52,182 - app.main - INFO - Cleanup task completed
+2026-03-30 22:37:31,339 - app.main - INFO - Generating and downloading pdf for invoice FT KA001032026/5
+2026-03-30 22:37:31,340 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-03-30 22:37:31,341 - app.main - INFO - PDF Download Layout requested: None
+2026-03-30 22:37:31,341 - app.main - INFO - Using standard PDFGenerator for download
+2026-03-30 22:37:31,346 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT KA001032026/5
+2026-03-30 22:37:31,423 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-03-30 22:37:31,476 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT KA001032026_5_20260330_223731.pdf
+2026-03-31 19:39:06,382 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-03-31 20:38:57,900 - app.main - INFO - Cleanup task completed
+2026-03-31 21:38:14,451 - app.main - INFO - Cleanup task completed
+2026-04-03 14:01:56,682 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-03 14:12:11,365 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-03 15:01:56,710 - app.main - INFO - Cleanup task completed
+2026-04-03 15:12:11,413 - app.main - INFO - Cleanup task completed
+2026-04-03 16:01:56,734 - app.main - INFO - Cleanup task completed
+2026-04-03 16:12:11,441 - app.main - INFO - Cleanup task completed
+2026-04-03 16:49:57,011 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-03 18:21:03,187 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-03 19:21:32,278 - app.main - INFO - Cleanup task completed
+2026-04-03 20:12:49,308 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-03 20:22:06,685 - app.main - INFO - Cleanup task completed
+2026-04-03 20:45:31,580 - app.main - INFO - Generating and downloading pdf for invoice FR KA001032026/6
+2026-04-03 20:45:31,593 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-04-03 20:45:31,595 - app.main - INFO - PDF Download Layout requested: None
+2026-04-03 20:45:31,595 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-03 20:45:31,646 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR KA001032026/6
+2026-04-03 20:45:32,721 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR KA001032026_6_20260403_204531.pdf
+2026-04-03 21:12:49,364 - app.main - INFO - Cleanup task completed
+2026-04-03 21:22:39,071 - app.main - INFO - Cleanup task completed
+2026-04-03 22:12:49,420 - app.main - INFO - Cleanup task completed
+2026-04-03 22:23:01,176 - app.main - INFO - Cleanup task completed
+2026-04-03 23:12:49,519 - app.main - INFO - Cleanup task completed
+2026-04-03 23:23:01,612 - app.main - INFO - Cleanup task completed
+2026-04-04 09:14:26,312 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-04 09:14:33,518 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-04 10:09:05,119 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/1
+2026-04-04 10:09:05,123 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-04 10:09:05,124 - app.main - INFO - PDF Download Layout requested: None
+2026-04-04 10:09:05,124 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-04 10:09:05,136 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/1
+2026-04-04 10:09:05,446 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-04 10:09:05,537 - app.modules.pdf.generator - INFO - PDF generated successfully: C:\Users\GTIMINDCOM\Documents\GitHub\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT MI001042026_1_20260404_100905.pdf
+2026-04-04 10:14:26,324 - app.main - INFO - Cleanup task completed
+2026-04-04 10:28:12,100 - app.main - INFO - Cleanup task completed
+2026-04-04 10:31:32,457 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/2
+2026-04-04 10:31:32,461 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-04 10:31:32,464 - app.main - INFO - PDF Download Layout requested: None
+2026-04-04 10:31:32,465 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-04 10:31:32,466 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/2
+2026-04-04 10:31:32,524 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-04 10:31:32,604 - app.modules.pdf.generator - INFO - PDF generated successfully: C:\Users\GTIMINDCOM\Documents\GitHub\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT MI001042026_2_20260404_103132.pdf
+2026-04-04 11:14:26,355 - app.main - INFO - Cleanup task completed
+2026-04-04 11:30:39,596 - app.main - INFO - Cleanup task completed
+2026-04-04 11:40:01,408 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/4
+2026-04-04 11:40:01,414 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-04 11:40:01,417 - app.main - INFO - PDF Download Layout requested: None
+2026-04-04 11:40:01,418 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-04 11:40:01,422 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/4
+2026-04-04 11:40:01,509 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-04 11:40:01,615 - app.modules.pdf.generator - INFO - PDF generated successfully: C:\Users\GTIMINDCOM\Documents\GitHub\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT MI001042026_4_20260404_114001.pdf
+2026-04-04 11:58:14,280 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/5
+2026-04-04 11:58:14,283 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-04 11:58:14,284 - app.main - INFO - PDF Download Layout requested: None
+2026-04-04 11:58:14,284 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-04 11:58:14,286 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/5
+2026-04-04 11:58:14,383 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-04 11:58:14,489 - app.modules.pdf.generator - INFO - PDF generated successfully: C:\Users\GTIMINDCOM\Documents\GitHub\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT MI001042026_5_20260404_115814.pdf
+2026-04-04 12:02:26,012 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/6
+2026-04-04 12:02:26,013 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-04 12:02:26,014 - app.main - INFO - PDF Download Layout requested: None
+2026-04-04 12:02:26,015 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-04 12:02:26,027 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/6
+2026-04-04 12:02:26,090 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-04 12:02:26,170 - app.modules.pdf.generator - INFO - PDF generated successfully: C:\Users\GTIMINDCOM\Documents\GitHub\MINDGEST-API\python-microservice\temp\NORMAL_INVOICE_FT MI001042026_6_20260404_120226.pdf
+2026-04-04 12:22:02,944 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-04 12:22:17,061 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-04 12:27:54,335 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/7
+2026-04-04 12:27:54,342 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-04 12:27:54,342 - app.main - INFO - PDF Download Layout requested: None
+2026-04-04 12:27:54,343 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-04 12:27:54,364 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/7
+2026-04-04 12:27:54,611 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-04 12:27:54,667 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001042026_7_20260404_122754.pdf
+2026-04-04 13:47:37,924 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-04 14:01:20,501 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-04 14:52:07,014 - app.main - INFO - Cleanup task completed
+2026-04-04 14:53:57,328 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/8
+2026-04-04 14:53:57,329 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-04 14:53:57,330 - app.main - INFO - PDF Download Layout requested: None
+2026-04-04 14:53:57,330 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-04 14:53:57,364 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/8
+2026-04-04 14:53:57,599 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-04 14:53:57,672 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001042026_8_20260404_145357.pdf
+2026-04-04 15:01:20,535 - app.main - INFO - Cleanup task completed
+2026-04-04 15:55:56,666 - app.main - INFO - Cleanup task completed
+2026-04-04 15:56:46,844 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/9
+2026-04-04 15:56:46,845 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-04 15:56:46,845 - app.main - INFO - PDF Download Layout requested: None
+2026-04-04 15:56:46,846 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-04 15:56:46,860 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/9
+2026-04-04 15:56:49,154 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-04 15:56:49,234 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001042026_9_20260404_155646.pdf
+2026-04-04 16:01:20,568 - app.main - INFO - Cleanup task completed
+2026-04-04 17:01:20,589 - app.main - INFO - Cleanup task completed
+2026-04-04 17:26:22,940 - app.main - INFO - Cleanup task completed
+2026-04-04 18:01:20,607 - app.main - INFO - Cleanup task completed
+2026-04-04 18:30:06,924 - app.main - INFO - Cleanup task completed
+2026-04-04 19:01:20,639 - app.main - INFO - Cleanup task completed
+2026-04-04 19:34:09,265 - app.main - INFO - Cleanup task completed
+2026-04-04 20:01:20,686 - app.main - INFO - Cleanup task completed
+2026-04-04 20:37:13,324 - app.main - INFO - Cleanup task completed
+2026-04-05 12:31:51,307 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-05 12:32:01,552 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-05 12:34:31,465 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/10
+2026-04-05 12:34:31,466 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-05 12:34:31,468 - app.main - INFO - PDF Download Layout requested: None
+2026-04-05 12:34:31,469 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-05 12:34:31,566 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/10
+2026-04-05 12:34:31,894 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-05 12:34:32,047 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001042026_10_20260405_123431.pdf
+2026-04-05 13:32:01,614 - app.main - INFO - Cleanup task completed
+2026-04-05 13:33:03,487 - app.main - INFO - Cleanup task completed
+2026-04-05 14:32:01,656 - app.main - INFO - Cleanup task completed
+2026-04-05 14:33:40,315 - app.main - INFO - Cleanup task completed
+2026-04-05 15:32:01,690 - app.main - INFO - Cleanup task completed
+2026-04-05 15:34:38,194 - app.main - INFO - Cleanup task completed
+2026-04-05 16:32:01,721 - app.main - INFO - Cleanup task completed
+2026-04-05 16:34:39,265 - app.main - INFO - Cleanup task completed
+2026-04-18 10:42:53,084 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-18 10:43:00,832 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-18 11:48:57,755 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-18 10:50:43,841 - app.main - INFO - Generating and downloading pdf for invoice FR MI001042026/1
+2026-04-18 10:50:43,847 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-04-18 10:50:43,848 - app.main - INFO - PDF Download Layout requested: None
+2026-04-18 10:50:43,848 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-18 10:50:43,890 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001042026/1
+2026-04-18 10:50:44,329 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-18 10:50:44,410 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001042026_1_20260418_105043.pdf
+2026-04-18 10:59:04,543 - app.main - INFO - Generating and downloading pdf for invoice FR MI001042026/2
+2026-04-18 10:59:04,568 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-04-18 10:59:04,569 - app.main - INFO - PDF Download Layout requested: None
+2026-04-18 10:59:04,570 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-18 10:59:04,597 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001042026/2
+2026-04-18 10:59:05,530 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-18 10:59:05,776 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001042026_2_20260418_105904.pdf
+2026-04-18 11:26:56,824 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-18 12:27:14,296 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-18 12:34:36,711 - app.main - INFO - MindGest Document Generator shutting down...
+2026-04-18 12:34:38,328 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-18 12:38:26,955 - app.main - INFO - MindGest Document Generator shutting down...
+2026-04-18 12:38:27,903 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-18 12:38:58,037 - app.main - INFO - MindGest Document Generator shutting down...
+2026-04-18 12:38:58,905 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-18 12:39:00,882 - app.main - INFO - MindGest Document Generator shutting down...
+2026-04-18 12:39:02,504 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-18 12:39:09,957 - app.main - INFO - MindGest Document Generator shutting down...
+2026-04-18 12:39:11,068 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-18 12:29:16,696 - app.main - INFO - Cleanup task completed
+2026-04-18 13:39:11,121 - app.main - INFO - Cleanup task completed
+2026-04-18 12:57:54,853 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/1
+2026-04-18 12:57:54,855 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-18 12:57:54,856 - app.main - INFO - PDF Download Layout requested: None
+2026-04-18 12:57:54,856 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-18 12:57:54,881 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/1
+2026-04-18 12:57:55,060 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-18 12:57:55,111 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001042026_1_20260418_125754.pdf
+2026-04-18 13:31:52,033 - app.main - INFO - Cleanup task completed
+2026-04-18 14:39:11,151 - app.main - INFO - Cleanup task completed
+2026-04-18 15:39:11,166 - app.main - INFO - Cleanup task completed
+2026-04-18 14:42:29,205 - app.main - INFO - Cleanup task completed
+2026-04-18 14:50:44,446 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/2
+2026-04-18 14:50:44,451 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-18 14:50:44,452 - app.main - INFO - PDF Download Layout requested: None
+2026-04-18 14:50:44,452 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-18 14:50:44,476 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/2
+2026-04-18 14:50:44,612 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-18 14:50:44,683 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001042026_2_20260418_145044.pdf
+2026-04-18 16:39:11,189 - app.main - INFO - Cleanup task completed
+2026-04-18 15:44:05,429 - app.main - INFO - Cleanup task completed
+2026-04-18 17:44:05,508 - app.main - INFO - Cleanup task completed
+2026-04-18 16:50:30,415 - app.main - INFO - Cleanup task completed
+2026-04-18 18:44:05,638 - app.main - INFO - Cleanup task completed
+2026-04-18 17:51:20,684 - app.main - INFO - Cleanup task completed
+2026-04-18 19:44:05,661 - app.main - INFO - Cleanup task completed
+2026-04-18 18:51:43,838 - app.main - INFO - Cleanup task completed
+2026-04-18 20:44:05,697 - app.main - INFO - Cleanup task completed
+2026-04-19 10:11:05,944 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-19 11:11:34,708 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-19 10:54:19,573 - app.main - INFO - Generating and downloading pdf for invoice FR MI001042026/1
+2026-04-19 10:54:19,579 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-04-19 10:54:19,579 - app.main - INFO - PDF Download Layout requested: None
+2026-04-19 10:54:19,580 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-19 10:54:19,643 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001042026/1
+2026-04-19 10:54:19,891 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-19 10:54:19,959 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001042026_1_20260419_105419.pdf
+2026-04-19 11:00:17,766 - app.main - INFO - Generating and downloading pdf for invoice FR MI001042026/2
+2026-04-19 11:00:17,769 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-04-19 11:00:17,769 - app.main - INFO - PDF Download Layout requested: None
+2026-04-19 11:00:17,769 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-19 11:00:17,775 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001042026/2
+2026-04-19 11:00:17,890 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-19 11:00:17,989 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001042026_2_20260419_110017.pdf
+2026-04-19 12:11:34,794 - app.main - INFO - Cleanup task completed
+2026-04-19 11:11:52,176 - app.main - INFO - Cleanup task completed
+2026-04-19 11:17:25,968 - app.main - INFO - Generating and downloading pdf for invoice FR MI001042026/3
+2026-04-19 11:17:25,973 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-04-19 11:17:25,980 - app.main - INFO - PDF Download Layout requested: None
+2026-04-19 11:17:25,981 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-19 11:17:25,999 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001042026/3
+2026-04-19 11:17:26,097 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-19 11:17:26,178 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001042026_3_20260419_111726.pdf
+2026-04-19 11:22:18,851 - app.main - INFO - Generating and downloading pdf for invoice FR KA001042026/1
+2026-04-19 11:22:18,856 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-04-19 11:22:18,859 - app.main - INFO - PDF Download Layout requested: None
+2026-04-19 11:22:18,860 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-19 11:22:18,864 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR KA001042026/1
+2026-04-19 11:22:18,942 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-19 11:22:19,001 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR KA001042026_1_20260419_112218.pdf
+2026-04-19 13:11:34,862 - app.main - INFO - Cleanup task completed
+2026-04-19 12:12:04,079 - app.main - INFO - Cleanup task completed
+2026-04-19 13:01:09,467 - app.main - INFO - Generating and downloading pdf for invoice FR KA001042026/2
+2026-04-19 13:01:09,478 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-04-19 13:01:09,479 - app.main - INFO - PDF Download Layout requested: None
+2026-04-19 13:01:09,480 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-19 13:01:09,549 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR KA001042026/2
+2026-04-19 13:01:09,806 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-19 13:01:10,001 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR KA001042026_2_20260419_130109.pdf
+2026-04-19 14:11:34,890 - app.main - INFO - Cleanup task completed
+2026-04-19 13:12:05,052 - app.main - INFO - Cleanup task completed
+2026-04-21 18:44:01,397 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-22 19:46:05,529 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-22 20:47:22,471 - app.main - INFO - Cleanup task completed
+2026-04-22 21:48:16,482 - app.main - INFO - Cleanup task completed
+2026-04-25 08:16:59,885 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-25 09:16:59,952 - app.main - INFO - Cleanup task completed
+2026-04-25 10:16:59,983 - app.main - INFO - Cleanup task completed
+2026-04-25 11:17:00,009 - app.main - INFO - Cleanup task completed
+2026-04-25 12:16:58,685 - app.main - INFO - Cleanup task completed
+2026-04-25 13:16:17,244 - app.main - INFO - Cleanup task completed
+2026-04-25 14:15:04,539 - app.main - INFO - Cleanup task completed
+2026-04-25 15:13:40,177 - app.main - INFO - Cleanup task completed
+2026-04-25 16:12:17,206 - app.main - INFO - Cleanup task completed
+2026-04-25 17:11:06,091 - app.main - INFO - Cleanup task completed
+2026-04-25 18:09:21,134 - app.main - INFO - Cleanup task completed
+2026-04-25 19:07:19,694 - app.main - INFO - Cleanup task completed
+2026-04-25 20:05:05,674 - app.main - INFO - Cleanup task completed
+2026-04-25 21:02:39,754 - app.main - INFO - Cleanup task completed
+2026-04-25 21:43:41,673 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/1
+2026-04-25 21:43:41,694 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-25 21:43:41,695 - app.main - INFO - PDF Download Layout requested: None
+2026-04-25 21:43:41,698 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-25 21:43:41,766 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/1
+2026-04-25 21:43:42,637 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-25 21:43:42,734 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001042026_1_20260425_214341.pdf
+2026-04-25 22:00:03,787 - app.main - INFO - Cleanup task completed
+2026-04-25 22:26:20,929 - app.main - INFO - Generating and downloading pdf for invoice FR MI001042026/1
+2026-04-25 22:26:21,330 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-04-25 22:26:21,482 - app.main - INFO - PDF Download Layout requested: None
+2026-04-25 22:26:21,493 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-25 22:26:22,088 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001042026/1
+2026-04-25 22:26:22,903 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-25 22:26:23,137 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001042026_1_20260425_222622.pdf
+2026-04-25 22:52:04,336 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/2
+2026-04-25 22:52:04,353 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-25 22:52:04,358 - app.main - INFO - PDF Download Layout requested: None
+2026-04-25 22:52:04,359 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-25 22:52:04,401 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/2
+2026-04-25 22:52:04,788 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-25 22:52:05,183 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001042026_2_20260425_225204.pdf
+2026-04-25 22:57:17,289 - app.main - INFO - Cleanup task completed
+2026-04-27 22:22:48,052 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-04-27 22:28:26,398 - app.main - INFO - Generating and downloading pdf for invoice FT MI001042026/3
+2026-04-27 22:28:26,405 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-04-27 22:28:26,409 - app.main - INFO - PDF Download Layout requested: None
+2026-04-27 22:28:26,411 - app.main - INFO - Using standard PDFGenerator for download
+2026-04-27 22:28:26,450 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001042026/3
+2026-04-27 22:28:26,732 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-04-27 22:28:26,798 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001042026_3_20260427_222826.pdf
+2026-05-01 19:33:43,747 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-01 19:40:49,647 - app.main - INFO - Generating and downloading pdf for invoice FT MI001052026/1
+2026-05-01 19:40:49,653 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-05-01 19:40:49,656 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 19:40:49,659 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 19:40:49,707 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT MI001052026/1
+2026-05-01 19:40:50,089 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 19:40:50,210 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT MI001052026_1_20260501_194049.pdf
+2026-05-01 19:46:52,736 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/1
+2026-05-01 19:46:52,757 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 19:46:52,766 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 19:46:52,770 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 19:46:52,842 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/1
+2026-05-01 19:46:53,165 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 19:46:53,449 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_1_20260501_194652.pdf
+2026-05-01 19:52:50,166 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/2
+2026-05-01 19:52:50,181 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 19:52:50,183 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 19:52:50,186 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 19:52:50,235 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/2
+2026-05-01 19:52:50,579 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 19:52:50,832 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_2_20260501_195250.pdf
+2026-05-01 20:02:16,440 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/3
+2026-05-01 20:02:16,457 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 20:02:16,461 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 20:02:16,468 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 20:02:15,280 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/3
+2026-05-01 20:02:15,591 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 20:02:15,783 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_3_20260501_200215.pdf
+2026-05-01 20:28:05,121 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/4
+2026-05-01 20:28:05,124 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 20:28:05,125 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 20:28:05,126 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 20:28:05,131 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/4
+2026-05-01 20:28:05,287 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 20:28:05,399 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_4_20260501_202805.pdf
+2026-05-01 20:31:40,575 - app.main - INFO - Cleanup task completed
+2026-05-01 20:34:01,592 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/5
+2026-05-01 20:34:01,593 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 20:34:01,594 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 20:34:01,595 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 20:34:01,603 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/5
+2026-05-01 20:34:01,652 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 20:34:01,695 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_5_20260501_203401.pdf
+2026-05-01 20:35:06,118 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/6
+2026-05-01 20:35:06,122 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 20:35:06,123 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 20:35:06,123 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 20:35:06,141 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/6
+2026-05-01 20:35:06,224 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 20:35:06,298 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_6_20260501_203506.pdf
+2026-05-01 20:45:10,046 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/7
+2026-05-01 20:45:10,061 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 20:45:10,062 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 20:45:10,067 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 20:45:10,096 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/7
+2026-05-01 20:45:10,351 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 20:45:10,493 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_7_20260501_204510.pdf
+2026-05-01 20:51:25,745 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/8
+2026-05-01 20:51:25,747 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 20:51:25,756 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 20:51:25,758 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 20:51:25,780 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/8
+2026-05-01 20:51:26,083 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 20:51:26,229 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_8_20260501_205125.pdf
+2026-05-01 20:57:34,750 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/9
+2026-05-01 20:57:34,756 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 20:57:34,777 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 20:57:34,799 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 20:57:34,850 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/9
+2026-05-01 20:57:35,018 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 20:57:35,147 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_9_20260501_205734.pdf
+2026-05-01 20:59:21,109 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/10
+2026-05-01 20:59:21,109 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 20:59:21,110 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 20:59:21,111 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 20:59:21,123 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/10
+2026-05-01 20:59:21,235 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 20:59:21,478 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_10_20260501_205921.pdf
+2026-05-01 21:29:25,655 - app.main - INFO - Cleanup task completed
+2026-05-01 21:35:14,417 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/11
+2026-05-01 21:35:14,422 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 21:35:14,423 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 21:35:14,424 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 21:35:14,444 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/11
+2026-05-01 21:35:14,540 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 21:35:14,612 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_11_20260501_213514.pdf
+2026-05-01 21:40:38,161 - app.main - INFO - Generating and downloading pdf for invoice FR MI001052026/12
+2026-05-01 21:40:38,163 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 21:40:38,163 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 21:40:38,164 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 21:40:38,178 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR MI001052026/12
+2026-05-01 21:40:38,291 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 21:40:38,371 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR MI001052026_12_20260501_214038.pdf
+2026-05-01 22:26:37,728 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/2
+2026-05-01 22:26:37,741 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-01 22:26:37,741 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 22:26:37,741 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 22:26:37,757 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR FR7826S3840N/2
+2026-05-01 22:26:38,012 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 22:26:38,105 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR FR7826S3840N_2_20260501_222637.pdf
+2026-05-01 22:26:44,572 - app.main - INFO - Cleanup task completed
+2026-05-01 22:29:06,411 - app.main - INFO - Generating and downloading pdf for invoice FT FT7826S6556N/2
+2026-05-01 22:29:06,415 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-05-01 22:29:06,419 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 22:29:06,425 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 22:29:06,443 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT FT7826S6556N/2
+2026-05-01 22:29:06,512 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 22:29:06,564 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT FT7826S6556N_2_20260501_222906.pdf
+2026-05-01 22:51:28,493 - app.main - INFO - Generating and downloading pdf for invoice FT FT7826S6556N/3
+2026-05-01 22:51:28,505 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-05-01 22:51:28,505 - app.main - INFO - PDF Download Layout requested: None
+2026-05-01 22:51:28,506 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-01 22:51:28,543 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT FT7826S6556N/3
+2026-05-01 22:51:28,816 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-01 22:51:28,916 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT FT7826S6556N_3_20260501_225128.pdf
+2026-05-01 23:23:51,302 - app.main - INFO - Cleanup task completed
+2026-05-03 15:46:37,102 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-03 16:46:41,849 - app.main - INFO - Cleanup task completed
+2026-05-03 17:46:41,872 - app.main - INFO - Cleanup task completed
+2026-05-03 18:19:19,818 - app.main - INFO - Generating and downloading pdf for invoice FT FT7826S6556N/4
+2026-05-03 18:19:19,821 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-05-03 18:19:19,821 - app.main - INFO - PDF Download Layout requested: None
+2026-05-03 18:19:19,821 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-03 18:19:19,845 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT FT7826S6556N/4
+2026-05-03 18:19:20,037 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-03 18:19:20,084 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT FT7826S6556N_4_20260503_181919.pdf
+2026-05-03 18:38:06,787 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/3
+2026-05-03 18:38:06,789 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-03 18:38:06,790 - app.main - INFO - PDF Download Layout requested: None
+2026-05-03 18:38:06,791 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-03 18:38:06,807 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR FR7826S3840N/3
+2026-05-03 18:38:06,946 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-03 18:38:07,022 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR FR7826S3840N_3_20260503_183806.pdf
+2026-05-03 18:46:41,898 - app.main - INFO - Cleanup task completed
+2026-05-04 00:00:38,718 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-04 17:48:02,375 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-04 18:52:05,682 - app.main - INFO - Cleanup task completed
+2026-05-04 19:56:12,651 - app.main - INFO - Cleanup task completed
+2026-05-04 21:00:09,330 - app.main - INFO - Cleanup task completed
+2026-05-04 22:03:34,893 - app.main - INFO - Cleanup task completed
+2026-05-04 23:06:38,520 - app.main - INFO - Cleanup task completed
+2026-05-05 19:53:36,613 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-09 10:21:27,472 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-09 11:23:49,296 - app.main - INFO - Cleanup task completed
+2026-05-09 12:26:13,389 - app.main - INFO - Cleanup task completed
+2026-05-09 13:28:23,473 - app.main - INFO - Cleanup task completed
+2026-05-09 14:30:23,617 - app.main - INFO - Cleanup task completed
+2026-05-09 15:26:49,232 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/3
+2026-05-09 15:26:49,235 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-09 15:26:49,235 - app.main - INFO - PDF Download Layout requested: None
+2026-05-09 15:26:49,235 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-09 15:26:49,252 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR FR7826S3840N/3
+2026-05-09 15:26:49,487 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR FR7826S3840N_3_20260509_152649.pdf
+2026-05-09 15:31:58,704 - app.main - INFO - Cleanup task completed
+2026-05-09 15:38:47,886 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/5
+2026-05-09 15:38:47,893 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-09 15:38:47,896 - app.main - INFO - PDF Download Layout requested: thermal
+2026-05-09 15:38:47,896 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-05-09 16:36:29,599 - app.main - INFO - Cleanup task completed
+2026-05-09 17:42:04,788 - app.main - INFO - Cleanup task completed
+2026-05-10 09:22:12,244 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-10 09:24:37,022 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/6
+2026-05-10 09:24:37,028 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-10 09:24:37,032 - app.main - INFO - PDF Download Layout requested: thermal
+2026-05-10 09:24:37,033 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-05-10 10:27:30,098 - app.main - INFO - Cleanup task completed
+2026-05-10 11:32:55,632 - app.main - INFO - Cleanup task completed
+2026-05-12 19:01:54,466 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-12 20:00:40,868 - app.main - INFO - Cleanup task completed
+2026-05-13 17:41:41,373 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-13 18:43:11,002 - app.main - INFO - Cleanup task completed
+2026-05-13 19:44:38,511 - app.main - INFO - Cleanup task completed
+2026-05-13 20:45:53,769 - app.main - INFO - Cleanup task completed
+2026-05-13 21:47:05,912 - app.main - INFO - Cleanup task completed
+2026-05-16 09:02:46,396 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-16 10:02:46,438 - app.main - INFO - Cleanup task completed
+2026-05-16 11:02:46,460 - app.main - INFO - Cleanup task completed
+2026-05-16 12:02:46,471 - app.main - INFO - Cleanup task completed
+2026-05-16 13:02:46,500 - app.main - INFO - Cleanup task completed
+2026-05-16 14:02:46,525 - app.main - INFO - Cleanup task completed
+2026-05-16 15:02:46,559 - app.main - INFO - Cleanup task completed
+2026-05-16 16:02:00,470 - app.main - INFO - Cleanup task completed
+2026-05-16 17:00:58,594 - app.main - INFO - Cleanup task completed
+2026-05-16 18:00:18,423 - app.main - INFO - Cleanup task completed
+2026-05-16 18:59:34,573 - app.main - INFO - Cleanup task completed
+2026-05-16 19:58:38,861 - app.main - INFO - Cleanup task completed
+2026-05-23 08:05:09,347 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-23 09:02:47,101 - app.main - INFO - Cleanup task completed
+2026-05-23 09:59:57,464 - app.main - INFO - Cleanup task completed
+2026-05-23 10:56:55,378 - app.main - INFO - Cleanup task completed
+2026-05-23 11:53:42,001 - app.main - INFO - Cleanup task completed
+2026-05-23 12:50:23,450 - app.main - INFO - Cleanup task completed
+2026-05-23 13:46:52,820 - app.main - INFO - Cleanup task completed
+2026-05-23 14:43:15,420 - app.main - INFO - Cleanup task completed
+2026-05-23 15:03:01,121 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/8
+2026-05-23 15:03:01,140 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-23 15:03:01,141 - app.main - INFO - PDF Download Layout requested: None
+2026-05-23 15:03:01,142 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-23 15:03:01,161 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR FR7826S3840N/8
+2026-05-23 15:03:01,694 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-23 15:03:01,819 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR FR7826S3840N_8_20260523_150301.pdf
+2026-05-23 15:52:15,643 - app.main - INFO - Cleanup task completed
+2026-05-23 16:54:18,058 - app.main - INFO - Cleanup task completed
+2026-05-23 17:50:20,548 - app.main - INFO - Cleanup task completed
+2026-05-23 19:04:57,003 - app.main - INFO - Cleanup task completed
+2026-05-23 19:38:39,494 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/9
+2026-05-23 19:38:39,512 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-23 19:38:39,518 - app.main - INFO - PDF Download Layout requested: thermal
+2026-05-23 19:38:39,520 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-05-23 21:19:18,448 - app.main - INFO - Cleanup task completed
+2026-05-23 21:36:04,547 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/12
+2026-05-23 21:36:04,565 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-23 21:36:04,568 - app.main - INFO - PDF Download Layout requested: thermal
+2026-05-23 21:36:04,569 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-05-23 21:36:56,503 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/13
+2026-05-23 21:36:56,508 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-23 21:36:56,513 - app.main - INFO - PDF Download Layout requested: thermal
+2026-05-23 21:36:56,520 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-05-23 21:37:48,442 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/14
+2026-05-23 21:37:48,445 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-23 21:37:48,447 - app.main - INFO - PDF Download Layout requested: thermal
+2026-05-23 21:37:48,448 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-05-23 21:42:23,355 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/15
+2026-05-23 21:42:23,360 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-23 21:42:23,365 - app.main - INFO - PDF Download Layout requested: thermal
+2026-05-23 21:42:23,370 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-05-23 21:48:18,011 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/16
+2026-05-23 21:48:18,013 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-23 21:48:18,014 - app.main - INFO - PDF Download Layout requested: thermal
+2026-05-23 21:48:18,015 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-05-23 22:15:01,320 - app.main - INFO - Cleanup task completed
+2026-05-23 22:18:10,085 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/17
+2026-05-23 22:18:10,086 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-23 22:18:10,087 - app.main - INFO - PDF Download Layout requested: thermal
+2026-05-23 22:18:10,088 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-05-23 22:52:44,249 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/18
+2026-05-23 22:52:44,257 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-23 22:52:44,259 - app.main - INFO - PDF Download Layout requested: thermal
+2026-05-23 22:52:44,260 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-05-23 23:01:43,738 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S3840N/19
+2026-05-23 23:01:43,756 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-23 23:01:43,777 - app.main - INFO - PDF Download Layout requested: thermal
+2026-05-23 23:01:43,779 - app.main - INFO - Using ThermalPDFGenerator for download
+2026-05-23 23:10:54,963 - app.main - INFO - Cleanup task completed
+2026-05-24 00:07:18,586 - app.main - INFO - Cleanup task completed
+2026-05-24 14:26:27,843 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-24 15:24:00,349 - app.main - INFO - Cleanup task completed
+2026-05-24 16:21:00,409 - app.main - INFO - Cleanup task completed
+2026-05-24 17:19:21,283 - app.main - INFO - Cleanup task completed
+2026-05-24 18:17:36,049 - app.main - INFO - Cleanup task completed
+2026-05-24 19:15:26,493 - app.main - INFO - Cleanup task completed
+2026-05-30 15:22:13,403 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-30 16:22:13,455 - app.main - INFO - Cleanup task completed
+2026-05-30 17:22:13,485 - app.main - INFO - Cleanup task completed
+2026-05-30 18:22:13,510 - app.main - INFO - Cleanup task completed
+2026-05-30 19:22:13,546 - app.main - INFO - Cleanup task completed
+2026-05-31 07:47:07,797 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-05-31 08:46:00,315 - app.main - INFO - Cleanup task completed
+2026-05-31 09:44:34,838 - app.main - INFO - Cleanup task completed
+2026-05-31 10:42:58,700 - app.main - INFO - Cleanup task completed
+2026-05-31 11:41:14,757 - app.main - INFO - Cleanup task completed
+2026-05-31 12:39:20,959 - app.main - INFO - Cleanup task completed
+2026-05-31 13:37:16,088 - app.main - INFO - Cleanup task completed
+2026-05-31 13:57:16,109 - app.main - INFO - Generating and downloading pdf for invoice FT FT7826S7392N/2
+2026-05-31 13:57:16,112 - app.main - INFO - DEBUG: Document Type: DocumentType.NORMAL_INVOICE (Type: <enum 'DocumentType'>)
+2026-05-31 13:57:16,113 - app.main - INFO - PDF Download Layout requested: None
+2026-05-31 13:57:16,113 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-31 13:57:16,130 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: FT FT7826S7392N/2
+2026-05-31 13:57:16,529 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-31 13:57:16,633 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/NORMAL_INVOICE_FT FT7826S7392N_2_20260531_135716.pdf
+2026-05-31 14:30:54,375 - app.main - INFO - Generating and downloading pdf for invoice FR FR7826S4356N/2
+2026-05-31 14:30:54,382 - app.main - INFO - DEBUG: Document Type: DocumentType.INVOICE_RECEIPT (Type: <enum 'DocumentType'>)
+2026-05-31 14:30:54,383 - app.main - INFO - PDF Download Layout requested: None
+2026-05-31 14:30:54,383 - app.main - INFO - Using standard PDFGenerator for download
+2026-05-31 14:30:54,390 - app.modules.pdf.generator - INFO - Generating PDF for INVOICE_RECEIPT: FR FR7826S4356N/2
+2026-05-31 14:30:54,517 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-05-31 14:30:54,578 - app.modules.pdf.generator - INFO - PDF generated successfully: /app/temp/INVOICE_RECEIPT_FR FR7826S4356N_2_20260531_143054.pdf
+2026-05-31 14:35:00,105 - app.main - INFO - Cleanup task completed
+2026-05-31 15:32:35,070 - app.main - INFO - Cleanup task completed
+2026-05-31 16:30:30,188 - app.main - INFO - Cleanup task completed
+2026-05-31 17:30:29,018 - app.main - INFO - Cleanup task completed
+2026-05-31 18:30:29,049 - app.main - INFO - Cleanup task completed
+2026-05-31 19:30:29,084 - app.main - INFO - Cleanup task completed
+2026-05-31 20:30:28,233 - app.main - INFO - Cleanup task completed
+2026-06-01 19:50:00,881 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-06-01 19:50:39,965 - app.main - INFO - MindGest Document Generator shutting down...
+2026-06-01 19:51:46,076 - app.main - INFO - MindGest Document Generator v1.0.0 starting...
+2026-06-01 19:53:00,004 - app.main - INFO - Generating and downloading pdf for invoice INV-1001
+2026-06-01 19:53:00,005 - app.modules.pdf.generator - INFO - Generating PDF for NORMAL_INVOICE: INV-1001
+2026-06-01 19:53:00,081 - app.modules.pdf.generator - WARNING - Failed to overlay logo on QR code: unrecognized image mode
+2026-06-01 19:53:00,108 - app.modules.pdf.generator - INFO - PDF generated successfully: C:\Users\GTIMINDCOM\Documents\GitHub\mindgest-pos-desktop\python-microservice\temp\NORMAL_INVOICE_INV-1001_20260601_195300.pdf
+2026-06-01 19:53:00,618 - app.main - INFO - Generating and downloading pdf for invoice INV-1002

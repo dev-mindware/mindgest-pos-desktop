@@ -5,6 +5,7 @@ import { usePagination } from "../common/use-pagination";
 import { ItemResponse } from "@/types/items";
 import { useMindPricingConfig } from "../pos";
 import { useState, useEffect } from "react";
+import { currentStoreStore } from "@/stores";
 
 export function useGetItems(params?: {
   search?: string;
@@ -29,68 +30,67 @@ export function useGetItems(params?: {
   const { isMindPricingEnabled, triggerPricingRecalculation } =
     useMindPricingConfig();
   const [items, setItems] = useState<any[]>([]);
+  const { currentStore } = currentStoreStore();
 
-  useEffect(() => {
-    async function loadItems() {
-      // If MIND features are Disabled, skip SQLite completely
-      if (!isMindPricingEnabled) {
-        setItems(data?.data || []);
-        return;
-      }
+  async function loadItems() {
+    let localItems: any[] = [];
 
-      // If MIND features are Enabled, intercept data and use DB as source of truth for dynamic prices
-      if (typeof window !== "undefined" && window.ipc?.db?.getCachedProducts) {
-        try {
-          const fetchedItems = Array.isArray(data)
-            ? data
-            : data?.data || data?.items;
+    if (typeof window !== "undefined" && window.ipc?.sync?.searchItems) {
+      try {
+        localItems = await window.ipc.sync.searchItems({
+          search: params?.search,
+          categoryId: params?.categoryId,
+          storeId: currentStore?.id,
+        });
 
-          if (
-            fetchedItems &&
-            Array.isArray(fetchedItems) &&
-            fetchedItems.length > 0
-          ) {
-            await window.ipc.db.updateProductsCache(fetchedItems);
-            await triggerPricingRecalculation(); // Tell Python microservice to crunch new prices
-          }
-
-          // Delay slightly to let the background job finish replacing prices
-          setTimeout(async () => {
-            let cached = await window.ipc.db.getCachedProducts();
-            if (cached && cached.length > 0) {
-              // Apply search filters
-              if (params?.search) {
-                const searchLower = params.search.toLowerCase();
-                cached = cached.filter(
-                  (c: any) =>
-                    c.name?.toLowerCase().includes(searchLower) ||
-                    c.reference?.toLowerCase().includes(searchLower) ||
-                    c.barcode?.toLowerCase().includes(searchLower),
-                );
-              }
-              if (params?.categoryId) {
-                cached = cached.filter(
-                  (c: any) => c.categoryId === params.categoryId,
-                );
-              }
-              setItems(cached);
-              return;
-            }
-          }, 300); // 300ms breather
+        if (localItems && localItems.length > 0) {
+          console.log(`🔁 [POS] Carregando itens locais: ${localItems.length} items encontrados`);
+          setItems(localItems);
           return;
-        } catch (e) {
-          console.error("Error loading cached MIND priced products", e);
         }
+      } catch (e) {
+        console.error("Erro na busca local:", e);
       }
-
-      // Final fallback
-      setItems(data?.data || []);
     }
 
-    loadItems();
-  }, [data, params?.search, params?.categoryId, isMindPricingEnabled]);
+    if (data?.data || data?.items) {
+      const fetchedItems = data?.data || data?.items || [];
+      if (fetchedItems.length > 0) {
+        console.log(`🌐 [POS] Carregando itens da Cloud: ${fetchedItems.length} items encontrados`);
+        setItems(fetchedItems);
+      }
+    } else if (!isLoading && items.length === 0) {
+      setItems([]);
+    }
+  }
 
-  return { items, error, isLoading, refetch };
+  useEffect(() => {
+    loadItems();
+
+    const handleStockUpdate = () => {
+      console.log("🔄 [POS] Evento 'local-stock-updated' recebido. Recarregando itens...");
+      loadItems();
+    };
+
+    const handleLocalDataUpdated = () => {
+      console.log("🔄 [Sync] Evento 'local-data-updated' recebido. Recarregando itens locais...");
+      loadItems();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("local-stock-updated", handleStockUpdate);
+      window.addEventListener("local-data-updated", handleLocalDataUpdated);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("local-stock-updated", handleStockUpdate);
+        window.removeEventListener("local-data-updated", handleLocalDataUpdated);
+      }
+    };
+  }, [data, isLoading, params?.search, params?.categoryId, currentStore?.id]);
+
+  return { items, error, isLoading, refetch: loadItems };
 }
 
 export function useGetItemsPaginated(

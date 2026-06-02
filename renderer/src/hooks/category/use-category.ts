@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePagination } from "../common/use-pagination";
 import { Category, CategoryData, CategoryResponse } from "@/types/category";
@@ -57,6 +58,8 @@ export function useToggleStatusCategory() {
 
 export function useGetCategories() {
   const { currentStore } = currentStoreStore();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLocalLoading, setIsLocalLoading] = useState(true);
 
   const pagination = usePagination<Category>({
     endpoint: "/categories",
@@ -67,7 +70,52 @@ export function useGetCategories() {
     enabled: !!currentStore?.id,
   });
 
-  const categoryOptions = pagination.data.map((category) => ({
+  const loadLocalCategories = async () => {
+    if (typeof window === "undefined" || !window.ipc?.sync?.getCategories || !currentStore?.id) {
+      setCategories(pagination.data);
+      setIsLocalLoading(false);
+      return;
+    }
+
+    setIsLocalLoading(true);
+    try {
+      const localCategories = await window.ipc.sync.getCategories({ storeId: currentStore.id });
+      if (localCategories && localCategories.length > 0) {
+        console.log(`🔁 [POS] Carregando categorias locais: ${localCategories.length}`);
+        setCategories(localCategories);
+      } else {
+        console.log(`🌐 [POS] Sem categorias locais — usando dados da Cloud: ${pagination.data?.length || 0}`);
+        setCategories(pagination.data);
+      }
+    } catch (error) {
+      console.error("❌ [Hook] Erro ao carregar categorias locais:", error);
+      setCategories(pagination.data);
+    } finally {
+      setIsLocalLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLocalCategories();
+  }, [currentStore?.id, pagination.data]);
+
+  useEffect(() => {
+    const handleLocalDataUpdated = () => {
+      loadLocalCategories();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("local-data-updated", handleLocalDataUpdated);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("local-data-updated", handleLocalDataUpdated);
+      }
+    };
+  }, [currentStore?.id]);
+
+  const categoryOptions = categories.map((category) => ({
     label: category.name,
     value: category.id,
   }));
@@ -75,7 +123,8 @@ export function useGetCategories() {
   return {
     ...pagination,
     categoryOptions,
-    categories: pagination.data,
+    categories,
+    isLoading: pagination.isLoading || isLocalLoading,
     // Backward compatibility
     error: pagination.isError,
     pagination: {

@@ -1,11 +1,12 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateInvoiceReceipt, useCreateProforma } from "@/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 import { currentStoreStore, useAuthStore, useModal } from "@/stores";
 import { ErrorMessage, formatCurrency, parseCurrency } from "@/utils";
-import { useInvoiceTotals, useClientSelection } from "@/hooks/invoice";
+import { useClientSelection } from "@/hooks/invoice";
 import { PosSalesFormData, PosSalesSchema } from "@/schemas";
 import { Product } from "@/types";
 
@@ -31,13 +32,16 @@ export function useCartCheckout({
   const { user } = useAuthStore();
   const { currentStore } = currentStoreStore();
   const { openModal } = useModal();
+  const queryClient = useQueryClient();
 
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("Credit Card");
   const [cashGiven, setCashGiven] = useState<number | "">("");
   const [change, setChange] = useState<number>(0);
 
+
   const [isCustomerExpanded, setIsCustomerExpanded] = useState(false);
+  const [newCustomerNif, setNewCustomerNif] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<PosSalesFormData | null>(
@@ -74,36 +78,63 @@ export function useCartCheckout({
     useClientSelection(setValue);
 
   const watchedItems = watch("items") as any[];
-  const totals = useInvoiceTotals({
-    items: watchedItems || [],
-    retention: 0,
-    discount: 0, // POS não usa desconto global
-  });
+
+  const cartTotals = useMemo(() => {
+    const subtotal = cartItems.reduce((acc, item) => {
+      const price = Number(item.price) || 0;
+      const qty = Number(item.qty) || 0;
+      return acc + price * qty;
+    }, 0);
+
+    const discountAmount = 0;
+    const taxAmount = cartItems.reduce((acc, item) => {
+      const price = Number(item.price) || 0;
+      const qty = Number(item.qty) || 0;
+      const rate = Number(item.tax?.rate ?? (item as any).taxPercent ?? 0) || 0;
+      return acc + price * qty * (rate / 100);
+    }, 0);
+
+    const total = subtotal + taxAmount - discountAmount;
+
+    return {
+      subtotal: Number(subtotal.toFixed(2)),
+      taxAmount: Number(taxAmount.toFixed(2)),
+      discountAmount: Number(discountAmount.toFixed(2)),
+      total: Number(total.toFixed(2)),
+    };
+  }, [cartItems]);
+
+  const totals = cartTotals;
 
   // Synchronize cartItems with form items
   useEffect(() => {
     const items = cartItems.map((item) => ({
-      id: item.id,
-      description: item.name,
-      type: "PRODUCT" as const,
+      id: (item as any).cloudId || item.id,
       quantity: item.qty,
-      unitPrice: item.price || 0,
-      tax: Number((item as any).tax?.rate || (item as any).taxRate || 0), // ✅ Convert string to number
-      discount: 0,
-      total: (item.price || 0) * item.qty,
-      isFromAPI: true,
     }));
 
-    setValue("items", items as any, { shouldValidate: true });
-  }, [cartItems, setValue]);
+    const sameItems =
+      items.length === watchedItems.length &&
+      items.every((item, index) => {
+        const watched = watchedItems[index];
+        return watched?.id === item.id && watched?.quantity === item.quantity;
+      });
+
+    if (sameItems) {
+      return;
+    }
+
+    console.log("✅ [CartCheckout] Items synced to form (with cloudId as id):", items);
+    setValue("items", items as any, { shouldValidate: false });
+  }, [cartItems, setValue, watchedItems]);
 
   // Synchronize totals to form state
   useEffect(() => {
-    setValue("total", totals.total);
-    setValue("subtotal", totals.subtotal);
-    setValue("taxAmount", totals.taxAmount);
-    setValue("discountAmount", totals.discountAmount);
-  }, [totals, setValue]);
+    setValue("total", cartTotals.total);
+    setValue("subtotal", cartTotals.subtotal);
+    setValue("taxAmount", cartTotals.taxAmount);
+    setValue("discountAmount", cartTotals.discountAmount);
+  }, [cartTotals, setValue]);
 
   // Synchronize payment method
   useEffect(() => {
@@ -127,7 +158,7 @@ export function useCartCheckout({
   useEffect(() => {
     if (paymentMethod === "Cash") {
       const cash = typeof cashGiven === "number" ? cashGiven : 0;
-      const changeVal = cash >= totals.total ? cash - totals.total : 0;
+      const changeVal = cash >= cartTotals.total ? cash - cartTotals.total : 0;
       const safeChange = isNaN(changeVal) ? 0 : Number(changeVal.toFixed(2));
 
       setChange(safeChange);
@@ -135,10 +166,10 @@ export function useCartCheckout({
       setValue("change", safeChange, { shouldValidate: true });
     } else {
       setChange(0);
-      setValue("receivedValue", totals.total);
+      setValue("receivedValue", cartTotals.total);
       setValue("change", 0, { shouldValidate: true });
     }
-  }, [cashGiven, totals.total, paymentMethod, setValue]);
+  }, [cashGiven, cartTotals.total, paymentMethod, setValue]);
 
   const handleQuickCash = (amount: number) => {
     setCashGiven(amount);
@@ -157,17 +188,53 @@ export function useCartCheckout({
       return;
     }
 
-    // Prepare payload
-    const simplifiedItems = data.items.map((item: any) => ({
-      id: item.id,
-      quantity: item.quantity,
-    }));
+    const simplifiedItems = await Promise.all(
+      cartItems.map(async (item) => {
+        const cloudId = (item as any).cloudId ||
+          (typeof window !== "undefined" && window.ipc?.db?.getItemCloudId
+            ? await window.ipc.db.getItemCloudId(item.id)
+            : item.id);
+
+        if (!cloudId) {
+          console.warn(
+            "⚠️ [CartCheckout] Não foi possível resolver cloudId para o item:",
+            item.id,
+          );
+        }
+
+        return {
+          id: cloudId,
+          quantity: item.qty,
+        };
+      }),
+    );
+
+    console.log("✅ [CartCheckout] Items ready for cloud (id=cloudId):", simplifiedItems);
+
+    let finalClient = undefined;
+    if (data.client && (data.client.id || (data.client.name && data.client.name.trim() !== ""))) {
+      const c: any = {};
+      if (data.client.id) c.id = data.client.id;
+      if (data.client.name && data.client.name.trim() !== "") c.name = data.client.name.trim();
+      if (data.client.phone && data.client.phone.trim() !== "") c.phone = data.client.phone.trim();
+      if (data.client.email && data.client.email.trim() !== "") c.email = data.client.email.trim();
+      if (data.client.address && data.client.address.trim() !== "") c.address = data.client.address.trim();
+      if (data.client.taxNumber && data.client.taxNumber.trim() !== "") c.taxNumber = data.client.taxNumber.trim();
+      if (data.client.nif && data.client.nif.trim() !== "") c.nif = data.client.nif.trim();
+
+      if (Object.keys(c).length > 0) finalClient = c;
+    }
 
     const payload: PosSalesFormData = {
       ...data,
       items: simplifiedItems,
-      client: data.client,
+      client: finalClient,
       storeId: currentStore?.id || user?.store?.id || data.storeId,
+      subtotal: cartTotals.subtotal,
+      taxAmount: cartTotals.taxAmount,
+      documentType: "FR",
+      discountAmount: cartTotals.discountAmount,
+      total: cartTotals.total,
       change:
         typeof data.change === "number" && !isNaN(data.change)
           ? Number(data.change.toFixed(2))
@@ -175,22 +242,42 @@ export function useCartCheckout({
       cashSessionId,
     };
 
-    if (!payload.storeId) {
-      ErrorMessage("Loja não identificada. Recarregue a página.");
-      return;
+    // If creating a new anonymous customer by phone/NIF, build minimal client object
+    if ((!selectedClient || selectedClient.__isNew__) && (newCustomerPhone || newCustomerNif)) {
+      payload.client = payload.client || {};
+      payload.client.name = payload.client.name || "Consumidor Final";
+
+      if (newCustomerPhone && typeof newCustomerPhone === "string" && newCustomerPhone.trim() !== "") {
+        payload.client.phone = newCustomerPhone.trim();
+      }
+
+      if (newCustomerNif && typeof newCustomerNif === "string" && newCustomerNif.trim() !== "") {
+        // prefer taxNumber field used elsewhere
+        payload.client.taxNumber = newCustomerNif.trim();
+      }
+
+      // sensible defaults (do not include if empty)
+      if (!payload.client.email) delete payload.client.email;
+      if (!payload.client.address) delete payload.client.address;
     }
 
-    // Custom adjustments for client
-    if (!selectedClient && newCustomerPhone) {
-      payload.client = {
-        name: "Consumidor Final",
-        phone: newCustomerPhone,
-        email: "consumidor@final.com",
-        address: "Loja",
-        taxNumber: "999999999",
-      };
+    // Remove any empty string / null / undefined fields from client before sending
+    if (payload.client) {
+      for (const k of Object.keys(payload.client)) {
+        const v = (payload.client as any)[k];
+        if (v === undefined || v === null || (typeof v === "string" && v.trim() === "")) {
+          delete (payload.client as any)[k];
+        }
+      }
+      if (Object.keys(payload.client).length === 0) {
+        delete (payload as any).client;
+      }
     }
 
+    if (payload.receivedValue === 0) {
+      delete (payload as any).receivedValue;
+    }
+    
     setPendingPayload(payload);
     setIsPreviewOpen(true);
   };
@@ -202,13 +289,14 @@ export function useCartCheckout({
       console.log("FINAL PAYLOAD:", JSON.stringify(pendingPayload, null, 2));
       if (type === "invoice") {
         const response = await createInvoiceReceipt(pendingPayload as any);
-        const invoiceId = response?.data?.id;
+        const invoiceId = response?.data?.id || response?.localId;
 
         if (invoiceId) {
           openModal("document-success", {
             id: invoiceId,
             type: "invoice-receipt",
             format: "thermal",
+            payload: pendingPayload,
           });
         }
       } else {
@@ -230,7 +318,34 @@ export function useCartCheckout({
             id: proformaId,
             type: "proforma",
             format: "thermal",
+            payload: pendingPayload,
           });
+        }
+      }
+
+      // NOVIDADE: Reduzir o stock localmente no SQLite para atualizar a UI do POS imediatamente
+      if (typeof window !== "undefined" && window.ipc?.sync?.reduceLocalStock) {
+        try {
+          const stockItems = cartItems.map(item => ({ id: item.id, quantity: item.qty }));
+          await window.ipc.sync.reduceLocalStock(stockItems);
+          console.log("✅ Stock local descontado com sucesso.");
+
+          // Disparar evento para atualizar a UI em tempo real
+          window.dispatchEvent(new CustomEvent("local-stock-updated"));
+
+          // Invalidate React Query caches to trigger real-time UI refresh
+          queryClient.invalidateQueries({
+            predicate: (query) => {
+              const key = query.queryKey[0];
+              return typeof key === "string" && (
+                key.startsWith("items-for-pos") ||
+                key.includes("items") ||
+                key.includes("products")
+              );
+            }
+          });
+        } catch (stockErr) {
+          console.error("❌ Erro ao descontar stock local:", stockErr);
         }
       }
 
@@ -261,6 +376,8 @@ export function useCartCheckout({
     setIsCustomerExpanded,
     newCustomerPhone,
     setNewCustomerPhone,
+    newCustomerNif,
+    setNewCustomerNif,
     selectedClient,
     handleClientChange,
     handleQuickCash,

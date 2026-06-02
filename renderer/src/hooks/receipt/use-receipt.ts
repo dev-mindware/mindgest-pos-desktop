@@ -3,41 +3,190 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoiceReceiptService } from "@/services/invoice-receipt-service";
 import { InvoiceReceiptPayload } from "@/types";
 import { useNetworkStatus } from "../common/use-network-status";
-import { useOfflineStore } from "@/stores/offline/offline-store";
 import { useAuth } from "../auth/use-auth";
+
+type CreateInvoiceReceiptResult =
+  | {
+      offline: false;
+      data: any;
+      status: number;
+      statusText: string;
+      localId?: string;
+      localPayload?: any;
+    }
+  | {
+      offline: true;
+      syncPending: true;
+      localId?: string;
+      localPayload?: any;
+      error?: string;
+      data?: undefined;
+      status?: undefined;
+      statusText?: undefined;
+    };
+
+async function resolveClientCloudId(client: any): Promise<string | null> {
+  if (!client?.id || typeof window === "undefined" || !window.ipc?.db?.getClientCloudId) {
+    return null;
+  }
+
+  try {
+    const cloudId = await window.ipc.db.getClientCloudId({
+      id: client.id,
+      nif: client.taxNumber || client.nif,
+      email: client.email,
+    });
+    return cloudId || null;
+  } catch (error) {
+    console.warn("⚠️ [Receipt] Falha ao resolver cloudId do cliente:", error);
+    return null;
+  }
+}
+
+function buildCloudClientPayload(client: any, cloudId: string | null) {
+  const name = client?.name?.trim();
+  const hasCloudId = Boolean(cloudId);
+  if (!hasCloudId && !name) {
+    return undefined;
+  }
+
+  const payload: any = {};
+  if (hasCloudId) payload.id = cloudId;
+  if (name) payload.name = name;
+  if (client.phone?.trim()) payload.phone = client.phone.trim();
+  if (client.email?.trim()) payload.email = client.email.trim();
+  if (client.address?.trim()) payload.address = client.address.trim();
+  const taxNumber = client.taxNumber?.trim() || client.nif?.trim();
+  if (taxNumber) payload.taxNumber = taxNumber;
+  return payload;
+}
+
+async function buildCloudInvoicePayload(data: InvoiceReceiptPayload) {
+  const clientCloudId = data.client ? await resolveClientCloudId(data.client as any) : null;
+  const client = data.client ? buildCloudClientPayload(data.client as any, clientCloudId) : undefined;
+
+  const items = await Promise.all(
+    (data.items || []).map(async (item: any) => {
+      let id = item.id;
+      if (typeof window !== "undefined" && window.ipc?.db?.getItemCloudId && item.id) {
+        try {
+          id = await window.ipc.db.getItemCloudId(item.id);
+        } catch (error) {
+          console.warn("⚠️ [Receipt] Falha ao resolver cloudId do item:", error);
+        }
+      }
+      return { ...item, id };
+    }),
+  );
+
+  const {documentType, ...restData} = data as any; // Exclude documentType if it exists, as cloud API might not expect it
+
+  const payload: any = {
+    ...restData,
+    items,
+  };
+
+  if (client) {
+    payload.client = client;
+  } else {
+    delete payload.client;
+  }
+
+  return payload;
+}
 
 export function useCreateInvoiceReceipt() {
   const queryClient = useQueryClient();
-  const { isOnline } = useNetworkStatus();
-  const { addDocument } = useOfflineStore();
   const { user } = useAuth();
+  const { isOnline } = useNetworkStatus();
 
-  return useMutation({
+  return useMutation<CreateInvoiceReceiptResult, unknown, InvoiceReceiptPayload>({
     mutationFn: async (data: InvoiceReceiptPayload) => {
-      if (!isOnline) {
-        // Document creation is now async due to SQLite IPC bridge
-        const internalId = await addDocument(
-          {
-            type: "invoice-receipt",
-            payload: data as any,
-          },
-          user?.id || "unknown",
-        );
-
-        // Return mock response for offline
-        return { data: { id: internalId, offline: true } };
+      if (!user?.id) {
+        throw new Error("Usuário não autenticado para criar a fatura.");
       }
-      return invoiceReceiptService.createInvoiceReceipt(data);
+
+      console.log("📝 [Receipt] Criar fatura recibo. Online:", isOnline);
+      console.log("📝 [Receipt] Payload items:", data.items?.map((i: any) => ({ id: i.id, cloudId: i.cloudId, qty: i.quantity })));
+
+      // 1. Always save locally first (online or offline)
+      let localSaveResult: any = null;
+      let localId: string | undefined = undefined;
+      const localPayload = data;
+
+      if (typeof window !== "undefined" && window.ipc?.sync?.createInvoice) {
+        const storeId = data.storeId || (user as any)?.store?.id || (user as any)?.storeId || "";
+        try {
+          localSaveResult = await window.ipc.sync.createInvoice({
+            invoiceData: data,
+            storeId,
+            userId: user.id,
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              storeId: user.storeId || (user as any)?.store?.id,
+            },
+          });
+
+          localId = localSaveResult?.data?.id || localSaveResult?.id;
+          console.log("✅ [Receipt] Fatura salva localmente", { localId });
+        } catch (localError) {
+          console.error("❌ [Receipt] Erro ao salvar localmente:", localError);
+          throw localError;
+        }
+      }
+
+      // 2. If online, send immediately to cloud
+      if (isOnline) {
+        try {
+          const cloudPayload = await buildCloudInvoicePayload(data);
+          console.log("🌐 [Receipt] Enviando para cloud...", JSON.stringify(cloudPayload, null, 2));
+          const cloudResponse = await invoiceReceiptService.createInvoiceReceipt(cloudPayload);
+          console.log("✅ [Receipt] Fatura enviada para cloud com sucesso");
+          return {
+            offline: false,
+            data: cloudResponse.data,
+            status: cloudResponse.status,
+            statusText: cloudResponse.statusText,
+            localId,
+            localPayload,
+          };
+        } catch (cloudError: any) {
+          console.warn("⚠️ [Receipt] Falha ao enviar para cloud, mas fatura foi salva localmente:", cloudError?.message);
+          // Continue even if cloud fails - invoice is local and will sync later
+          return {
+            offline: true,
+            syncPending: true,
+            localId,
+            localPayload,
+            error: cloudError?.message,
+          };
+        }
+      } else {
+        console.log("📱 [Receipt] Offline - fatura salva localmente, será sincronizada depois");
+        return {
+          offline: true,
+          syncPending: true,
+          localId,
+          localPayload,
+        };
+      }
     },
     onSuccess: (response) => {
       const isOffline = (response as any)?.offline;
-      SucessMessage(
-        isOffline
-          ? "Fatura Recibo salva localmente!"
-          : "Fatura Recibo criada com sucesso!",
-      );
+      const isSyncPending = (response as any)?.syncPending;
+      
+      if (isOffline && isSyncPending) {
+        SucessMessage("Fatura Recibo salva localmente e será sincronizada quando online!");
+      } else if (isOffline) {
+        SucessMessage("Fatura Recibo salva localmente!");
+      } else {
+        SucessMessage("Fatura Recibo criada e enviada com sucesso!");
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["invoice-receipt"] });
-      return response.data;
     },
   });
 }

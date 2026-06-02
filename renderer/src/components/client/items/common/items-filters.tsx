@@ -1,6 +1,5 @@
 "use client";
 import { Button, Input } from "@/components/ui";
-import { useGetCategories, useItemsFilters } from "@/hooks";
 import { ItemStatus } from "@/types/items";
 import {
   itemsByOption,
@@ -12,6 +11,8 @@ import { FilterPopover } from "@/components/shared";
 import { PaginatedSelect } from "@/components/shared/filters/paginated-select";
 import { useURLSearchParams } from "@/hooks/common";
 import { cn } from "@/lib";
+import { useItemsFilters } from "@/hooks/items/use-items-filters";
+import { useGetCategories } from "@/hooks";
 
 export function ItemsFiltersTSX({
   prefix,

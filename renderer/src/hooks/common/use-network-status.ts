@@ -22,7 +22,7 @@ export function useNetworkStatus(pingInterval = 5000) {
       });
       setIsOnline(true);
     } catch (error) {
-      console.log("Ping failed, marking offline", error);
+        // console.log("Ping failed, marking offline", error);
       setIsOnline(false);
     }
   }, []);

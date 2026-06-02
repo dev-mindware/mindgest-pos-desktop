@@ -16,7 +16,7 @@ type Props = {
 
 export default function POSLayout({ children }: Props) {
   return (
-    <RouteProtector allowed={["CASHIER"]}>
+    <RouteProtector allowed={["CASHIER", "ADMIN", "OWNER", "MANAGER"]}>
       <StoreProvider>
         <PosSessionGuard>
           <SidebarProvider defaultOpen={false}>

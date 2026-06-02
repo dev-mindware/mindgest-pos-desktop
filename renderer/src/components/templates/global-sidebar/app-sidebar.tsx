@@ -14,6 +14,7 @@ import { menuItems } from "@/constants/menu-items";
 import { useAuth } from "@/hooks/auth";
 import { getSidebarForUser } from "@/lib/get-sidebar-for-user";
 import { PlanType } from "@/types";
+import { SyncButton } from "./sync-button";
 
 export function AppSidebar() {
   const { user } = useAuth();
@@ -34,6 +35,7 @@ export function AppSidebar() {
       <SidebarContent className="group-data-[collapsible=icon]:items-center mt-4">
         <NavMenu items={filteredMenu} />
       </SidebarContent>
+      <SyncButton />
       <SidebarFooter>
         <UserInfo />
       </SidebarFooter>

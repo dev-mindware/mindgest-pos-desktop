@@ -26,38 +26,9 @@ export type MenuStructure = {
 export const menuItems: MenuStructure = {
   items: [
     {
-      name: "Dashboard",
-      url: "/dashboard",
-      icon: <Icon name="LayoutDashboard" className="w-5 h-5" />,
-      roles: ["MANAGER", "OWNER"],
-      minPlan: "Base",
-    },
-  /*   {
-      name: "GestIA",
-      url: "/gestia",
-      icon: <Icon name="Sparkles" className="w-5 h-5" />,
-      roles: ["OWNER"],
-      minPlan: "Base",
-      showUpgrade: true,
-    }, */
-    {
-      name: "Planos",
-      url: "/plans",
-      icon: <Icon name="Wallet" className="w-5 h-5" />,
-      roles: ["OWNER"],
-      minPlan: "Base",
-    },
-    {
       name: "Clientes",
       url: "/clients",
       icon: <Icon name="Users" className="w-5 h-5" />,
-      roles: ["MANAGER", "OWNER"],
-      minPlan: "Base",
-    },
-    {
-      name: "Documentos",
-      url: "/documents",
-      icon: <Icon name="ScrollText" className="w-5 h-5" />,
       roles: ["MANAGER", "OWNER"],
       minPlan: "Base",
     },
@@ -69,57 +40,9 @@ export const menuItems: MenuStructure = {
       minPlan: "Base",
     },
     {
-      name: "Gestão",
-      url: "#",
-      icon: <Icon name="Boxes" className="w-5 h-5" />,
-      roles: ["MANAGER", "OWNER"],
-      minPlan: "Smart",
-      items: [
-        {
-          name: "Estoque",
-          url: "/management/stock",
-        },
-        {
-          name: "POS",
-          url: "/management/pos",
-          minPlan: "Smart",
-        },
-      ],
-    },
-    {
-      name: "Relatórios",
-      url: "#",
-      icon: <Icon name="ChartNetwork" className="w-5 h-5" />,
-      roles: ["OWNER", "MANAGER"],
-      minPlan: "Base",
-      items: [
-        {
-          name: "Vendas",
-          url: "/reports/sales",
-        },
-        {
-          name: "Clientes",
-          url: "/reports/clients",
-          minPlan: "Smart",
-        },
-        {
-          name: "Acesso e Auditoria",
-          url: "/reports/access-control",
-          minPlan: "Smart",
-        },
-      ],
-    },
-    {
-      name: "Notificações",
-      url: "/notifications",
-      icon: <Icon name="Bell" className="w-5 h-5" />,
-      roles: ["MANAGER", "OWNER"],
-      minPlan: "Base",
-    },
-    {
-      name: "Configurações",
-      url: "/settings",
-      icon: <Icon name="Settings" className="w-5 h-5" />,
+      name: "Documentos",
+      url: "/documents",
+      icon: <Icon name="ScrollText" className="w-5 h-5" />,
       roles: ["MANAGER", "OWNER"],
       minPlan: "Base",
     },
@@ -127,22 +50,15 @@ export const menuItems: MenuStructure = {
       name: "Ponto de Venda",
       url: "/pos/counter",
       icon: <Icon name="Computer" className="w-5 h-5" />,
-      roles: ["CASHIER"],
-      minPlan: "Smart",
+      roles: ["CASHIER", "MANAGER", "OWNER"],
+      minPlan: "Base",
     },
     {
       name: "Movimentações",
       url: "/pos/movements",
       icon: <Icon name="Wallet" className="w-5 h-5" />,
-      roles: ["CASHIER"],
-      minPlan: "Pro",
-    },
-    {
-      name: "Configurações",
-      url: "/pos/settings",
-      icon: <Icon name="Settings" className="w-5 h-5" />,
-      roles: ["CASHIER"],
-      minPlan: "Smart",
+      roles: ["CASHIER", "MANAGER", "OWNER"],
+      minPlan: "Base",
     },
   ],
 };

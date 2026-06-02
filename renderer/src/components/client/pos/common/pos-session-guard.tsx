@@ -13,21 +13,39 @@ import {
     Icon,
 } from "@/components";
 import { currentStoreStore, useAuthStore } from "@/stores";
+import { useAuth } from "@/hooks/auth";
 import { Loader2 } from "lucide-react";
 
 export function PosSessionGuard({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const { logout, isLoggingOut } = useAuthStore();
+    const { user } = useAuth();
     const { currentStore } = currentStoreStore();
-    const { data: currentSession, isLoading, error } = useGetCurrentSession(currentStore?.id);
+    const { data: currentSession, isLoading, error } = useGetCurrentSession(currentStore?.id, user?.id);
+    
+    console.log("🛡️ [SessionGuard] Verificando sessão...", {
+        path: pathname,
+        userRole: user?.role,
+        userId: user?.id,
+        storeId: currentStore?.id,
+        hasSession: !!currentSession,
+        isOpen: currentSession?.isOpen,
+        status: (currentSession as any)?.status
+    });
 
     // Paths that require an active session
     const protectedPaths = ["/pos/counter", "/pos/movements"];
     const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
 
-    // If not a protected path, allow access immediately
-    if (!isProtectedPath) return <>{children}</>;
+    // Allow OWNER and MANAGER to bypass the session check for viewing purposes
+    const canBypass = user?.role === 'OWNER' || user?.role === 'MANAGER';
+
+    // If not a protected path or user has bypass permission, allow access
+    if (!isProtectedPath || canBypass) {
+        if (canBypass && isProtectedPath) console.log("🛡️ [SessionGuard] Acesso permitido via BYPASS (OWNER/MANAGER)");
+        return <>{children}</>;
+    }
 
     // Show loading state while checking session
     if (isLoading || isLoggingOut) {
@@ -137,10 +155,10 @@ export function PosSessionGuard({ children }: { children: React.ReactNode }) {
                         </Button>
                         <Button
                             variant="ghost"
-                            onClick={() => logout()}
+                            onClick={() => router.push("/dashboard")}
                         >
-                            <Icon name="House" className="h-4 w-4" />
-                            Voltar para o Login
+                            <Icon name="House" className="h-4 w-4 mr-2" />
+                            Voltar ao Dashboard
                         </Button>
                     </div>
                 </div>

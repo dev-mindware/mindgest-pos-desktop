@@ -48,10 +48,7 @@ export function useNotifications(
 
   // Socket.IO Connection
   useEffect(() => {
-    // Only connect if URL is defined
-    if (!process.env.NEXT_PUBLIC_API_URL) return;
-
-    socket = io(process.env.NEXT_PUBLIC_API_URL, {
+    socket = io("https://mindgest.mindware-vps.cloud/api", { // VPS
       transports: ["websocket"],
     });
 
@@ -107,7 +104,7 @@ export function useNotifications(
       });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] }); 
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
       // Optional: Re-fetch to confirm
     },
   });

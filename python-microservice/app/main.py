@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, HTTPException, status, BackgroundTasks
 import os
 
@@ -33,9 +34,7 @@ from app.modules.xml.generator_v2 import XMLGeneratorV2
 from app.modules.docx.generator import DOCXGenerator
 from app.modules.saft.saft_generator import SAFTGenerator
 from app.modules.xlsx.generator import XLSXGenerator
-from pydantic import BaseModel
-from typing import List, Optional
-
+from app.services.document_generation_service import DocumentGenerationService
 # Setup logging
 setup_logging()
 logger = get_logger(__name__)
@@ -49,6 +48,15 @@ xml_generator_v2 = XMLGeneratorV2()  # Enhanced XML with type-specific routing
 docx_generator = DOCXGenerator()
 saft_generator = SAFTGenerator()  # SAF-T (Angola tax compliance)
 xlsx_generator = XLSXGenerator()
+
+document_generation_service = DocumentGenerationService(
+    pdf_generator=pdf_generator,
+    thermal_generator=thermal_pdf_generator,
+    subscription_invoice_generator=subscription_invoice_generator,
+    xml_generator=xml_generator_v2,
+    docx_generator=docx_generator,
+    xlsx_generator=xlsx_generator,
+)
 
 
 @asynccontextmanager
@@ -114,27 +122,8 @@ async def generate_document(request: GenerateDocumentRequest):
                 detail=f"Format {request.format.value} not supported. Supported: {SUPPORTED_FORMATS}",
             )
 
-        # Generate document based on format
-        if request.format == DocumentFormat.PDF:
-            if request.documentType == DocumentType.SUBSCRIPTION_INVOICE:
-                filepath = await subscription_invoice_generator.generate(request)
-            else:
-                layout = request.metadata.get("layout") if request.metadata else None
-                print(f"DEBUG: Layout detected in generate: {layout}")
-                if layout == "thermal":
-                    filepath = await thermal_pdf_generator.generate(request)
-                else:
-                    filepath = await pdf_generator.generate(request)
-        elif request.format == DocumentFormat.XML:
-            filepath = await xml_generator.generate(request)
-        elif request.format == DocumentFormat.DOCX:
-            filepath = await docx_generator.generate(request)
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unknown format: {request.format.value}",
-            )
-
+        # Generate document based on format using the document generation service
+        filepath = await document_generation_service.generate(request)
         logger.info(f"Document generated successfully: {filepath}")
 
         return GenerateDocumentResponse(
@@ -171,41 +160,7 @@ async def generate_and_download_document(
             f"Generating and downloading {request.format.value} for invoice {request.invoiceNumber}"
         )
 
-        # Generate document based on format
-        if request.format == DocumentFormat.PDF:
-            logger.info(
-                f"DEBUG: Document Type: {request.documentType} (Type: {type(request.documentType)})"
-            )
-
-            if (
-                request.documentType == DocumentType.SUBSCRIPTION_INVOICE
-                or request.documentType == "SUBSCRIPTION_INVOICE"
-            ):
-                logger.info("Using SubscriptionInvoiceGenerator for download")
-                filepath = await subscription_invoice_generator.generate(request)
-            else:
-                layout = request.metadata.get("layout") if request.metadata else None
-                print(f"DEBUG: Layout detected in download: {layout}")
-                logger.info(f"PDF Download Layout requested: {layout}")
-                if layout == "thermal":
-                    logger.info("Using ThermalPDFGenerator for download")
-                    filepath = await thermal_pdf_generator.generate(request)
-                else:
-                    logger.info("Using standard PDFGenerator for download")
-                    filepath = await pdf_generator.generate(request)
-            media_type = "application/pdf"
-        elif request.format == DocumentFormat.XML:
-            # Use enhanced XML generator (V2) with document-type specific routing
-            filepath = await xml_generator_v2.generate(request)
-            media_type = "application/xml"
-        elif request.format == DocumentFormat.DOCX:
-            filepath = await docx_generator.generate(request)
-            media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unknown format: {request.format.value}",
-            )
+        filepath, media_type = await document_generation_service.generate_with_media_type(request)
 
         # Schedule immediate cleanup of the file after response is sent
         background_tasks.add_task(os.remove, filepath)
@@ -281,7 +236,6 @@ async def generate_report_download(
 async def root():
     """Root endpoint."""
     return {
-        "message": "Mindgest POS - Servidor de Relatórios (Python) operante!",
         "service": APP_NAME,
         "version": APP_VERSION,
         "status": "running",

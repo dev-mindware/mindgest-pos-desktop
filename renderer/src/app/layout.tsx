@@ -5,9 +5,10 @@ import { Inter, Outfit, } from "next/font/google";
 import { ThemeProvider } from "@/providers";
 import { CustomToaster } from "@/utils";
 import { SidebarProvider } from "@/components";
-import { AuthProvider } from "@/contexts";
+import { AuthProvider, SyncProvider } from "@/contexts";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { NotificationDetail } from "@/components/shared/notifications";
+import { TimeTravelLock } from "@/components/shared/security/time-travel-lock";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -50,11 +51,14 @@ export default function RootLayout({
         >
           <ReactQueryProvider>
             <AuthProvider>
-              <NuqsAdapter>
-                <SidebarProvider>{children}</SidebarProvider>
-                <CustomToaster />
-                <NotificationDetail />
-              </NuqsAdapter>
+              <SyncProvider>
+                <NuqsAdapter>
+                  <SidebarProvider>{children}</SidebarProvider>
+                  <CustomToaster />
+                  <NotificationDetail />
+                  <TimeTravelLock />
+                </NuqsAdapter>
+              </SyncProvider>
             </AuthProvider>
           </ReactQueryProvider>
         </ThemeProvider>
