@@ -268,10 +268,10 @@ export function CounterContent() {
   const isDraggingRef = useRef(false);
 
   const calculateKeyboardBounds = useCallback((available: number) => {
-    const minKeyboard = Math.max(240, Math.round(available * 0.22));
-    const minRight = Math.max(260, Math.round(available * 0.26));
+    const minKeyboard = Math.max(220, Math.round(available * 0.18));
+    const minRight = Math.max(320, Math.round(available * 0.28));
     const maxKeyboard = Math.max(
-      Math.min(Math.round(available * 0.42), available - minRight),
+      Math.min(Math.round(available * 0.70), available - minRight),
       minKeyboard,
     );
     const preferred = Math.round(available * 0.42);
@@ -381,11 +381,11 @@ export function CounterContent() {
         >
           {/* Left slot: Virtual Keyboard (resizable) */}
           <div
-            className="h-full overflow-hidden transition-all duration-200"
+            className="h-full overflow-hidden transition-all duration-200 flex-shrink-0"
             style={{
               width: keyboardWidth ? `${keyboardWidth}px` : "100%",
-              minWidth: 280,
-              maxWidth: "72%",
+              minWidth: 240,
+              maxWidth: "calc(100% - 320px)",
             }}
           >
             <EmbeddedKeyboard />
@@ -401,7 +401,7 @@ export function CounterContent() {
           />
 
           {/* Right slot: Payment Summary / Totals */}
-          <div className="flex-1 h-full border-t border-white/10 lg:border-t-0 lg:border-l px-4 py-3">
+          <div className="flex-1 h-full border-t border-white/10 lg:border-t-0 lg:border-l px-4 py-3 min-w-[320px] lg:flex-shrink-0">
             <div className="w-full h-full flex flex-col gap-3">
               <div className="bg-muted/20 p-3 rounded-md border border-white/5">
                 <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
