@@ -38,7 +38,7 @@ export const CategorySelector = React.memo<CategorySectionProps>(
     }
 
     return (
-      <div className="w-full mb-6 relative group">
+      <div className="w-full mb-2 relative group">
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

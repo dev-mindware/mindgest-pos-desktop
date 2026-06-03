@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { CategorySelector, ProductList } from "./products";
 import { CartList } from "./cart";
 import { BarcodeProductScanner } from "./modals";
@@ -37,6 +37,7 @@ import { CartType, Product } from "@/types";
 
 export function CounterContent() {
   const [search, setSearch] = useQueryState("search", { defaultValue: "" });
+  const [debouncedSearch, setDebouncedSearch] = useState<string>(search || "");
   const { categories, isLoading: isLoadingCategories } = useGetCategories();
   const [activeCart, setActiveCart] = useState<CartType>("invoice");
   const { currentStore } = currentStoreStore();
@@ -52,11 +53,77 @@ export function CounterContent() {
   }, [categories, selectedCategory]);
 
   const { items: apiProducts, isLoading: isLoadingProducts } = useGetItems({
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     categoryId: selectedCategory || undefined,
     type: "PRODUCT",
     limit: 100,
   });
+
+  // Debounce the search query to reduce requests and improve UX
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search || ""), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Client-side refined filtering + relevance scoring to improve precision
+  const filteredProducts = useMemo(() => {
+    const s = (debouncedSearch || "").trim();
+    if (!s) return (apiProducts || []) as any[];
+
+    const normalize = (str: string) =>
+      str
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+
+    const query = normalize(s);
+    const tokens = query.split(/\s+/).filter(Boolean);
+    const isNumeric = /^\d+$/.test(query.replace(/\s+/g, ""));
+
+    return (apiProducts || [])
+      .map((p: any) => {
+        const name = normalize(p.name || "");
+        const desc = normalize(p.description || "");
+        const sku = String(p.sku || "").toLowerCase();
+        const barcode = String(p.barcode || "").toLowerCase();
+
+        let score = 0;
+
+        // Numeric searches prefer barcode/sku exact or contains
+        if (isNumeric) {
+          if (barcode === query) score += 200;
+          else if (sku === query) score += 190;
+          else if (barcode.includes(query)) score += 120;
+          else if (sku.includes(query)) score += 110;
+        }
+
+        // Exact name
+        if (name === query) score += 150;
+        // Starts with
+        if (name.startsWith(query)) score += 120;
+        // All tokens included
+        if (tokens.every((t) => name.includes(t))) score += 80;
+        // Partial matches
+        if (name.includes(query)) score += 60;
+        if (desc.includes(query)) score += 30;
+
+        // SKU/barcode non-numeric fuzzy
+        if (!isNumeric) {
+          if (sku && sku.includes(query)) score += 40;
+          if (barcode && barcode.includes(query)) score += 50;
+        }
+
+        // Boost items with stock quantity
+        const qty = Number(p.quantity || p.reserved || 0);
+        if (qty > 0) score += 5;
+
+        return { item: p, score };
+      })
+      .filter((x: any) => x.score > 0)
+      .sort((a: any, b: any) => b.score - a.score)
+      .map((x: any) => x.item);
+  }, [apiProducts, debouncedSearch]);
 
   // Use custom hook for cart state management
   const {
@@ -100,6 +167,30 @@ export function CounterContent() {
       })),
     [apiProducts],
   );
+
+  const displayedProducts: Product[] = useMemo(() => {
+    if (filteredProducts && filteredProducts.length > 0) {
+      return filteredProducts.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        price: p.price || 0,
+        image: p.image,
+        category: p.category?.name || "",
+        quantity: p.quantity || p.reserved || 0,
+        reserved: p.reserved || 0,
+        description: p.description,
+        barcode: p.barcode,
+        sku: p.sku,
+        tax:
+          p.tax ||
+          (typeof p.taxPercent === "number" || typeof p.taxPercent === "string"
+            ? { id: "", name: "", rate: Number(p.taxPercent) }
+            : undefined),
+      }));
+    }
+
+    return products;
+  }, [filteredProducts, products]);
 
   const cartItemsMap = useMemo(
     () =>
@@ -171,10 +262,83 @@ export function CounterContent() {
     handleQuickCash,
   } = checkout;
 
+  // Resizable keyboard state
+  const controlPanelRef = useRef<HTMLDivElement | null>(null);
+  const [keyboardWidth, setKeyboardWidth] = useState<number | null>(null);
+  const isDraggingRef = useRef(false);
+
+  const calculateKeyboardBounds = useCallback((available: number) => {
+    const minKeyboard = Math.max(240, Math.round(available * 0.22));
+    const minRight = Math.max(260, Math.round(available * 0.26));
+    const maxKeyboard = Math.max(
+      Math.min(Math.round(available * 0.42), available - minRight),
+      minKeyboard,
+    );
+    const preferred = Math.round(available * 0.42);
+    return {
+      minKeyboard,
+      maxKeyboard,
+      preferred: Math.min(Math.max(preferred, minKeyboard), maxKeyboard),
+    };
+  }, []);
+
+  const updateKeyboardWidth = useCallback(() => {
+    const el = controlPanelRef.current;
+    if (!el) return;
+
+    const available = el.clientWidth;
+    const { minKeyboard, maxKeyboard, preferred } = calculateKeyboardBounds(
+      available,
+    );
+
+    setKeyboardWidth((current) => {
+      if (current === null) return preferred;
+      if (current < minKeyboard) return minKeyboard;
+      if (current > maxKeyboard) return maxKeyboard;
+      return current;
+    });
+  }, [calculateKeyboardBounds]);
+
+  useEffect(() => {
+    updateKeyboardWidth();
+    window.addEventListener("resize", updateKeyboardWidth);
+    return () => {
+      window.removeEventListener("resize", updateKeyboardWidth);
+    };
+  }, [updateKeyboardWidth]);
+
+  const onMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      const el = controlPanelRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const available = rect.width;
+      const { minKeyboard, maxKeyboard } = calculateKeyboardBounds(available);
+      let newWidth = e.clientX - rect.left;
+      newWidth = Math.max(minKeyboard, Math.min(newWidth, maxKeyboard));
+      setKeyboardWidth(newWidth);
+    },
+    [calculateKeyboardBounds],
+  );
+
+  const onMouseUp = useCallback(() => {
+    isDraggingRef.current = false;
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", onMouseUp);
+  }, [onMouseMove]);
+
+  const onMouseDown = (e: any) => {
+    e.preventDefault();
+    isDraggingRef.current = true;
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
   return (
-    <div className="flex w-full h-full overflow-hidden">
+    <div className="flex flex-col xl:flex-row w-full h-full overflow-hidden min-h-0">
       {/* Left Section */}
-      <div className="flex w-full flex-col h-full overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
         {/* Cash Session — 70% */}
         <div className="flex flex-[6.5] overflow-hidden">
           <BarcodeProductScanner
@@ -182,22 +346,24 @@ export function CounterContent() {
             onConfirm={onConfirmScan}
           />
           <div className="flex-1 flex flex-col min-w-0 gap-4 p-4">
-            {isLoadingCategories ? (
-              <PosCategorySkeleton />
-            ) : (
-              <CategorySelector
-                categories={categories}
-                activeCategory={selectedCategory}
-                onSelectCategory={handleCategorySelect}
-              />
-            )}
+            <div className="sticky top-0 z-20 bg-[#121212] pb-4">
+              {isLoadingCategories ? (
+                <PosCategorySkeleton />
+              ) : (
+                <CategorySelector
+                  categories={categories}
+                  activeCategory={selectedCategory}
+                  onSelectCategory={handleCategorySelect}
+                />
+              )}
+            </div>
 
-            <ScrollArea className="flex-1 pb-4">
+            <ScrollArea className="flex-1 pb-4 overflow-y-auto custom-scrollbar">
               {isLoadingProducts ? (
                 <PosProductSectionSkeleton />
               ) : (
                 <ProductList
-                  products={products}
+                  products={displayedProducts}
                   cartItems={cartItemsMap}
                   onAddToCart={handleAddToCart}
                   onRemoveFromCart={handleRemoveFromCart}
@@ -209,13 +375,33 @@ export function CounterContent() {
         </div>
 
         {/* Control Panel — 30% */}
-        <div className="flex flex-[3.5] overflow-hidden bg-[#121212] border-t border-white/10">
-          {/* Left slot: Virtual Keyboard */}
-          <div className="flex flex-[2] h-full overflow-hidden">
+        <div
+          ref={controlPanelRef}
+          className="flex flex-col lg:flex-row flex-[3.5] overflow-hidden bg-[#121212] border-t border-white/10 min-h-[330px]"
+        >
+          {/* Left slot: Virtual Keyboard (resizable) */}
+          <div
+            className="h-full overflow-hidden transition-all duration-200"
+            style={{
+              width: keyboardWidth ? `${keyboardWidth}px` : "100%",
+              minWidth: 280,
+              maxWidth: "72%",
+            }}
+          >
             <EmbeddedKeyboard />
           </div>
+
+          {/* Resizer handle */}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            onMouseDown={onMouseDown}
+            className="hidden lg:block w-2 cursor-col-resize hover:bg-white/10 transition-colors"
+            style={{ background: "transparent" }}
+          />
+
           {/* Right slot: Payment Summary / Totals */}
-          <div className="flex flex-[3] h-full border-l border-white/10 px-4 py-3">
+          <div className="flex-1 h-full border-t border-white/10 lg:border-t-0 lg:border-l px-4 py-3">
             <div className="w-full h-full flex flex-col gap-3">
               <div className="bg-muted/20 p-3 rounded-md border border-white/5">
                 <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -254,7 +440,7 @@ export function CounterContent() {
       </div>
 
       {/* Right Content - Cart & Payment */}
-      <div className="w-[500px] h-full flex flex-col border-l border-white/10 bg-[#121212]">
+      <div className="w-full xl:w-[500px] min-w-0 max-w-[520px] h-full flex flex-col border-l border-white/10 bg-[#121212]">
         <div className="flex border-b items-center justify-between">
           <Tabs
             value={activeCart}

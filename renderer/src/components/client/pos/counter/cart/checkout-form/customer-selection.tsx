@@ -57,7 +57,7 @@ export function CustomerSelection({
                         <AsyncCreatableSelectField
                             endpoint="/clients"
                             label=""
-                            placeholder="Procurar cliente..."
+                            placeholder="Cliente..."
                             value={selectedClient}
                             onChange={onClientChange}
                             displayFields={["name", "phone"]}
@@ -70,27 +70,27 @@ export function CustomerSelection({
                     {(!selectedClient || selectedClient.__isNew__) && (
                         <div className="space-y-2 pt-2 border-t border-dashed">
                             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                Telefone do Cliente (Novo)
+                                Telefone do Cliente 
                             </label>
                             <Input
                                 startIcon="Phone"
                                 type="text"
                                 inputMode="numeric"
                                 data-layout="numeric"
-                                placeholder="Digite o número de telefone..."
+                                placeholder="Número de telefone"
                                 value={newCustomerPhone}
                                 onChange={(e) => onPhoneChange(e.target.value)}
-                                className="bg-muted/30"
+                                className="bg-muted/30 truncate"
                             />
 
                             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mt-2">
-                                NIF do Cliente (Opcional)
+                                NIF (Opcional)
                             </label>
                             <Input
                                 startIcon="Hash"
                                 type="text"
                                 inputMode="numeric"
-                                placeholder="Digite o NIF (se aplicável)..."
+                                placeholder="Digite o NIF"
                                 value={newCustomerNif}
                                 onChange={(e) => onNifChange?.(e.target.value)}
                                 className="bg-muted/30"
