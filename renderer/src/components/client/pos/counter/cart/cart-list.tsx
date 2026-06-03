@@ -77,7 +77,7 @@ export const CartList = React.memo<CartSectionProps>(
     }) => {
         return (
             /* CartCheckoutForm aligned to Control Panel height (35% of viewport) */
-           <div className="grid grid-rows-[62.5%_35%] h-full w-full bg-[#121212] overflow-hidden">
+           <div className="grid grid-rows-[62.5%_37.5%] h-full w-full bg-[#121212] overflow-hidden">
                 
                 {/* Parte 1: Itens do Carrinho (62.5%) */}
                 <div className="h-full w-full min-h-0 overflow-y-auto custom-scrollbar">
@@ -99,7 +99,7 @@ export const CartList = React.memo<CartSectionProps>(
                     </div>
                 </div>
 
-                {/* Parte 2: Checkout Form (30%) */}
+                {/* Parte 2: Checkout Form (37.5%) */}
                 <div className="h-full w-full min-h-0 overflow-y-auto border-t border-white/10 bg-[#161616]">
                     <CartCheckoutForm
                         cartItems={cartItems}

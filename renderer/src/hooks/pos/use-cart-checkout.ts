@@ -175,6 +175,18 @@ export function useCartCheckout({
     setCashGiven(amount);
   };
 
+  const handleCancel = () => {
+    setCashGiven("");
+    setPaymentMethod("Credit Card");
+    setChange(0);
+    setSelectedClient(null);
+    setNewCustomerPhone("");
+    setNewCustomerNif("");
+    reset();
+    setIsPreviewOpen(false);
+    setPendingPayload(null);
+  };
+
   const handlePreview = async (data: any) => {
     if (cartItems.length === 0) {
       ErrorMessage("O carrinho está vazio!");
@@ -383,6 +395,7 @@ export function useCartCheckout({
     handleQuickCash,
     handlePreview,
     handleFinalSubmit,
+    handleCancel,
     isPreviewOpen,
     setIsPreviewOpen,
     pendingPayload,

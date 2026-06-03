@@ -39,6 +39,7 @@ export function CartCheckoutForm({
         handleClientChange,
         handleQuickCash,
         handlePreview,
+        handleCancel,
         handleFinalSubmit,
         isPreviewOpen,
         setIsPreviewOpen,
@@ -48,7 +49,7 @@ export function CartCheckoutForm({
 
     return (
         <>
-            <div className="p-2 border border-dashed rounded-test-md bg-muted/30">
+            <div className="p-2 h-full flex flex-col justify-between border border-dashed rounded-test-md bg-muted/30">
                 <PaymentSummary
                     subtotal={totals.subtotal}
                     taxAmount={totals.taxAmount}
@@ -59,26 +60,30 @@ export function CartCheckoutForm({
                 />
 
                 {/* CustomerSelection moved to main Counter layout for improved spacing */}
+                <div className="flex">
+                    <Button
+                        className="w-1/3 h-14 bg-red-400 border border-white/10 hover:bg-red-500/80 transition-colors text-md font-bold"
+                        onClick={() => {
+                            handleCancel();
+                            onSuccess?.();
+                        }}
+                        disabled={isPending}
+                    >
+                        Cancelar
+                    </Button>
 
-                <PaymentMethods
-                    paymentMethod={paymentMethod}
-                    onMethodChange={setPaymentMethod}
-                    cashGiven={cashGiven}
-                    onCashChange={setCashGiven}
-                    onQuickCash={handleQuickCash}
-                    change={change}
-                />
+                    <Button
+                        className="w-2/3 h-14 ml-2 text-md font-bold"
+                        onClick={handleSubmit(handlePreview, (errors) => {
+                            console.error("Form Validation Errors:", errors);
+                            ErrorMessage("Verifique os campos obrigatórios");
+                        })}
+                        disabled={isPending}
+                    >
+                        {isPending ? "Processando..." : "Confirmar Pagamento"}
+                    </Button>
+                </div>
 
-                <Button
-                    className="w-full"
-                    onClick={handleSubmit(handlePreview, (errors) => {
-                        console.error("Form Validation Errors:", errors);
-                        ErrorMessage("Verifique os campos obrigatórios");
-                    })}
-                    disabled={isPending}
-                >
-                    {isPending ? "Processando..." : "Confirmar Pagamento"}
-                </Button>
             </div>
 
             <PosInvoicePreviewDrawer
