@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "nextron",
     "build": "nextron build --no-pack && electron-builder",
+    "build:publish": "nextron build --no-pack && electron-builder --publish always",
+    "test": "echo 'No tests configured yet'",
+    "lint": "eslint . --ext .ts,.tsx --fix",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {

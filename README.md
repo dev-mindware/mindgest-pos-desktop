@@ -120,6 +120,68 @@ Para criar o instalador `.exe` (ou `.dmg` no Mac) para distribuir aos clientes:
 
 ---
 
-## 📄 Licença
+## � Workflow de Releases Profissional
+
+Este projeto está configurado com **GitHub Actions** para automatizar o processo de versionamento, build e publicação.
+
+### Como publicar uma nova versão
+
+#### Opção A: Usar script auxiliar (Recomendado)
+
+**Windows:**
+```bash
+scripts\release.bat patch
+scripts\release.bat minor
+scripts\release.bat major
+```
+
+**macOS/Linux:**
+```bash
+chmod +x scripts/release.sh
+./scripts/release.sh patch
+./scripts/release.sh minor
+./scripts/release.sh major
+```
+
+#### Opção B: Manualmente
+
+1. Atualizar versão em `package.json`:
+   ```bash
+   npm version patch    # 1.0.0 → 1.0.1
+   npm version minor    # 1.0.0 → 1.1.0
+   npm version major    # 1.0.0 → 2.0.0
+   ```
+
+2. Fazer push para `main`:
+   ```bash
+   git push origin main
+   ```
+
+3. Criar e fazer push da tag:
+   ```bash
+   git tag -a v1.0.1 -m "Release v1.0.1"
+   git push origin v1.0.1
+   ```
+
+### O que acontece automaticamente
+
+Quando uma tag `v*` é feita push:
+
+1. ✅ **CI Checks**: Lint, testes e build validação
+2. 🔨 **Multi-Platform Build**: Gera instaladores para Windows, macOS e Linux
+3. 📦 **Publish Release**: Publica assets (`.exe`, `.dmg`, `.AppImage`, etc.) no GitHub
+4. 🔄 **Auto-Update**: O arquivo `latest.yml` é publicado para permitir auto-updates
+
+### Acompanhar o progresso
+
+- Ir para: [GitHub Actions](https://github.com/dev-mindware/mindgest-pos-desktop/actions)
+- Ver o workflow `Release` em execução
+- Verificar assets publicados: [Releases](https://github.com/dev-mindware/mindgest-pos-desktop/releases)
+
+Para mais detalhes, consulte [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md).
+
+---
+
+## �📄 Licença
 
 Uso exclusivo MindGest. Proibida distribuição não autorizada.

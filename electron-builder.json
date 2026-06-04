@@ -1,0 +1,84 @@
+{
+  "appId": "com.mindgest.pos",
+  "productName": "MindGest POS",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "**/*",
+    "!.git",
+    "!.github",
+    "!node_modules",
+    "!dist",
+    "!*.log",
+    "!*.md",
+    "!scripts",
+    "!.eslintrc",
+    "!.gitignore",
+    "!tsconfig.json",
+    "!*.yml",
+    "!prisma"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "certificateFile": null,
+    "certificatePassword": null,
+    "signingHashAlgorithms": ["sha256"],
+    "sign": null
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowElevation": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "MindGest POS"
+  },
+  "mac": {
+    "target": [
+      "dmg",
+      "zip"
+    ],
+    "category": "public.app-category.business"
+  },
+  "dmg": {
+    "contents": [
+      {
+        "x": 110,
+        "y": 150
+      },
+      {
+        "x": 240,
+        "y": 150,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ]
+  },
+  "linux": {
+    "target": [
+      "AppImage",
+      "tar.gz"
+    ],
+    "category": "Office"
+  },
+  "appImage": {
+    "artifactName": "${productName}-${version}.${ext}"
+  },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "dev-mindware",
+      "repo": "mindgest-pos-desktop"
+    }
+  ]
+}
