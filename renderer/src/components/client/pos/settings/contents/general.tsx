@@ -1,5 +1,6 @@
 "use client";
 import { Card, CardContent, Icon, DynamicMetricCard } from "@/components";
+import { AutoUpdateSection } from "@/components/client/auto-update/auto-update-manager";
 import { currentStoreStore, useModal } from "@/stores";
 import { cn } from "@/lib/utils";
 import {
@@ -129,6 +130,10 @@ export function PosGeneralSettings({ currentSession }: PosGeneralSettingsProps) 
                         )}
                     />
                 ))}
+            </div>
+
+            <div className="mt-6">
+                <AutoUpdateSection />
             </div>
 
             {currentSession && (

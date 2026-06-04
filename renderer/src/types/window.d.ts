@@ -1,6 +1,7 @@
 export interface IpcBridge {
   send: (channel: string, data: any) => void;
   on: (channel: string, func: (...args: any[]) => void) => void;
+  off: (channel: string, func: (...args: any[]) => void) => void;
   // SQLite Database Bridge — all document operations are user-scoped
   db: {
     saveDocument: (doc: {
@@ -55,6 +56,9 @@ export interface IpcBridge {
     stopAutoSync: () => Promise<{ stopped: true }>;
     triggerSync: (params: { token: string, storeId: string, userId: string }) => Promise<any>;
     getSyncStatus: () => Promise<{ running: boolean; lastSyncAt?: string; nextSyncAt?: string; lastResult?: any }>;
+  };
+  app: {
+    getVersion: () => Promise<string>;
   };
   update: {
     checkForUpdates: () => Promise<any>;

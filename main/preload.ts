@@ -99,6 +99,9 @@ contextBridge.exposeInMainWorld("ipc", {
       ipcRenderer.invoke("sync:trigger-sync", params),
     getSyncStatus: () => ipcRenderer.invoke("sync:get-sync-status")
   },
+  app: {
+    getVersion: () => ipcRenderer.invoke("app:get-version"),
+  },
   update: {
     checkForUpdates: () => ipcRenderer.invoke("update:check-for-updates"),
     downloadUpdate: () => ipcRenderer.invoke("update:download-update"),

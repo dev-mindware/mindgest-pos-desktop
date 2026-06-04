@@ -44,9 +44,10 @@
 - [ ] Teste F6: Ligar PC 2 ao PC 1. Faturar num, confirmar se o stock desconta no outro instantaneamente.
 
 ### Fase 7: Auto-Updater e Polimento
-- [ ] Integrar `electron-updater` e configurar provedor de releases (ex: GitHub).
-- [ ] Criar UI para notificar atualizações e estado de progresso de download.
-- [ ] Refinar as notificações locais (Sonner/Toast).
+- [2/2] Integrar `electron-updater` e configurar provedor de releases (ex: GitHub).
+- [x] Criar UI para notificar atualizações e estado de progresso de download.
+- [x] Refinar as notificações locais (Sonner/Toast).
+- [x] Adicionar indicador visual de atualização na sidebar.
 - [ ] Teste F7: Publicar versão 1.0.1 falsa, abrir a v1.0.0 e ver o auto-update a atuar.
 
 ### Fase 8: Teste Piloto e Homologação

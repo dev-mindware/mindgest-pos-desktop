@@ -102,10 +102,7 @@ apiRouter.get('/cash-sessions/current', async (req, res) => {
         storeId: String(storeId),
         status: 'OPEN'
       },
-      orderBy: { openedAt: 'desc' },
-      include: {
-        openedBy: { select: { id: true, name: true, email: true } },
-      }
+      orderBy: { openingDate: 'desc' }
     });
     res.json(session);
   } catch (error) {

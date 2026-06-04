@@ -944,6 +944,10 @@ if (isUpdateEnabled) {
   });
 }
 
+ipcMain.handle("app:get-version", () => {
+  return app.getVersion();
+});
+
 console.log("--- Electron Main Process Log ---");
 console.log("Environment:", isProd ? "production" : "development");
 
