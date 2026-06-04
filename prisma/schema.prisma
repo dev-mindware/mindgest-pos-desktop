@@ -41,6 +41,11 @@ model Settings {
   lastOperationTime  DateTime? // Timestamp da última operação válida (para validação contínua)
   lastFraudAttempt   DateTime? // Última vez que foi detectada uma tentativa de fraude
   fraudAttemptCount  Int       @default(0) // Contador de tentativas de fraude
+
+  // Topologia Multi-Terminal (Fase 6)
+  terminalMode       String    @default("MASTER") // "MASTER" ou "TERMINAL"
+  masterIp           String?                      // IP do Master (usado no modo TERMINAL)
+  lanSecret          String?                      // Shared secret para autenticação LAN
 }
 
 // ==========================================

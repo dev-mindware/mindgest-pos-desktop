@@ -110,6 +110,27 @@ async function ensureSyncOutboxSchema() {
   }
 }
 
+async function ensureSettingsSchema() {
+  const tableExists = await prisma.$queryRawUnsafe<Array<{ name: string }>>(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name='Settings'`
+  );
+
+  if (tableExists.length > 0) {
+    const columnsToAdd: Array<[string, string]> = [
+      ['terminalMode', 'TEXT NOT NULL DEFAULT "MASTER"'],
+      ['masterIp', 'TEXT'],
+      ['lanSecret', 'TEXT'],
+    ];
+
+    for (const [columnName, definition] of columnsToAdd) {
+      if (!(await tableHasColumn('Settings', columnName))) {
+        console.log(`🔧 [Prisma] Adicionando coluna ausente Settings.${columnName}...`);
+        await prisma.$executeRawUnsafe(`ALTER TABLE "Settings" ADD COLUMN "${columnName}" ${definition};`);
+      }
+    }
+  }
+}
+
 export async function testPrismaConnection() {
   try {
     
@@ -175,6 +196,9 @@ export async function testPrismaConnection() {
         "lastOperationTime" DATETIME,
         "lastFraudAttempt" DATETIME,
         "fraudAttemptCount" INTEGER NOT NULL DEFAULT 0,
+        "terminalMode" TEXT NOT NULL DEFAULT 'MASTER',
+        "masterIp" TEXT,
+        "lanSecret" TEXT
       );
     `);
 
@@ -326,6 +350,7 @@ export async function testPrismaConnection() {
     `);
 
     await ensureSyncOutboxSchema();
+    await ensureSettingsSchema();
 
     const userCount = await prisma.user.count();
     console.log('✅ [Prisma] Conexão bem-sucedida! Total de Utilizadores na DB:', userCount);

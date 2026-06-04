@@ -38,6 +38,12 @@ contextBridge.exposeInMainWorld("ipc", {
       ipcRenderer.invoke("security:save-license", { licenseJwt, storeId }),
     checkClock: () => ipcRenderer.invoke("security:check-clock"),
   },
+  // LAN Configuration Bridge
+  lan: {
+    getLocalIp: () => ipcRenderer.invoke("lan:get-local-ip"),
+    getConfig: () => ipcRenderer.invoke("lan:get-config"),
+    setConfig: (config: any) => ipcRenderer.invoke("lan:set-config", config),
+  },
   // Sync Bridge (Cloud to Local)
   sync: {
     products: (token: string, storeId: string) => 

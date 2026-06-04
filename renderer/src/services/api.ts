@@ -27,6 +27,53 @@ export const api = axios.create({
   },
 });
 
+export const localApi = axios.create({
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+localApi.interceptors.request.use(async (config) => {
+  if (typeof window !== "undefined" && (window as any).ipc?.lan) {
+    try {
+      const lanConfig = await (window as any).ipc.lan.getConfig();
+      if (lanConfig.terminalMode === 'TERMINAL' && lanConfig.masterIp) {
+        config.baseURL = `http://${lanConfig.masterIp}:3333/api`;
+      } else {
+        config.baseURL = `http://127.0.0.1:3333/api`;
+      }
+      
+      if (lanConfig.lanSecret) {
+        config.headers['X-LAN-Secret'] = lanConfig.lanSecret;
+      }
+    } catch (e) {
+      console.warn("Failed to get LAN config for localApi", e);
+    }
+  } else {
+    config.baseURL = `http://127.0.0.1:3333/api`;
+  }
+
+  // Inject storeId logic
+  const STORE_DEPENDENT_ROUTES = ["items", "clients", "cash-sessions", "invoice"];
+  const currentMethod = config.method?.toLowerCase() || "";
+  const shouldInject = config.url && STORE_DEPENDENT_ROUTES.some(r => config.url?.includes(r));
+
+  if (shouldInject) {
+    const currentStore = currentStoreStore.getState().currentStore;
+    if (currentStore?.id) {
+      if (currentMethod === "get") {
+        config.params = { ...config.params, storeId: config.params?.storeId || currentStore.id };
+      } else if (config.data && typeof config.data === "object" && !config.data.storeId) {
+        config.data = { ...config.data, storeId: currentStore.id };
+      } else if (!config.data && ["post", "put", "patch"].includes(currentMethod)) {
+        config.data = { storeId: currentStore.id };
+      }
+    }
+  }
+
+  return config;
+});
+
 import { currentStoreStore } from "@/stores";
 
 api.interceptors.request.use(async (config) => {

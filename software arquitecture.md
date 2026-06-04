@@ -104,17 +104,18 @@ Esta checklist assegura um desenvolvimento iterativo. A regra é: **Não avança
 - [] Teste F3: Sincronizar 1000 itens da Cloud e consultar offline com performance.
 
 ### Fase 4: O Coração do POS (Invoicing & AGT)
-- [ ] UI do Counter (Carrinho, Pesquisa Rápida de Produtos).
-- [ ] Fluxo de Checkout (Métodos de Pagamento, Troco).
+- [2/3] UI do Counter (Carrinho, Pesquisa Rápida de Produtos).
+- [2/3] Fluxo de Checkout (Métodos de Pagamento, Troco).
 - [x] Lógica de Criação de Facturas Offline.
-- [ ] Comunicação com o Python Microservice para gerar e imprimir o PDF da Fatura.
+- [2/3] Comunicação com o Python Microservice para gerar e imprimir o PDF da Fatura.
 - [ ] Teste F4: Emitir 10 faturas seguidas. Validar Hashes AGT e integridade da impressão térmica.
 
 ### Fase 5: Sincronização Bidirecional (Outbox & Sync)
 - [x] Implementar a tabela e lógica `sync_outbox` no Prisma.
 - [x] Criar o CronJob em background para deteção de conectividade (Network Polling).
 - [x] Implementar rotas na Cloud (MINDGEST-API) para receber os lotes (Batch Processing).
-- [x] Implementar o Pull (Cloud -> Local) para atualizações de preços em tempo real.
+- [x] Implementar o Pull (Cloud -> Local) para atualizações de preços em tempo real. , mas antes quero que analises o primeiro ponto se já foi implementado!
+
 - [x] Teste F5: Faturar offline. Ligar internet. Confirmar na Cloud se dados chegaram. Mudar preço na cloud, verificar se POS localizou.
 
 ### Fase 6: Topologia Multi-Terminal
