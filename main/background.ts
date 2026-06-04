@@ -1,5 +1,6 @@
 import path from "path";
 import { app, BrowserWindow, ipcMain } from "electron";
+import { autoUpdater } from "electron-updater";
 import serve from "electron-serve";
 import { database } from "./database";
 import { getHardwareFingerprint, validateMonotonicClock, validateOfflineLicense } from "./security";
@@ -854,6 +855,95 @@ ipcMain.handle("db:get-cached-clients", async () => {
 
 const isProd: boolean = process.env.NODE_ENV === "production";
 
+function getMainWindow(): BrowserWindow | null {
+  const mainWindow = (global as any).__mainWindow;
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+}
+
+function sendUpdateEvent(channel: string, payload?: any) {
+  const mainWindow = getMainWindow();
+  if (!mainWindow) {
+    console.warn(`[Updater] Nenhuma janela disponível para enviar evento ${channel}`);
+    return;
+  }
+  mainWindow.webContents.send(channel, payload);
+}
+
+const isUpdateEnabled = isProd;
+
+if (isUpdateEnabled) {
+  autoUpdater.autoDownload = false;
+  autoUpdater.allowPrerelease = false;
+
+  autoUpdater.on("error", (error: Error | null) => {
+    console.error("❌ [Updater] error:", error);
+    sendUpdateEvent("update:error", {
+      message: error?.message || "Erro desconhecido ao verificar atualizações.",
+    });
+  });
+
+  autoUpdater.on("update-available", (info: any) => {
+    console.log("✅ [Updater] update available:", info);
+    sendUpdateEvent("update:available", info);
+  });
+
+  autoUpdater.on("update-not-available", (info: any) => {
+    console.log("ℹ️ [Updater] update not available:", info);
+    sendUpdateEvent("update:not-available", info);
+  });
+
+  autoUpdater.on("download-progress", (progress: any) => {
+    sendUpdateEvent("update:download-progress", progress);
+  });
+
+  autoUpdater.on("update-downloaded", (info: any) => {
+    console.log("✅ [Updater] update downloaded:", info);
+    sendUpdateEvent("update:downloaded", info);
+  });
+
+  ipcMain.handle("update:check-for-updates", async () => {
+    if (!isUpdateEnabled) {
+      return { success: false, message: "Atualizações só funcionam em produção." };
+    }
+
+    try {
+      const result = await autoUpdater.checkForUpdates();
+      return { success: true, result };
+    } catch (error) {
+      console.error("❌ [Updater] check-for-updates failed:", error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle("update:download-update", async () => {
+    if (!isUpdateEnabled) {
+      return { success: false, message: "Atualizações só funcionam em produção." };
+    }
+
+    try {
+      const result = await autoUpdater.downloadUpdate();
+      return { success: true, result };
+    } catch (error) {
+      console.error("❌ [Updater] download-update failed:", error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle("update:install-update", async () => {
+    if (!isUpdateEnabled) {
+      return { success: false, message: "Atualizações só funcionam em produção." };
+    }
+
+    try {
+      autoUpdater.quitAndInstall(true, true);
+      return { success: true };
+    } catch (error) {
+      console.error("❌ [Updater] install-update failed:", error);
+      throw error;
+    }
+  });
+}
+
 console.log("--- Electron Main Process Log ---");
 console.log("Environment:", isProd ? "production" : "development");
 
@@ -943,6 +1033,12 @@ async function createWindow() {
   try {
     await mainWindow.loadURL(url);
     console.log("Window loaded successfully");
+
+    if (isUpdateEnabled) {
+      autoUpdater.checkForUpdates().catch((error: any) => {
+        console.error("❌ [Updater] initial check failed:", error);
+      });
+    }
   } catch (err) {
     console.error("CRITICAL: Failed to load URL:", err);
   }

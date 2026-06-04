@@ -98,5 +98,10 @@ contextBridge.exposeInMainWorld("ipc", {
     triggerSync: (params: { token: string, storeId: string, userId: string }) =>
       ipcRenderer.invoke("sync:trigger-sync", params),
     getSyncStatus: () => ipcRenderer.invoke("sync:get-sync-status")
+  },
+  update: {
+    checkForUpdates: () => ipcRenderer.invoke("update:check-for-updates"),
+    downloadUpdate: () => ipcRenderer.invoke("update:download-update"),
+    installUpdate: () => ipcRenderer.invoke("update:install-update"),
   }
 });

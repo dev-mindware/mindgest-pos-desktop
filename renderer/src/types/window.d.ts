@@ -56,6 +56,11 @@ export interface IpcBridge {
     triggerSync: (params: { token: string, storeId: string, userId: string }) => Promise<any>;
     getSyncStatus: () => Promise<{ running: boolean; lastSyncAt?: string; nextSyncAt?: string; lastResult?: any }>;
   };
+  update: {
+    checkForUpdates: () => Promise<any>;
+    downloadUpdate: () => Promise<any>;
+    installUpdate: () => Promise<any>;
+  };
 }
 
 declare global {
