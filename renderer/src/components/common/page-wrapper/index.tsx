@@ -66,7 +66,7 @@ export function PageWrapper({
 
         {/* Counter Variant Header Content */}
         {variant === "counter" && (
-          <div className="flex items-center gap-4 w-full justify-between px-4">
+          <div className="flex items-center gap-4 w-full justify-center px-4">
             <div className="relative w-96">
               <Icon name="Search" className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input

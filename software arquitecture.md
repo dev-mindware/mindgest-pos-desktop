@@ -101,21 +101,22 @@ Esta checklist assegura um desenvolvimento iterativo. A regra é: **Não avança
 - [x] Implementar Gestão de Sessões de Caixa (Abertura/Fecho de Turnos Local).
 - [x] Redesenhar Arquivo de Documentos (Tabs FR/PP/NC) com leitura SQLite.
 - [x] Implementar SyncWorker (Background process para enviar SyncOutbox para API).
-- [ ] Teste F3: Sincronizar 1000 itens da Cloud e consultar offline com performance.
+- [] Teste F3: Sincronizar 1000 itens da Cloud e consultar offline com performance.
 
 ### Fase 4: O Coração do POS (Invoicing & AGT)
-- [ ] UI do Counter (Carrinho, Pesquisa Rápida de Produtos).
-- [ ] Fluxo de Checkout (Métodos de Pagamento, Troco).
-- [ ] Lógica de Hashes AGT (Gerar Chaves RSA offline, encadear Hashes de faturas).
-- [ ] Comunicação com o Python Microservice para gerar e imprimir o PDF da Fatura.
+- [2/3] UI do Counter (Carrinho, Pesquisa Rápida de Produtos).
+- [2/3] Fluxo de Checkout (Métodos de Pagamento, Troco).
+- [x] Lógica de Criação de Facturas Offline.
+- [2/3] Comunicação com o Python Microservice para gerar e imprimir o PDF da Fatura.
 - [ ] Teste F4: Emitir 10 faturas seguidas. Validar Hashes AGT e integridade da impressão térmica.
 
 ### Fase 5: Sincronização Bidirecional (Outbox & Sync)
-- [ ] Implementar a tabela e lógica `sync_outbox` no Prisma.
-- [ ] Criar o CronJob em background para deteção de conectividade (Network Polling).
-- [ ] Implementar rotas na Cloud (MINDGEST-API) para receber os lotes (Batch Processing).
-- [ ] Implementar o Pull (Cloud -> Local) para atualizações de preços em tempo real.
-- [ ] Teste F5: Faturar offline. Ligar internet. Confirmar na Cloud se dados chegaram. Mudar preço na cloud, verificar se POS localizou.
+- [x] Implementar a tabela e lógica `sync_outbox` no Prisma.
+- [x] Criar o CronJob em background para deteção de conectividade (Network Polling).
+- [x] Implementar rotas na Cloud (MINDGEST-API) para receber os lotes (Batch Processing).
+- [x] Implementar o Pull (Cloud -> Local) para atualizações de preços em tempo real. , mas antes quero que analises o primeiro ponto se já foi implementado!
+
+- [x] Teste F5: Faturar offline. Ligar internet. Confirmar na Cloud se dados chegaram. Mudar preço na cloud, verificar se POS localizou.
 
 ### Fase 6: Topologia Multi-Terminal
 - [ ] Criar API Server (Express/Next API) no Main Process para aceitar ligações LAN.

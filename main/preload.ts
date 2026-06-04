@@ -38,6 +38,12 @@ contextBridge.exposeInMainWorld("ipc", {
       ipcRenderer.invoke("security:save-license", { licenseJwt, storeId }),
     checkClock: () => ipcRenderer.invoke("security:check-clock"),
   },
+  // LAN Configuration Bridge
+  lan: {
+    getLocalIp: () => ipcRenderer.invoke("lan:get-local-ip"),
+    getConfig: () => ipcRenderer.invoke("lan:get-config"),
+    setConfig: (config: any) => ipcRenderer.invoke("lan:set-config", config),
+  },
   // Sync Bridge (Cloud to Local)
   sync: {
     products: (token: string, storeId: string) => 
@@ -92,5 +98,13 @@ contextBridge.exposeInMainWorld("ipc", {
     triggerSync: (params: { token: string, storeId: string, userId: string }) =>
       ipcRenderer.invoke("sync:trigger-sync", params),
     getSyncStatus: () => ipcRenderer.invoke("sync:get-sync-status")
+  },
+  app: {
+    getVersion: () => ipcRenderer.invoke("app:get-version"),
+  },
+  update: {
+    checkForUpdates: () => ipcRenderer.invoke("update:check-for-updates"),
+    downloadUpdate: () => ipcRenderer.invoke("update:download-update"),
+    installUpdate: () => ipcRenderer.invoke("update:install-update"),
   }
 });

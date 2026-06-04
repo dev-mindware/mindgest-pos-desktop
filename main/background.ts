@@ -1,5 +1,6 @@
 import path from "path";
 import { app, BrowserWindow, ipcMain } from "electron";
+import { autoUpdater } from "electron-updater";
 import serve from "electron-serve";
 import { database } from "./database";
 import { getHardwareFingerprint, validateMonotonicClock, validateOfflineLicense } from "./security";
@@ -30,6 +31,64 @@ ipcMain.handle("security:check-clock", async () => {
   return validateMonotonicClock();
 });
 
+
+// ==========================================
+// LAN Configuration IPC Handlers
+// ==========================================
+import os from "os";
+
+function getLocalIpAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
+
+ipcMain.handle("lan:get-local-ip", () => {
+  return getLocalIpAddress();
+});
+
+ipcMain.handle("lan:get-config", async () => {
+  try {
+    const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+    return {
+      terminalMode: settings?.terminalMode || 'MASTER',
+      masterIp: settings?.masterIp || null,
+      lanSecret: settings?.lanSecret || null
+    };
+  } catch (error) {
+    console.error("❌ [LAN] Erro ao buscar config LAN:", error);
+    return { terminalMode: 'MASTER', masterIp: null, lanSecret: null };
+  }
+});
+
+ipcMain.handle("lan:set-config", async (_, config) => {
+  try {
+    await prisma.settings.upsert({
+      where: { id: 'singleton' },
+      update: { 
+        terminalMode: config.terminalMode,
+        masterIp: config.masterIp,
+        lanSecret: config.lanSecret
+      },
+      create: { 
+        id: 'singleton',
+        terminalMode: config.terminalMode,
+        masterIp: config.masterIp,
+        lanSecret: config.lanSecret
+      }
+    });
+    return true;
+  } catch (error) {
+    console.error("❌ [LAN] Erro ao guardar config LAN:", error);
+    throw error;
+  }
+});
 
 // ==========================================
 // Data Sync IPC Handlers
@@ -796,6 +855,99 @@ ipcMain.handle("db:get-cached-clients", async () => {
 
 const isProd: boolean = process.env.NODE_ENV === "production";
 
+function getMainWindow(): BrowserWindow | null {
+  const mainWindow = (global as any).__mainWindow;
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+}
+
+function sendUpdateEvent(channel: string, payload?: any) {
+  const mainWindow = getMainWindow();
+  if (!mainWindow) {
+    console.warn(`[Updater] Nenhuma janela disponível para enviar evento ${channel}`);
+    return;
+  }
+  mainWindow.webContents.send(channel, payload);
+}
+
+const isUpdateEnabled = isProd;
+
+if (isUpdateEnabled) {
+  autoUpdater.autoDownload = false;
+  autoUpdater.allowPrerelease = false;
+
+  autoUpdater.on("error", (error: Error | null) => {
+    console.error("❌ [Updater] error:", error);
+    sendUpdateEvent("update:error", {
+      message: error?.message || "Erro desconhecido ao verificar atualizações.",
+    });
+  });
+
+  autoUpdater.on("update-available", (info: any) => {
+    console.log("✅ [Updater] update available:", info);
+    sendUpdateEvent("update:available", info);
+  });
+
+  autoUpdater.on("update-not-available", (info: any) => {
+    console.log("ℹ️ [Updater] update not available:", info);
+    sendUpdateEvent("update:not-available", info);
+  });
+
+  autoUpdater.on("download-progress", (progress: any) => {
+    sendUpdateEvent("update:download-progress", progress);
+  });
+
+  autoUpdater.on("update-downloaded", (info: any) => {
+    console.log("✅ [Updater] update downloaded:", info);
+    sendUpdateEvent("update:downloaded", info);
+  });
+
+  ipcMain.handle("update:check-for-updates", async () => {
+    if (!isUpdateEnabled) {
+      return { success: false, message: "Atualizações só funcionam em produção." };
+    }
+
+    try {
+      const result = await autoUpdater.checkForUpdates();
+      return { success: true, result };
+    } catch (error) {
+      console.error("❌ [Updater] check-for-updates failed:", error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle("update:download-update", async () => {
+    if (!isUpdateEnabled) {
+      return { success: false, message: "Atualizações só funcionam em produção." };
+    }
+
+    try {
+      const result = await autoUpdater.downloadUpdate();
+      return { success: true, result };
+    } catch (error) {
+      console.error("❌ [Updater] download-update failed:", error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle("update:install-update", async () => {
+    if (!isUpdateEnabled) {
+      return { success: false, message: "Atualizações só funcionam em produção." };
+    }
+
+    try {
+      autoUpdater.quitAndInstall(true, true);
+      return { success: true };
+    } catch (error) {
+      console.error("❌ [Updater] install-update failed:", error);
+      throw error;
+    }
+  });
+}
+
+ipcMain.handle("app:get-version", () => {
+  return app.getVersion();
+});
+
 console.log("--- Electron Main Process Log ---");
 console.log("Environment:", isProd ? "production" : "development");
 
@@ -885,6 +1037,12 @@ async function createWindow() {
   try {
     await mainWindow.loadURL(url);
     console.log("Window loaded successfully");
+
+    if (isUpdateEnabled) {
+      autoUpdater.checkForUpdates().catch((error: any) => {
+        console.error("❌ [Updater] initial check failed:", error);
+      });
+    }
   } catch (err) {
     console.error("CRITICAL: Failed to load URL:", err);
   }
@@ -1021,7 +1179,12 @@ app.on("ready", async () => {
   await testPrismaConnection();
 
   try {
-    await startLocalServer();
+    const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+    if (!settings || settings.terminalMode === 'MASTER') {
+      await startLocalServer();
+    } else {
+      console.log("🖥️ [Terminal Mode] Servidor local desativado. Este PC é um terminal slave.");
+    }
   } catch (error) {
     console.error("⚠️ [Aviso] Não foi possível iniciar o servidor local. A porta pode estar ocupada:", error);
   }

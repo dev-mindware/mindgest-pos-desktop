@@ -4,6 +4,7 @@ import React from "react";
 import { Icon, Avatar, AvatarFallback, AvatarImage } from "@/components";
 import { Product } from "@/types";
 import { CartCheckoutForm } from "./checkout-form";
+import { formatCurrency } from "@/utils";
 
 interface CartItem extends Product {
     qty: number;
@@ -64,8 +65,6 @@ const CartItemRow = React.memo<{
 
 CartItemRow.displayName = "CartItemRow";
 
-import { formatCurrency } from "@/utils";
-
 export const CartList = React.memo<CartSectionProps>(
     ({
         cartItems,
@@ -77,37 +76,38 @@ export const CartList = React.memo<CartSectionProps>(
         cashSessionId,
     }) => {
         return (
-            <div className="flex flex-col bg-[#121212] flex-1">
-                {/* Cart Items List */}
-                <div className="flex-1 min-h-0 relative">
-                    <div className="h-full overflow-y-auto custom-scrollbar">
-                        <div className="flex flex-col">
-                            {cartItems.map((item) => (
-                                <CartItemRow
-                                    key={item.id}
-                                    item={item}
-                                    onDelete={onDelete}
-                                    onUpdateQty={onUpdateQty}
-                                />
-                            ))}
-                            {cartItems.length === 0 && (
-                                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground/30 gap-3">
-                                    <Icon name="ShoppingBasket" size={48} />
-                                    <span className="text-sm font-medium">Carrinho vazio</span>
-                                </div>
-                            )}
-                        </div>
+            /* CartCheckoutForm aligned to Control Panel height (35% of viewport) */
+           <div className="grid grid-rows-[62.5%_37.5%] h-full w-full bg-[#121212] overflow-hidden">
+                
+                {/* Parte 1: Itens do Carrinho (62.5%) */}
+                <div className="h-full w-full min-h-0 overflow-y-auto custom-scrollbar">
+                    <div className="flex flex-col">
+                        {cartItems.map((item) => (
+                            <CartItemRow
+                                key={item.id}
+                                item={item}
+                                onDelete={onDelete}
+                                onUpdateQty={onUpdateQty}
+                            />
+                        ))}
+                        {cartItems.length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground/30 gap-3">
+                                <Icon name="ShoppingBasket" size={48} />
+                                <span className="text-sm font-medium">Carrinho vazio</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-
-                {/* Sub-components for checkout summary and payment methods */}
-                <CartCheckoutForm
-                    cartItems={cartItems}
-                    type={type}
-                    cashSessionId={cashSessionId}
-                    onSuccess={onClearCart}
-                />
+                {/* Parte 2: Checkout Form (37.5%) */}
+                <div className="h-full w-full min-h-0 overflow-y-auto border-t border-white/10 bg-[#161616]">
+                    <CartCheckoutForm
+                        cartItems={cartItems}
+                        type={type}
+                        cashSessionId={cashSessionId}
+                        onSuccess={onClearCart}
+                    />
+                </div>
             </div>
         );
     }

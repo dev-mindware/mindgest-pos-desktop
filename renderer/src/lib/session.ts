@@ -47,8 +47,13 @@ export async function decrypt(session: string): Promise<SessionPayload | null> {
       algorithms: ["HS256"],
     });
     return payload as SessionPayload;
-  } catch (error) {
-    console.error("Falha ao decifrar sessão:", error);
+  } catch (error: any) {
+    if (error?.code === "ERR_JWT_EXPIRED") {
+      console.warn("Sessão expirada localmente (JWTExpired). Limpando dados de sessão local...");
+      destroySession();
+    } else {
+      console.error("Falha ao decifrar sessão:", error);
+    }
     return null;
   }
 }

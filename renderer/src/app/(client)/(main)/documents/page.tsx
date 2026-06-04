@@ -120,10 +120,11 @@ export default function DocumentsPage() {
                         </TableCell>
                         <TableCell className="text-right pr-6">
                           <Button variant="ghost" size="icon" className="rounded-test-full hover:bg-primary/10">
-                            <Icon name="MoreHorizontal" className="h-5 w-5" />
+                            <Icon name="Ellipsis" className="h-5 w-5" />
                           </Button>
                         </TableCell>
                       </TableRow>
+                      
                     ))
                   ) : (
                     <TableRow>

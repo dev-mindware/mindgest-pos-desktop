@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/auth";
 import { getSidebarForUser } from "@/lib/get-sidebar-for-user";
 import { PlanType } from "@/types";
 import { SyncButton } from "./sync-button";
+import { UpdateButton } from "./update-button";
 
 export function AppSidebar() {
   const { user } = useAuth();
@@ -35,6 +36,9 @@ export function AppSidebar() {
       <SidebarContent className="group-data-[collapsible=icon]:items-center mt-4">
         <NavMenu items={filteredMenu} />
       </SidebarContent>
+      <div className="px-2">
+        <UpdateButton />
+      </div>
       <SyncButton />
       <SidebarFooter>
         <UserInfo />

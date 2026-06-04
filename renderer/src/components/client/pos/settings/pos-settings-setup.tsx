@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger, Appearance, Icon } from "@/components";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PosGeneralSettings, PosWorkspaceSettings, PosMindSettings } from "./contents";
+import { PosGeneralSettings, PosWorkspaceSettings, PosMindSettings, PosLanSettings } from "./contents";
 import { currentStoreStore } from "@/stores";
 import { useAuth } from "@/hooks/auth";
 import { useGetCurrentSession } from "@/hooks";
@@ -41,6 +41,12 @@ export function PosSettingsSetup() {
             icon: "Sparkles",
             component: () => <PosMindSettings />,
         },
+        {
+            id: "lan",
+            label: "Rede Local",
+            icon: "Network",
+            component: () => <PosLanSettings />,
+        },
     ];
 
     const defaultTab = tabs[0].id;
@@ -54,7 +60,7 @@ export function PosSettingsSetup() {
     };
 
     return (
-        <div>
+        <div className="p-4">
             <h1 className="text-2xl font-semibold">Definições do POS</h1>
             <div className="hidden md:block">
                 <Tabs

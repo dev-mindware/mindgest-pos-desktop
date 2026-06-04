@@ -60,5 +60,12 @@ export const menuItems: MenuStructure = {
       roles: ["CASHIER", "MANAGER", "OWNER"],
       minPlan: "Base",
     },
+    {
+      name: "Definições",
+      url: "/pos/settings",
+      icon: <Icon name="Settings" className="w-5 h-5" />,
+      roles: ["CASHIER", "MANAGER", "OWNER"],
+      minPlan: "Base",
+    },
   ],
 };
