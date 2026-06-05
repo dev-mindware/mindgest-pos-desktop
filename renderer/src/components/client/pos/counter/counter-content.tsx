@@ -241,7 +241,9 @@ export function CounterContent() {
     cartItems: getCartItemsArray(activeCart),
     type: activeCart,
     onSuccess:
-      activeCart === "invoice" ? handleClearCartInvoice : handleClearCartProforma,
+      activeCart === "invoice"
+        ? handleClearCartInvoice
+        : handleClearCartProforma,
     cashSessionId: currentSession?.id || "",
   });
 
@@ -271,7 +273,7 @@ export function CounterContent() {
     const minKeyboard = Math.max(220, Math.round(available * 0.18));
     const minRight = Math.max(320, Math.round(available * 0.28));
     const maxKeyboard = Math.max(
-      Math.min(Math.round(available * 0.70), available - minRight),
+      Math.min(Math.round(available * 0.7), available - minRight),
       minKeyboard,
     );
     const preferred = Math.round(available * 0.42);
@@ -287,9 +289,8 @@ export function CounterContent() {
     if (!el) return;
 
     const available = el.clientWidth;
-    const { minKeyboard, maxKeyboard, preferred } = calculateKeyboardBounds(
-      available,
-    );
+    const { minKeyboard, maxKeyboard, preferred } =
+      calculateKeyboardBounds(available);
 
     setKeyboardWidth((current) => {
       if (current === null) return preferred;
@@ -345,7 +346,7 @@ export function CounterContent() {
             scannedProduct={scannedProduct}
             onConfirm={onConfirmScan}
           />
-          <div className="flex-1 flex flex-col min-w-0 gap-4 p-4">
+          <div className="flex-1 flex flex-col min-w-0 gap-4 px-4">
             <div className="sticky top-0 z-20 bg-[#121212] pb-4">
               {isLoadingCategories ? (
                 <PosCategorySkeleton />
@@ -358,7 +359,7 @@ export function CounterContent() {
               )}
             </div>
 
-            <ScrollArea className="flex-1 pb-4 overflow-y-auto custom-scrollbar">
+            <ScrollArea className="flex-1 overflow-y-auto custom-scrollbar pb-2">
               {isLoadingProducts ? (
                 <PosProductSectionSkeleton />
               ) : (
@@ -401,7 +402,7 @@ export function CounterContent() {
           />
 
           {/* Right slot: Payment Summary / Totals */}
-          <div className="flex-1 h-full border-t border-white/10 lg:border-t-0 lg:border-l px-4 py-3 min-w-[320px] lg:flex-shrink-0">
+          <div className="flex-1 h-full border-t border-white/10 lg:border-t-0 lg:border-l px-4 py-3 min-w-[580px] lg:flex-shrink-0">
             <div className="w-full h-full flex flex-col gap-3">
               <div className="bg-muted/20 p-3 rounded-md border border-white/5">
                 <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -561,7 +562,6 @@ export function CounterContent() {
           </TabsContent>
         </Tabs>
       </div>
-
     </div>
   );
 }
