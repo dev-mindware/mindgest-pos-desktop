@@ -60,9 +60,9 @@ export function CartCheckoutForm({
                 />
 
                 {/* CustomerSelection moved to main Counter layout for improved spacing */}
-                <div className="flex">
+                <div className="flex px-1 gap-4">
                     <Button
-                        className="w-1/3 h-14 bg-red-400 border border-white/10 hover:bg-red-500/80 transition-colors text-md font-bold"
+                        className="max-w-1/3 grow h-14 bg-red-400 border border-white/10 hover:bg-red-500/80 transition-colors text-md font-bold"
                         onClick={() => {
                             handleCancel();
                             onSuccess?.();
@@ -73,7 +73,7 @@ export function CartCheckoutForm({
                     </Button>
 
                     <Button
-                        className="w-2/3 h-14 ml-2 text-md font-bold"
+                        className="w-2/3 grow h-14 text-md font-bold"
                         onClick={handleSubmit(handlePreview, (errors) => {
                             console.error("Form Validation Errors:", errors);
                             ErrorMessage("Verifique os campos obrigatórios");

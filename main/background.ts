@@ -901,6 +901,8 @@ if (isUpdateEnabled) {
     sendUpdateEvent("update:downloaded", info);
   });
 
+}
+
   ipcMain.handle("update:check-for-updates", async () => {
     if (!isUpdateEnabled) {
       return { success: false, message: "Atualizações só funcionam em produção." };
@@ -942,7 +944,6 @@ if (isUpdateEnabled) {
       throw error;
     }
   });
-}
 
 ipcMain.handle("app:get-version", () => {
   return app.getVersion();
