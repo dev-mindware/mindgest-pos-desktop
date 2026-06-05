@@ -377,7 +377,7 @@ export function CounterContent() {
         {/* Control Panel — 30% */}
         <div
           ref={controlPanelRef}
-          className="flex flex-col lg:flex-row flex-[3.5] overflow-hidden bg-[#121212] border-t border-white/10 min-h-[330px]"
+          className="flex flex-col lg:flex-row flex-[3.5] overflow-hidden bg-[#121212] border-t border-white/10 min-h-[320px]"
         >
           {/* Left slot: Virtual Keyboard (resizable) */}
           <div
