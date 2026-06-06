@@ -12,6 +12,7 @@ interface CustomerSelectionProps {
   onPhoneChange: (phone: string) => void;
   newCustomerNif?: string;
   onNifChange?: (nif: string) => void;
+  isProforma?: boolean;
 }
 
 export function CustomerSelection({
@@ -23,6 +24,7 @@ export function CustomerSelection({
   onPhoneChange,
   newCustomerNif,
   onNifChange,
+  isProforma = false,
 }: CustomerSelectionProps) {
   return (
     <div className="space-y-3 min-w-0">
@@ -31,7 +33,7 @@ export function CustomerSelection({
         className="flex items-center justify-between cursor-pointer w-full py-2 group hover:text-primary transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold">Cliente (Opcional)</span>
+          <span className="text-sm font-bold">Cliente{!isProforma ? " (Opcional)" : ""}</span>
         </div>
 
         {isExpanded ? (

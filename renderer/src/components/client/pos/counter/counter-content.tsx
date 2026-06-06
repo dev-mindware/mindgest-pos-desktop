@@ -264,6 +264,12 @@ export function CounterContent() {
     handleQuickCash,
   } = checkout;
 
+  useEffect(() => {
+    if (activeCart === "proforma") {
+      setIsCustomerExpanded(true);
+    }
+  }, [activeCart, setIsCustomerExpanded]);
+
   // Resizable keyboard state
   const controlPanelRef = useRef<HTMLDivElement | null>(null);
   const [keyboardWidth, setKeyboardWidth] = useState<number | null>(null);
@@ -430,7 +436,7 @@ export function CounterContent() {
       </div>
 
       {/* Right Content - Cart & Payment */}
-      <div className="w-full xl:basis-[500px] basis-[320px] min-w-[240px] max-w-[520px] shrink-0 h-full flex flex-col border-l border-border dark:border-white/10 bg-background dark:bg-[#121212]">
+      <div className="w-full xl:basis-[450px] basis-[320px] min-w-[240px] max-w-[520px] shrink-0 h-full flex flex-col border-l border-border dark:border-white/10 bg-background dark:bg-[#121212]">
         <div className="flex flex-col border-b justify-between">
           <div className="min-w-0 w-full p-2">
             <CustomerSelection
@@ -442,6 +448,7 @@ export function CounterContent() {
               onPhoneChange={setNewCustomerPhone}
               newCustomerNif={newCustomerNif}
               onNifChange={setNewCustomerNif}
+              isProforma={activeCart === "proforma"}
             />
           </div>
 
@@ -449,11 +456,15 @@ export function CounterContent() {
             <Tabs
               value={activeCart}
               onValueChange={(v) => setActiveCart(v as CartType)}
-              className="flex-1 flex flex-col"
+              className="flex-1 flex flex-col items-center"
             >
               <TabsList className="grid w-full grid-cols-2 m-4 mb-2">
-                <TabsTrigger value="invoice">Faturação</TabsTrigger>
-                <TabsTrigger value="proforma">Proforma</TabsTrigger>
+                <TabsTrigger value="invoice" className="cursor-pointer">
+                  Faturação
+                </TabsTrigger>
+                <TabsTrigger value="proforma" className="cursor-pointer">
+                  Proforma
+                </TabsTrigger>
               </TabsList>
             </Tabs>
 

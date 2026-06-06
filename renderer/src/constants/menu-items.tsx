@@ -43,7 +43,7 @@ export const menuItems: MenuStructure = {
       name: "Documentos",
       url: "/documents",
       icon: <Icon name="ScrollText" className="w-5 h-5" />,
-      roles: ["MANAGER", "OWNER"],
+      roles: ["CASHIER", "MANAGER", "OWNER"],
       minPlan: "Base",
     },
     {

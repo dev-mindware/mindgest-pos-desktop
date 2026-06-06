@@ -7,6 +7,7 @@ import React, {
   useState,
   useRef,
 } from "react";
+import { useWorkspaceStore } from "@/stores/pos/workspace-store";
 
 // Define the shape of our context
 interface KeyboardContextType {
@@ -37,13 +38,29 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
   );
   const [isShift, setIsShift] = useState(false);
   const [isCaps, setIsCaps] = useState(false);
+  const [shouldOpenOnFocus, setShouldOpenOnFocus] = useState(false);
+  const { enableVirtualKeyboard } = useWorkspaceStore();
 
-  // Global listener for focusin/focus to auto-detect inputs
+  // Global listener for pointer/touch down so the keyboard opens only on input click
   useEffect(() => {
-    const handleFocusIn = (e: Event) => {
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement;
-
       if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement
+      ) {
+        setShouldOpenOnFocus(true);
+      } else {
+        setShouldOpenOnFocus(false);
+      }
+    };
+
+    const handleFocusIn = (e: Event) => {
+      if (!enableVirtualKeyboard) return;
+
+      const target = e.target as HTMLElement;
+      if (
+        shouldOpenOnFocus &&
         (target instanceof HTMLInputElement ||
           target instanceof HTMLTextAreaElement) &&
         !target.dataset.noKeyboard
@@ -53,7 +70,6 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
         const inputMode = input.inputMode;
         const dataLayout = input.getAttribute("data-layout");
 
-        // Enhanced numeric detection
         const isNumeric =
           type === "number" ||
           type === "tel" ||
@@ -64,15 +80,20 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
         setActiveInput(target as HTMLInputElement | HTMLTextAreaElement);
         setIsVisible(true);
       }
+
+      setShouldOpenOnFocus(false);
     };
 
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("touchstart", handlePointerDown, true);
     document.addEventListener("focusin", handleFocusIn);
-    document.addEventListener("focus", handleFocusIn, true); // Capture phase to catch autoFocus
+
     return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("touchstart", handlePointerDown, true);
       document.removeEventListener("focusin", handleFocusIn);
-      document.removeEventListener("focus", handleFocusIn, true);
     };
-  }, []);
+  }, [enableVirtualKeyboard, shouldOpenOnFocus]);
 
   // Safety sync: ensure layout matches the active input if it transitions or re-mounts
   useEffect(() => {
@@ -107,6 +128,12 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
     setIsVisible(false);
     setActiveInput(null);
   }, []);
+
+  useEffect(() => {
+    if (!enableVirtualKeyboard && isVisible) {
+      closeKeyboard();
+    }
+  }, [enableVirtualKeyboard, isVisible, closeKeyboard]);
 
   const toggleShift = React.useCallback(() => setIsShift((prev) => !prev), []);
   const toggleCaps = React.useCallback(() => setIsCaps((prev) => !prev), []);
