@@ -25,60 +25,83 @@ export function CustomerSelection({
   onNifChange,
 }: CustomerSelectionProps) {
   return (
-    <div className="mb-6 space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-bold">Cliente (Opcional)</span>
-      </div>
-
-      <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Buscar Cliente
-          </label>
-          <AsyncCreatableSelectField
-            endpoint="/clients"
-            label=""
-            placeholder="Cliente..."
-            value={selectedClient}
-            onChange={onClientChange}
-            displayFields={["name", "phone"]}
-            minChars={2}
-            formatCreateLabel={(val) => `➕ Criar "${val}"`}
-          />
+    <div className="space-y-3 min-w-0">
+      <button
+        onClick={onToggleExpand}
+        className="flex items-center justify-between cursor-pointer w-full py-2 group hover:text-primary transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold">Cliente (Opcional)</span>
         </div>
 
-        {/* If no selected customer or it's a new one, show phone + nif fields */}
-        {(!selectedClient || selectedClient.__isNew__) && (
-          <div className="space-y-2 pt-2 border-t border-dashed">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Telefone do Cliente
-            </label>
-            <Input
-              startIcon="Phone"
-              type="text"
-              inputMode="numeric"
-              data-layout="numeric"
-              placeholder="Número de telefone"
-              value={newCustomerPhone}
-              onChange={(e) => onPhoneChange(e.target.value)}
-              className="bg-muted/30 truncate"
-            />
-
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mt-2">
-              NIF (Opcional)
-            </label>
-            <Input
-              startIcon="Hash"
-              type="text"
-              inputMode="numeric"
-              placeholder="Digite o NIF"
-              value={newCustomerNif}
-              onChange={(e) => onNifChange?.(e.target.value)}
-              className="bg-muted/30"
-            />
-          </div>
+        {isExpanded ? (
+          <Icon
+            name="ChevronDown"
+            size={16}
+            className="text-muted-foreground group-hover:text-primary"
+          />
+        ) : (
+          <Icon
+            name="ChevronRight"
+            size={16}
+            className="text-muted-foreground group-hover:text-primary"
+          />
         )}
-      </div>
-    </div>
+      </button>
+
+      {
+        isExpanded && (
+          /* Adicionado w-full e min-w-0 para conter o avanço do flex */
+          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 w-full min-w-0 overflow-hidden">
+            <div className="space-y-2 min-w-0 w-full">
+              <div className="min-w-0 w-full">
+                <AsyncCreatableSelectField
+                  endpoint="/clients"
+                  label=""
+                  placeholder="Buscar Cliente..."
+                  value={selectedClient}
+                  onChange={onClientChange}
+                  displayFields={["name", "phone"]}
+                  minChars={2}
+                  formatCreateLabel={(val) => `➕ Criar "${val}"`}
+                />
+              </div>
+            </div>
+
+            {/* Se não houver cliente selecionado ou for novo, mostra campos de telefone + nif */}
+            {(!selectedClient || selectedClient.__isNew__) && (
+              /* Garantido que em telas muito pequenas (abaixo de sm) não quebre o layout lateral */
+              <div className="flex lg:flex-col flex-row sm:gap-2 gap-3 pt-2 border-t border-dashed w-full min-w-0">
+                <div className="flex-1 min-w-0 w-full">
+                  <Input
+                    startIcon="Phone"
+                    type="text"
+                    inputMode="numeric"
+                    data-layout="numeric"
+                    placeholder="Telefone"
+                    value={newCustomerPhone}
+                    onChange={(e) => onPhoneChange(e.target.value)}
+                    className="bg-muted/30 truncate w-full"
+                  />
+                </div>
+
+                {/* Alterado de sm:w-36 fixo para sm:basis-36 para responder melhor ao flexbox */}
+                <div className="w-full min-w-0 shrink-0">
+                  <Input
+                    startIcon="Hash"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="NIF"
+                    value={newCustomerNif}
+                    onChange={(e) => onNifChange?.(e.target.value)}
+                    className="bg-muted/30 w-full"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      }
+    </div >
   );
 }

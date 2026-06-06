@@ -16,6 +16,29 @@ interface CategorySectionProps {
 export const CategorySelector = React.memo<CategorySectionProps>(
   ({ categories, activeCategory, onSelectCategory }) => {
     const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+    const [canScrollRight, setCanScrollRight] = React.useState(true);
+
+    const updateScrollButtons = () => {
+      if (scrollContainerRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+        setCanScrollLeft(scrollLeft > 0);
+        setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+      }
+    };
+
+    React.useEffect(() => {
+      updateScrollButtons();
+      const container = scrollContainerRef.current;
+      if (container) {
+        container.addEventListener("scroll", updateScrollButtons);
+        window.addEventListener("resize", updateScrollButtons);
+        return () => {
+          container.removeEventListener("scroll", updateScrollButtons);
+          window.removeEventListener("resize", updateScrollButtons);
+        };
+      }
+    }, []);
 
     const scroll = (direction: "left" | "right") => {
       if (scrollContainerRef.current) {
@@ -43,7 +66,7 @@ export const CategorySelector = React.memo<CategorySectionProps>(
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8 shrink-0 rounded-test-full hidden md:flex"
+            className="h-8 w-8 shrink-0 rounded-test-full hidden md:flex "
             onClick={() => scroll("left")}
           >
             <Icon name="ChevronLeft" className="h-4 w-4" />
@@ -58,10 +81,10 @@ export const CategorySelector = React.memo<CategorySectionProps>(
                 key={category.id}
                 onClick={() => onSelectCategory(category.id)}
                 className={cn(
-                  "flex items-center justify-center px-6 py-2.5 rounded-[8px] transition-all min-w-[120px] shrink-0 text-sm font-semibold border-none whitespace-nowrap",
+                  "flex items-center justify-center px-6 py-2.5 rounded-[8px] transition-all min-w-[120px] shrink-0 text-sm font-semibold whitespace-nowrap",
                   activeCategory === category.id
-                    ? "bg-[#2A2A2A] text-white shadow-sm ring-1 ring-white/10"
-                    : "bg-[#1F1F1F] text-zinc-400 hover:text-white hover:bg-[#2A2A2A]/80",
+                    ? "border-[1px] border-primary dark:text-white shadow-sm ring-1 ring-white/10"
+                    : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/70 border-none dark:bg-[#1F1F1F] dark:text-zinc-400 dark:hover:text-white dark:hover:bg-[#2A2A2A]/80",
                 )}
               >
                 {category.name}

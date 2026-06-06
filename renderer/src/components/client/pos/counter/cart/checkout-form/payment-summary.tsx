@@ -30,7 +30,7 @@ export function PaymentSummary({
                     </span>
                 </div>
 
-                {taxAmount > 0 && (
+                {taxAmount >= 0 && (
                     <div className="flex justify-between text-sm text-muted-foreground">
                         <span>Impostos</span>
                         <span className="font-medium text-foreground">

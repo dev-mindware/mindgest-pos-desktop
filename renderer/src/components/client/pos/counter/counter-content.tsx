@@ -270,10 +270,12 @@ export function CounterContent() {
   const isDraggingRef = useRef(false);
 
   const calculateKeyboardBounds = useCallback((available: number) => {
-    const minKeyboard = Math.max(220, Math.round(available * 0.18));
-    const minRight = Math.max(320, Math.round(available * 0.28));
+    // Allow the keyboard to shrink more aggressively on narrower screens
+    const minKeyboard = Math.max(180, Math.round(available * 0.14));
+    // Reserve a smaller right-side minimum so the right column can shrink
+    const minRight = Math.max(220, Math.round(available * 0.18));
     const maxKeyboard = Math.max(
-      Math.min(Math.round(available * 0.7), available - minRight),
+      Math.min(Math.round(available * 0.75), available - minRight),
       minKeyboard,
     );
     const preferred = Math.round(available * 0.42);
@@ -346,8 +348,8 @@ export function CounterContent() {
             scannedProduct={scannedProduct}
             onConfirm={onConfirmScan}
           />
-          <div className="flex-1 flex flex-col min-w-0 gap-4 px-4">
-            <div className="sticky top-0 z-20 bg-[#121212] pb-4">
+          <div className="flex-1 flex flex-col min-w-0 gap-4">
+            <div className="sticky top-0 z-20 bg-background dark:bg-[#121212] p-1">
               {isLoadingCategories ? (
                 <PosCategorySkeleton />
               ) : (
@@ -359,7 +361,7 @@ export function CounterContent() {
               )}
             </div>
 
-            <ScrollArea className="flex-1 overflow-y-auto custom-scrollbar pb-2">
+            <ScrollArea className="flex-1 overflow-y-auto custom-scrollbar pb-2 px-4">
               {isLoadingProducts ? (
                 <PosProductSectionSkeleton />
               ) : (
@@ -378,15 +380,15 @@ export function CounterContent() {
         {/* Control Panel — 30% */}
         <div
           ref={controlPanelRef}
-          className="flex flex-col lg:flex-row flex-[3.5] overflow-hidden bg-[#121212] border-t border-white/10 min-h-[320px]"
+          className="flex flex-col lg:flex-row flex-[3.5] overflow-hidden bg-background dark:bg-[#121212] border-t border-border dark:border-white/10 min-h-[320px]"
         >
           {/* Left slot: Virtual Keyboard (resizable) */}
           <div
-            className="h-full overflow-hidden transition-all duration-200 flex-shrink-0"
+            className="h-full overflow-hidden transition-all duration-200"
             style={{
               width: keyboardWidth ? `${keyboardWidth}px` : "100%",
-              minWidth: 240,
-              maxWidth: "calc(100% - 320px)",
+              minWidth: 280,
+              maxWidth: "calc(100% - 340px)",
             }}
           >
             <EmbeddedKeyboard />
@@ -397,29 +399,16 @@ export function CounterContent() {
             role="separator"
             aria-orientation="vertical"
             onMouseDown={onMouseDown}
-            className="hidden lg:block w-2 cursor-col-resize hover:bg-white/10 transition-colors"
+            className="hidden lg:block w-2 cursor-col-resize hover:bg-muted/20 dark:hover:bg-white/10 transition-colors"
             style={{ background: "transparent" }}
           />
 
           {/* Right slot: Payment Summary / Totals */}
-          <div className="flex-1 h-full border-t border-white/10 lg:border-t-0 lg:border-l px-4 py-3 min-w-[580px] lg:flex-shrink-0">
+          <div className="flex-1 h-full border-t border-border dark:border-white/10 lg:border-t-0 lg:border-l px-4 py-3 min-w-[220px]">
             <div className="w-full h-full flex flex-col gap-3">
-              <div className="bg-muted/20 p-3 rounded-md border border-white/5">
-                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-                  <div className="min-w-0">
-                    <CustomerSelection
-                      isExpanded={isCustomerExpanded}
-                      onToggleExpand={() => setIsCustomerExpanded((s) => !s)}
-                      selectedClient={selectedClient}
-                      onClientChange={handleClientChange}
-                      newCustomerPhone={newCustomerPhone}
-                      onPhoneChange={setNewCustomerPhone}
-                      newCustomerNif={newCustomerNif}
-                      onNifChange={setNewCustomerNif}
-                    />
-                  </div>
-
-                  <div className="min-w-[280px]">
+              <div className="bg-muted/20 p-3 rounded-md border border-border dark:border-white/5 w-full">
+                <div className="grid gap-3 lg:grid-cols-[min(0,1fr)_320px]">
+                  <div className="min-w-[280px] w-full">
                     <PaymentMethods
                       paymentMethod={paymentMethod}
                       onMethodChange={setPaymentMethod}
@@ -441,77 +430,92 @@ export function CounterContent() {
       </div>
 
       {/* Right Content - Cart & Payment */}
-      <div className="w-full xl:w-[500px] min-w-0 max-w-[520px] h-full flex flex-col border-l border-white/10 bg-[#121212]">
-        <div className="flex border-b items-center justify-between">
-          <Tabs
-            value={activeCart}
-            onValueChange={(v) => setActiveCart(v as CartType)}
-            className="flex-1 flex flex-col"
-          >
-            <TabsList className="grid w-full grid-cols-2 m-4 mb-2">
-              <TabsTrigger value="invoice">Faturação</TabsTrigger>
-              <TabsTrigger value="proforma">Proforma</TabsTrigger>
-            </TabsList>
-          </Tabs>
+      <div className="w-full xl:basis-[500px] basis-[320px] min-w-[240px] max-w-[520px] shrink-0 h-full flex flex-col border-l border-border dark:border-white/10 bg-background dark:bg-[#121212]">
+        <div className="flex flex-col border-b justify-between">
+          <div className="min-w-0 w-full p-2">
+            <CustomerSelection
+              isExpanded={isCustomerExpanded}
+              onToggleExpand={() => setIsCustomerExpanded((s) => !s)}
+              selectedClient={selectedClient}
+              onClientChange={handleClientChange}
+              newCustomerPhone={newCustomerPhone}
+              onPhoneChange={setNewCustomerPhone}
+              newCustomerNif={newCustomerNif}
+              onNifChange={setNewCustomerNif}
+            />
+          </div>
 
-          {/* Mind AI Recommendations Tooltip */}
-          {currentCartArray.length > 0 && (
-            <div className="pr-4 pb-0 items-center justify-center flex">
-              <TooltipProvider delayDuration={100}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 border-primary/30 text-primary relative"
+          <div className="flex border-b items-center justify-between">
+            <Tabs
+              value={activeCart}
+              onValueChange={(v) => setActiveCart(v as CartType)}
+              className="flex-1 flex flex-col"
+            >
+              <TabsList className="grid w-full grid-cols-2 m-4 mb-2">
+                <TabsTrigger value="invoice">Faturação</TabsTrigger>
+                <TabsTrigger value="proforma">Proforma</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* Mind AI Recommendations Tooltip */}
+            {currentCartArray.length > 0 && (
+              <div className="pr-4 pb-0 items-center justify-center flex">
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 border-primary/30 text-primary relative"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        {!loadingRecs && recommendedProducts.length > 0 && (
+                          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                          </span>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="left"
+                      className="w-[300px] p-4 border bg-background text-foreground shadow-lg"
                     >
-                      <Sparkles className="w-4 h-4" />
-                      {!loadingRecs && recommendedProducts.length > 0 && (
-                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                        </span>
+                      <div className="font-semibold text-sm mb-3 flex items-center gap-2 text-primary">
+                        <Sparkles className="w-4 h-4" /> Mind AI Sugere:
+                      </div>
+                      {loadingRecs ? (
+                        <div className="text-sm text-muted-foreground animate-pulse text-center p-4">
+                          A analisar o cesto...
+                        </div>
+                      ) : recommendedProducts.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {recommendedProducts.slice(0, 2).map((p) => (
+                            <button
+                              key={p.id}
+                              onClick={() => handleAddToCart(p)}
+                              className="flex flex-col items-center p-2 rounded border hover:bg-muted hover:border-primary transition-colors text-xs text-center wrap-break-word"
+                            >
+                              <span className="font-medium truncate w-full">
+                                {p.name}
+                              </span>
+                              <span className="text-muted-foreground mt-1 text-xs">
+                                +{(p.price || 0).toFixed(2)}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground text-center p-2">
+                          Sem sugestões de momento.
+                        </div>
                       )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="left"
-                    className="w-[300px] p-4 border bg-background text-foreground shadow-lg"
-                  >
-                    <div className="font-semibold text-sm mb-3 flex items-center gap-2 text-primary">
-                      <Sparkles className="w-4 h-4" /> Mind AI Sugere:
-                    </div>
-                    {loadingRecs ? (
-                      <div className="text-sm text-muted-foreground animate-pulse text-center p-4">
-                        A analisar o cesto...
-                      </div>
-                    ) : recommendedProducts.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        {recommendedProducts.slice(0, 2).map((p) => (
-                          <button
-                            key={p.id}
-                            onClick={() => handleAddToCart(p)}
-                            className="flex flex-col items-center p-2 rounded border hover:bg-muted hover:border-primary transition-colors text-xs text-center wrap-break-word"
-                          >
-                            <span className="font-medium truncate w-full">
-                              {p.name}
-                            </span>
-                            <span className="text-muted-foreground mt-1 text-xs">
-                              +{(p.price || 0).toFixed(2)}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground text-center p-2">
-                        Sem sugestões de momento.
-                      </div>
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+          </div>
         </div>
 
         <Tabs
