@@ -50,12 +50,12 @@ export function DocumentSuccessModal() {
                             invoiceNumber: payloadToUse.invoiceNumber || "PENDENTE OFFLINE",
                             invoiceDate: payloadToUse.invoiceDate || new Date().toISOString(),
                             dueDate: payloadToUse.dueDate,
-                            company: {
-                                name: payloadToUse.company?.name || "A Minha Empresa",
-                                taxNumber: payloadToUse.company?.taxNumber || "000000000",
-                                address: payloadToUse.company?.address || "Endereço da Empresa",
-                                email: payloadToUse.company?.email || "geral@empresa.com",
-                                phone: payloadToUse.company?.phone || "900000000"
+                            company: payloadToUse.company || {
+                                name: "A Minha Empresa",
+                                taxNumber: "000000000",
+                                address: "Endereço da Empresa",
+                                email: "geral@empresa.com",
+                                phone: "900000000"
                             },
                             client: {
                                 name: payloadToUse.client?.name || "Consumidor Final",

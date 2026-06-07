@@ -73,9 +73,13 @@ export function useCartCheckout({
     },
   });
 
-  const { handleSubmit, setValue, watch, reset } = form;
+  const { handleSubmit, setValue, watch, reset, register } = form;
   const { handleClientChange, selectedClient, setSelectedClient } =
     useClientSelection(setValue);
+
+  useEffect(() => {
+    register("client");
+  }, [register]);
 
   const watchedItems = watch("items") as any[];
 
@@ -147,11 +151,9 @@ export function useCartCheckout({
     if (id) setValue("storeId", id);
   }, [currentStore, user, setValue]);
 
-  // Synchronize cashSessionId
+  // Synchronize cashSessionId (always set, even if empty, to handle form reset)
   useEffect(() => {
-    if (cashSessionId) {
-      setValue("cashSessionId", cashSessionId);
-    }
+    setValue("cashSessionId", cashSessionId || "");
   }, [cashSessionId, setValue]);
 
   // Handle Cash & Change
@@ -182,7 +184,20 @@ export function useCartCheckout({
     setSelectedClient(null);
     setNewCustomerPhone("");
     setNewCustomerNif("");
-    reset();
+    reset({
+      issueDate: new Date().toLocaleDateString("en-CA"),
+      items: [],
+      client: undefined,
+      storeId: currentStore?.id || user?.store?.id || "",
+      total: 0,
+      subtotal: 0,
+      taxAmount: 0,
+      discountAmount: 0,
+      receivedValue: 0,
+      change: 0,
+      paymentMethod: "CARD",
+      cashSessionId: cashSessionId || "", // Preserve cashSessionId
+    });
     setIsPreviewOpen(false);
     setPendingPayload(null);
   };
@@ -222,6 +237,8 @@ export function useCartCheckout({
     );
 
     console.log("✅ [CartCheckout] Items ready for cloud (id=cloudId):", simplifiedItems);
+    console.log("✅ [CartCheckout] selectedClient:", selectedClient);
+    console.log(data);
 
     let finalClient = undefined;
     if (data.client && (data.client.id || (data.client.name && data.client.name.trim() !== ""))) {
@@ -237,14 +254,39 @@ export function useCartCheckout({
       if (Object.keys(c).length > 0) finalClient = c;
     }
 
+    if (!finalClient && data.clientId) {
+      finalClient = { id: data.clientId };
+    }
+
+    // If the form did not populate `client`, fall back to `selectedClient` (selection UI)
+    if (!finalClient && selectedClient) {
+      const option: any = selectedClient;
+      if (option.__isNew__) {
+        finalClient = { name: option.label };
+      } else if (option.data) {
+        const d = option.data;
+        const c: any = {
+          id: d.id,
+          name: d.name,
+          taxNumber: d.taxNumber || undefined,
+          address: d.address || undefined,
+          phone: d.phone || undefined,
+        };
+        // Remove undefined/empty fields
+        Object.keys(c).forEach((k) => {
+          if (c[k] === undefined || (typeof c[k] === "string" && c[k].trim() === "")) delete c[k];
+        });
+        if (Object.keys(c).length > 0) finalClient = c;
+      }
+    }
+
     const payload: PosSalesFormData = {
       ...data,
       items: simplifiedItems,
-      client: finalClient,
       storeId: currentStore?.id || user?.store?.id || data.storeId,
       subtotal: cartTotals.subtotal,
       taxAmount: cartTotals.taxAmount,
-      documentType: "FR",
+      documentType: type === "proforma" ? "FP" : "FR",
       discountAmount: cartTotals.discountAmount,
       total: cartTotals.total,
       change:
@@ -253,6 +295,12 @@ export function useCartCheckout({
           : 0,
       cashSessionId,
     };
+
+    if (finalClient) {
+      payload.client = finalClient;
+    } else {
+      delete (payload as any).client;
+    }
 
     // If creating a new anonymous customer by phone/NIF, build minimal client object
     if ((!selectedClient || selectedClient.__isNew__) && (newCustomerPhone || newCustomerNif)) {
@@ -302,14 +350,58 @@ export function useCartCheckout({
       if (type === "invoice") {
         const response = await createInvoiceReceipt(pendingPayload as any);
         const invoiceId = response?.data?.id || response?.localId;
+        const invoiceNumber = response?.data?.agtNo || response?.data?.invoiceNumber || response?.data?.number || "PENDENTE OFFLINE";
+
+        console.log("📋 [Checkout] Invoice creation response:", JSON.stringify(response, null, 2));
+        console.log("📋 [Checkout] Extracted invoiceNumber:", invoiceNumber);
+        console.log("📋 [Checkout] Response.data:", JSON.stringify(response?.data, null, 2));
 
         if (invoiceId) {
+          // Enrich payload with response data and full item details
+          const enrichedPayload = {
+            ...pendingPayload,
+            invoiceNumber: invoiceNumber,
+            invoiceDate: new Date().toISOString().split('T')[0],
+            items: (cartItems || []).map((item) => ({
+              name: item.name,
+              description: item.description,
+              quantity: item.qty,
+              price: item.price,
+              tax: item.tax?.rate || 0,
+            })),
+            company: {
+              name: currentStore?.name || "A Minha Empresa",
+              address: currentStore?.address || "Endereço da Empresa",
+              email: currentStore?.email || "geral@empresa.com",
+              phone: currentStore?.phone || "900000000",
+              taxNumber: "000000000",
+            },
+          };
+
           openModal("document-success", {
             id: invoiceId,
             type: "invoice-receipt",
             format: "thermal",
-            payload: pendingPayload,
+            payload: enrichedPayload,
           });
+
+          // 🔄 Force synchronization after successful invoice creation
+          if (typeof window !== "undefined" && window.ipc?.sync?.triggerSync) {
+            const storeId = currentStore?.id || user?.store?.id || "";
+            const token = (user as any)?.token || localStorage.getItem("auth_token") || "";
+            if (token && storeId && user?.id) {
+              try {
+                console.log("🔄 [Checkout] Triggering sync after invoice creation...");
+                window.ipc.sync.triggerSync({
+                  token,
+                  storeId,
+                  userId: user.id,
+                });
+              } catch (syncErr) {
+                console.warn("⚠️ [Checkout] Erro ao forçar sincronização:", syncErr);
+              }
+            }
+          }
         }
       } else {
         // Remove payment-specific fields for proforma
@@ -323,15 +415,63 @@ export function useCartCheckout({
             .split("T")[0],
         };
         const response = await createProforma(proformaPayload as any);
-        const proformaId = response?.data?.id;
+        const proformaId = response?.data?.id || response?.localId;
+        const proformaNumber = response?.data?.proformaNumber || response?.data?.number || response?.data?.invoiceNumber || "PENDENTE OFFLINE";
+
+        console.log("📋 [Checkout] Proforma creation response:", JSON.stringify(response, null, 2));
+        console.log("📋 [Checkout] Extracted proformaNumber:", proformaNumber);
+        console.log("📋 [Checkout] Response.data:", JSON.stringify(response?.data, null, 2));
+
+        console.log("Proforma creation response:");
+        console.log(response);
 
         if (proformaId) {
+          // Enrich payload with response data and full item details
+          const enrichedPayload = {
+            ...pendingPayload,
+            invoiceNumber: proformaNumber,
+            invoiceDate: new Date().toISOString().split('T')[0],
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            items: (cartItems || []).map((item) => ({
+              name: item.name,
+              description: item.description,
+              quantity: item.qty,
+              price: item.price,
+              tax: item.tax?.rate || 0,
+            })),
+            company: {
+              name: currentStore?.name || "A Minha Empresa",
+              address: currentStore?.address || "Endereço da Empresa",
+              email: currentStore?.email || "geral@empresa.com",
+              phone: currentStore?.phone || "900000000",
+              taxNumber: "000000000",
+            },
+          };
+
           openModal("document-success", {
             id: proformaId,
             type: "proforma",
             format: "thermal",
-            payload: pendingPayload,
+            payload: enrichedPayload,
           });
+
+          // 🔄 Force synchronization after successful proforma creation
+          if (typeof window !== "undefined" && window.ipc?.sync?.triggerSync) {
+            const storeId = currentStore?.id || user?.store?.id || "";
+            const token = (user as any)?.token || localStorage.getItem("auth_token") || "";
+            if (token && storeId && user?.id) {
+              try {
+                console.log("🔄 [Checkout] Triggering sync after proforma creation...");
+                window.ipc.sync.triggerSync({
+                  token,
+                  storeId,
+                  userId: user.id,
+                });
+              } catch (syncErr) {
+                console.warn("⚠️ [Checkout] Erro ao forçar sincronização:", syncErr);
+              }
+            }
+          }
         }
       }
 
@@ -364,14 +504,31 @@ export function useCartCheckout({
       setCashGiven("");
       setSelectedClient(null);
       setNewCustomerPhone("");
-      reset();
+      reset({
+        issueDate: new Date().toLocaleDateString("en-CA"),
+        items: [],
+        client: undefined,
+        storeId: currentStore?.id || user?.store?.id || "",
+        total: 0,
+        subtotal: 0,
+        taxAmount: 0,
+        discountAmount: 0,
+        receivedValue: 0,
+        change: 0,
+        paymentMethod: "CARD",
+        cashSessionId: cashSessionId || "", // Preserve cashSessionId
+      });
       setIsPreviewOpen(false);
       setPendingPayload(null);
       onSuccess?.();
     } catch (error: any) {
       console.error("Payment error:", error);
+      const backendMessage =
+        typeof error === "string"
+          ? error
+          : error?.response?.data?.message || error?.message || null;
       ErrorMessage(
-        `Erro ao processar ${type === "invoice" ? "o pagamento" : "a proforma"}.`,
+        backendMessage || `Erro ao processar ${type === "invoice" ? "o pagamento" : "a proforma"}.`,
       );
     }
   };

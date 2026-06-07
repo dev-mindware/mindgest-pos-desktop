@@ -3,7 +3,7 @@
 import { Button } from "@/components";
 import { InvoicePreviewDrawer as PosInvoicePreviewDrawer } from "../../modals/invoice-preview-drawer";
 import { ErrorMessage } from "@/utils";
-import { useCartCheckout, CartItem } from "@/hooks";
+import { CartItem } from "@/hooks";
 import { PaymentSummary } from "./payment-summary";
 import { PaymentMethods } from "./payment-methods";
 import { DocumentSuccessModal } from "@/components/client/documents/modals/document-success-modal";
@@ -13,6 +13,7 @@ interface CartCheckoutFormProps {
     onSuccess?: () => void;
     type?: "invoice" | "proforma";
     cashSessionId: string;
+    checkout: any;
 }
 
 export function CartCheckoutForm({
@@ -20,6 +21,7 @@ export function CartCheckoutForm({
     onSuccess,
     type = "invoice",
     cashSessionId,
+    checkout,
 }: CartCheckoutFormProps) {
     const {
         form: { handleSubmit },
@@ -29,15 +31,6 @@ export function CartCheckoutForm({
         setCashGiven,
         change,
         totals,
-        isCustomerExpanded,
-        setIsCustomerExpanded,
-        newCustomerPhone,
-        setNewCustomerPhone,
-        newCustomerNif,
-        setNewCustomerNif,
-        selectedClient,
-        handleClientChange,
-        handleQuickCash,
         handlePreview,
         handleCancel,
         handleFinalSubmit,
@@ -45,7 +38,7 @@ export function CartCheckoutForm({
         setIsPreviewOpen,
         pendingPayload,
         isPending,
-    } = useCartCheckout({ cartItems, type, onSuccess, cashSessionId });
+    } = checkout;
 
     return (
         <>
@@ -74,7 +67,7 @@ export function CartCheckoutForm({
 
                     <Button
                         className="w-2/3 grow h-14 text-md font-bold"
-                        onClick={handleSubmit(handlePreview, (errors) => {
+                        onClick={handleSubmit(handlePreview, (errors: any) => {
                             console.error("Form Validation Errors:", errors);
                             ErrorMessage("Verifique os campos obrigatórios");
                         })}

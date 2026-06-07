@@ -264,6 +264,13 @@ export function CounterContent() {
     handleQuickCash,
   } = checkout;
 
+useEffect(() => {
+
+  console.log("Selected client changed:", selectedClient);
+  console.log("Selected client changed:", newCustomerPhone, " -- ", newCustomerNif);
+
+}, [selectedClient, newCustomerPhone, newCustomerNif])
+
   useEffect(() => {
     if (activeCart === "proforma") {
       setIsCustomerExpanded(true);
@@ -553,6 +560,7 @@ export function CounterContent() {
                 onDelete={handleDeleteItem}
                 onClearCart={handleClearCartInvoice}
                 cashSessionId={currentSession.id}
+                checkout={checkout}
               />
             )}
           </TabsContent>
@@ -572,6 +580,7 @@ export function CounterContent() {
                 onDelete={handleDeleteItem}
                 onClearCart={handleClearCartProforma}
                 cashSessionId={currentSession.id}
+                checkout={checkout}
               />
             )}
           </TabsContent>

@@ -18,6 +18,7 @@ interface CartSectionProps {
     onClearCart: () => void;
     type?: "invoice" | "proforma";
     cashSessionId: string;
+    checkout: any;
 }
 
 const CartItemRow = React.memo<{
@@ -149,6 +150,7 @@ export const CartList = React.memo<CartSectionProps>(
         onClearCart,
         type = "invoice",
         cashSessionId,
+        checkout,
     }) => {
         return (
             /* CartCheckoutForm aligned to Control Panel height (35% of viewport) */
@@ -181,6 +183,7 @@ export const CartList = React.memo<CartSectionProps>(
                         type={type}
                         cashSessionId={cashSessionId}
                         onSuccess={onClearCart}
+                        checkout={checkout}
                     />
                 </div>
             </div>

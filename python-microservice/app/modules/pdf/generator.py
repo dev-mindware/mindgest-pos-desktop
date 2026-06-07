@@ -1290,7 +1290,7 @@ class PDFGenerator(BaseDocumentGenerator):
         canvas.line(18 * mm, 12 * mm, 192 * mm, 12 * mm)
 
         # Centered text - SOFTWARE BRAND
-        footer_text = "Software de Gestão MINDGEST | Tel: +244 926 665 793 | E-mail: minwareofficial@gmail.com"
+        footer_text = "Software de Gestão MINDGEST | Tel: +244 943 100 922 | E-mail: geral@mindware.ao"
         canvas.drawCentredString(self.page_width / 2.0, 8 * mm, footer_text)
 
         # AGT CERTIFICATION - MANDATORY FORMAT

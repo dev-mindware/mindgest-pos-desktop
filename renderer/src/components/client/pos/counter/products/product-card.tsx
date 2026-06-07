@@ -65,7 +65,7 @@ export const ProductCard = React.memo<ProductCardProps>(
 
     return (
       <Card 
-        className="overflow-hidden max-w-[250px] w-full flex flex-col py-0 relative group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20 bg-card/50 backdrop-blur-sm cursor-pointer"
+        className="overflow-hidden max-w-[250px] min-w-[250px] w-full flex flex-col py-0 relative group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20 bg-card/50 backdrop-blur-sm cursor-pointer"
         onClick={() => {
           if (quantity === 0 && product.quantity > 0) {
             onAdd(product);

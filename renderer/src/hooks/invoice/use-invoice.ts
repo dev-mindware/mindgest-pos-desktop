@@ -58,6 +58,9 @@ export function useCreateInvoice() {
         }
         throw new Error("Sistema offline não inicializado.");
       }
+
+      console.log("Creating invoice with data:");
+      console.log(data);
       return invoiceService.createInvoice(data);
     },
     onSuccess: (response) => {
