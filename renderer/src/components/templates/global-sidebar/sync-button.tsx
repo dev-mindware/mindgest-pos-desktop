@@ -49,14 +49,14 @@ export function SyncButton() {
   };
 
   return (
-    <SidebarMenu className="mt-2 mb-2 border-t pt-2">
+    <SidebarMenu className="mt-2 mb-2 border-t pt-2 items-center">
       <SidebarMenuItem>
         <SidebarMenuButton 
           onClick={handleSync}
           disabled={isSyncing}
           tooltip="Sincronizar dados com a Cloud"
           className={cn(
-            "hover:bg-sidebar-accent transition-colors",
+            "hover:bg-sidebar-accent transition-colors cursor-pointer",
             isSyncing && "opacity-50 cursor-not-allowed"
           )}
         >

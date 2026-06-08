@@ -489,7 +489,66 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
         const storeIdLocal = invoiceData.storeId || null;
         const documentType = (invoiceData.documentType || invoiceData.type || 'FR').toString().toUpperCase();
         console.log(documentType +" - "+ storeIdLocal)
-        if (documentType && storeIdLocal) {
+
+        if (documentType === 'FP' && storeIdLocal) {
+          // Lógica Fatura Proforma
+          const currentYear = new Date().getFullYear().toString();
+          
+          // Fallback para companyCode e storeCode caso a UI não tenha enviado
+          const companyCode = invoiceData.companyCode || (user?.company?.name?.substring(0, 2).toUpperCase() || 'MC');
+          const storeCode = invoiceData.storeCode || (user?.store?.code || 'S1');
+
+          let sequence = await (prisma as any).documentSequence.findFirst({
+            where: {
+              companyCode,
+              storeCode,
+              documentType: 'FP',
+              seriesYear: currentYear,
+              isClosed: false
+            },
+            orderBy: { versionCode: 'desc' }
+          });
+
+          if (!sequence) {
+            const lastSeq = await (prisma as any).documentSequence.findFirst({
+              where: { companyCode, storeCode, documentType: 'FP', seriesYear: currentYear },
+              orderBy: { versionCode: 'desc' }
+            });
+            let newVersion = "01";
+            if (lastSeq && lastSeq.versionCode) {
+              newVersion = (parseInt(lastSeq.versionCode, 10) + 1).toString().padStart(2, '0');
+            }
+            const seriesCode = `${companyCode}${storeCode}${currentYear}${newVersion}`;
+
+            sequence = await (prisma as any).documentSequence.create({
+              data: {
+                companyCode,
+                storeCode,
+                documentType: 'FP',
+                seriesYear: currentYear,
+                versionCode: newVersion,
+                seriesCode: seriesCode,
+                currentSequence: 0,
+                lastDocumentNo: 5000,
+                isClosed: false,
+                storeId: storeIdLocal
+              }
+            });
+          }
+
+          const nextSeqNum = sequence.currentSequence + 1;
+          const willClose = nextSeqNum >= sequence.lastDocumentNo;
+
+          const updated = await (prisma as any).documentSequence.update({
+            where: { id: sequence.id },
+            data: { currentSequence: nextSeqNum, isClosed: willClose }
+          });
+
+          localAgtNo = `FP ${updated.seriesCode}/${updated.currentSequence}`;
+          console.log(`------🔢 [sync:create-invoice] Proforma Sequence gerada localmente: ${localAgtNo}`);
+
+        } else if (documentType && storeIdLocal) {
+          // Lógica Normal AGT (FR, FT, NC, etc)
           const currentYear = new Date().getFullYear().toString();
           const seriesRow = await prisma.agtSeries.findFirst({
             where: {
@@ -604,15 +663,79 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
 ipcMain.handle("sync:create-proforma", async (_, { proformaData, storeId, userId }) => {
   try {
     const proformaId = crypto.randomUUID();
+    let localProformaNo = proformaData.proformaNumber || proformaData.number || proformaData.invoiceNumber || undefined;
 
-    // Proformas não necessitam de representação estruturada offline de imediato no SQLite
+    if (!localProformaNo) {
+      const currentYear = new Date().getFullYear().toString();
+      
+      const companyCode = proformaData.companyCode || (proformaData.company?.name ? proformaData.company.name.substring(0, 2).toUpperCase() : 'MC');
+      const storeCode = proformaData.storeCode || 'S1'; 
+
+      let sequence = await (prisma as any).documentSequence.findFirst({
+        where: {
+          companyCode,
+          storeCode,
+          documentType: 'FP',
+          seriesYear: currentYear,
+          isClosed: false
+        },
+        orderBy: { versionCode: 'desc' }
+      });
+
+      if (!sequence) {
+        const lastSeq = await (prisma as any).documentSequence.findFirst({
+          where: { companyCode, storeCode, documentType: 'FP', seriesYear: currentYear },
+          orderBy: { versionCode: 'desc' }
+        });
+        let newVersion = "01";
+        if (lastSeq && lastSeq.versionCode) {
+          newVersion = (parseInt(lastSeq.versionCode, 10) + 1).toString().padStart(2, '0');
+        }
+        const seriesCode = `${companyCode}${storeCode}${currentYear}${newVersion}`;
+
+        sequence = await (prisma as any).documentSequence.create({
+          data: {
+            companyCode,
+            storeCode,
+            documentType: 'FP',
+            seriesYear: currentYear,
+            versionCode: newVersion,
+            seriesCode: seriesCode,
+            currentSequence: 0,
+            lastDocumentNo: 5000,
+            isClosed: false,
+            storeId: storeId
+          }
+        });
+      }
+
+      const nextSeqNum = sequence.currentSequence + 1;
+      const willClose = nextSeqNum >= sequence.lastDocumentNo;
+
+      const updated = await (prisma as any).documentSequence.update({
+        where: { id: sequence.id },
+        data: { currentSequence: nextSeqNum, isClosed: willClose }
+      });
+
+      localProformaNo = `FP ${updated.seriesCode}/${updated.currentSequence}`;
+      console.log(`------🔢 [sync:create-proforma] Proforma Sequence gerada localmente: ${localProformaNo}`);
+    }
+
+    const finalPayload = {
+      ...proformaData,
+      proformaNumber: localProformaNo,
+      invoiceNumber: localProformaNo,
+      offline: true,
+      establishmentNumber: proformaData.establishmentNumber || 'SEDE'
+    };
+
     // Apenas guardamos o payload no outbox para sincronizar mais tarde
     await prisma.syncOutbox.create({
       data: {
         entityType: "PROFORMA",
         entityId: proformaId,
         action: "CREATE",
-        payload: JSON.stringify(proformaData),
+        payload: JSON.stringify(finalPayload),
         storeId
       }
     });
@@ -620,6 +743,7 @@ ipcMain.handle("sync:create-proforma", async (_, { proformaData, storeId, userId
     return {
       data: {
         id: proformaId,
+        proformaNumber: localProformaNo,
         offline: true
       }
     };

@@ -209,6 +209,26 @@ model SyncOutbox {
   updatedAt       DateTime @updatedAt
 }
 
+model DocumentSequence {
+  id              String   @id @default(uuid())
+  cloudId         String?  @unique
+  companyCode     String
+  storeCode       String
+  documentType    String   @default("FP")
+  seriesYear      String
+  versionCode     String   @default("01")
+  seriesCode      String   @unique
+  currentSequence Int      @default(0)
+  lastDocumentNo  Int      @default(5000)
+  isClosed        Boolean  @default(false)
+  
+  storeId         String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([companyCode, storeCode, documentType, seriesYear, versionCode])
+}
+
 // AGT Series local model (permitirá operações atômicas via Prisma)
 model AgtSeries {
   id                String   @id @default(uuid())

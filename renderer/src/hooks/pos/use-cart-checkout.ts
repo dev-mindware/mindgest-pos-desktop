@@ -334,6 +334,12 @@ export function useCartCheckout({
       }
     }
 
+    // Validation: Proforma Invoices require an identified client
+    if (type === "proforma" && !payload.client) {
+      ErrorMessage("É obrigatório identificar o cliente para emitir uma Fatura Proforma.");
+      return;
+    }
+
     if (payload.receivedValue === 0) {
       delete (payload as any).receivedValue;
     }

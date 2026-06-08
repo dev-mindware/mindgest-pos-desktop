@@ -1,7 +1,7 @@
 import axios from "axios";
 import { syncService } from "./sync";
 
-const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api";
+const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 const DEFAULT_SYNC_INTERVAL_MS = 2 * 60 * 1000; // 5 minutos
 
 interface AutoSyncParams {
