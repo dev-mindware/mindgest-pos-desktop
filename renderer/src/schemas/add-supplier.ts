@@ -8,7 +8,7 @@ export const supplierSchema = z.object({
   }),
   phone: phoneNumberSchema,
   email: z.string().trim().email("Email inválido"),
-  nif: taxNumberSchema,
+  taxNumber: taxNumberSchema,
   address: z.string().trim().min(5, "Endereço muito curto"),
   supplyType: z.enum(["src", "prd", "amb"], {
     required_error: "Selecione o tipo de fornecimento",

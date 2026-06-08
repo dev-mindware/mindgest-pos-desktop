@@ -11,7 +11,7 @@ interface CustomerSelectionProps {
   newCustomerPhone: string;
   onPhoneChange: (phone: string) => void;
   newCustomerNif?: string;
-  onNifChange?: (nif: string) => void;
+  onNifChange?: (taxNumber: string) => void;
   isProforma?: boolean;
 }
 
@@ -70,7 +70,7 @@ export function CustomerSelection({
               </div>
             </div>
 
-            {/* Se não houver cliente selecionado ou for novo, mostra campos de telefone + nif */}
+            {/* Se não houver cliente selecionado ou for novo, mostra campos de telefone + taxNumber */}
             {(!selectedClient || selectedClient.__isNew__) && (
               /* Garantido que em telas muito pequenas (abaixo de sm) não quebre o layout lateral */
               <div className="flex lg:flex-col flex-row sm:gap-2 gap-3 pt-2 border-t border-dashed w-full min-w-0">

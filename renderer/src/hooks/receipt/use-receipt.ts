@@ -33,7 +33,7 @@ async function resolveClientCloudId(client: any): Promise<string | null> {
   try {
     const cloudId = await window.ipc.db.getClientCloudId({
       id: client.id,
-      nif: client.taxNumber || client.nif,
+      taxNumber: client.taxNumber || client.taxNumber,
       email: client.email,
     });
     return cloudId || null;
@@ -56,7 +56,7 @@ function buildCloudClientPayload(client: any, cloudId: string | null) {
   if (client.phone?.trim()) payload.phone = client.phone.trim();
   if (client.email?.trim()) payload.email = client.email.trim();
   if (client.address?.trim()) payload.address = client.address.trim();
-  const taxNumber = client.taxNumber?.trim() || client.nif?.trim();
+  const taxNumber = client.taxNumber?.trim() || client.taxNumber?.trim();
   if (taxNumber) payload.taxNumber = taxNumber;
   return payload;
 }

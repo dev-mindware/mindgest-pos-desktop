@@ -29,12 +29,12 @@ contextBridge.exposeInMainWorld("ipc", {
     getCachedProducts: () => ipcRenderer.invoke("db:get-cached-products"),
     getCachedClients: () => ipcRenderer.invoke("db:get-cached-clients"),
     getItemCloudId: (id: string) => ipcRenderer.invoke("db:get-item-cloud-id", id),
-    getClientCloudId: (params: { id?: string; nif?: string; email?: string }) => ipcRenderer.invoke("db:get-client-cloud-id", params),
+    getClientCloudId: (params: { id?: string; taxNumber?: string; email?: string }) => ipcRenderer.invoke("db:get-client-cloud-id", params),
   },
   // Security Bridge (Anti-Tampering)
   security: {
     getHardwareId: () => ipcRenderer.invoke("security:get-hwid"),
-    saveOfflineLicense: (licenseJwt: string, storeId: string) => 
+    saveOfflineLicense: (licenseJwt: string, storeId: string) =>
       ipcRenderer.invoke("security:save-license", { licenseJwt, storeId }),
     checkClock: () => ipcRenderer.invoke("security:check-clock"),
   },
@@ -46,11 +46,11 @@ contextBridge.exposeInMainWorld("ipc", {
   },
   // Sync Bridge (Cloud to Local)
   sync: {
-    products: (token: string, storeId: string) => 
+    products: (token: string, storeId: string) =>
       ipcRenderer.invoke("sync:products", { token, storeId }),
-    categories: (token: string, storeId: string) => 
+    categories: (token: string, storeId: string) =>
       ipcRenderer.invoke("sync:categories", { token, storeId }),
-    clients: (token: string, storeId: string) => 
+    clients: (token: string, storeId: string) =>
       ipcRenderer.invoke("sync:clients", { token, storeId }),
     getCategories: (params: { storeId?: string }) =>
       ipcRenderer.invoke("sync:get-categories", params),
@@ -76,7 +76,7 @@ contextBridge.exposeInMainWorld("ipc", {
       ipcRenderer.invoke("sync:create-proforma", params),
     getPendingOutboxCount: () =>
       ipcRenderer.invoke("sync:get-pending-outbox-count"),
-    
+
     // Sessões de Caixa
     searchCashSessions: (params: { storeId?: string }) =>
       ipcRenderer.invoke("sync:search-cash-sessions", params),

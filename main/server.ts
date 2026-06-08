@@ -37,8 +37,8 @@ async function lanAuthMiddleware(req: Request, res: Response, next: NextFunction
 // Rotas de Teste e Healthcheck
 // ==========================================
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'online', 
+  res.json({
+    status: 'online',
     message: 'MindGest Local Master Server is running!',
     timestamp: new Date().toISOString()
   });
@@ -82,7 +82,7 @@ apiRouter.get('/clients', async (req, res) => {
       const s = String(search);
       where.OR = [
         { name: { contains: s } },
-        { nif: { contains: s } },
+        { taxNumber: { contains: s } },
         { email: { contains: s } },
       ];
     }
@@ -98,7 +98,7 @@ apiRouter.get('/cash-sessions/current', async (req, res) => {
   try {
     const { storeId } = req.query;
     const session = await prisma.cashSession.findFirst({
-      where: { 
+      where: {
         storeId: String(storeId),
         status: 'OPEN'
       },
@@ -117,7 +117,7 @@ apiRouter.post('/invoice', async (req, res) => {
     // o modo Terminal precisaria enviar a factura diretamente para a API do Master!
     // TODO: A lógica real de facturação pode ser mais complexa. Por enquanto guardamos num Outbox do Master ou inserimos direto.
     const payload = req.body;
-    
+
     // Inserimos a factura diretamente na DB do Master (como se fosse criada aqui)
     // Precisaríamos de mapear os campos, mas uma implementação provisória é apenas simular sucesso 
     // ou inserir via prisma.invoice.create se o payload for 1:1 com o prisma.

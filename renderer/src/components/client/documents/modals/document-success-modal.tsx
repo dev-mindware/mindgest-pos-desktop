@@ -59,7 +59,7 @@ export function DocumentSuccessModal() {
                             },
                             client: {
                                 name: payloadToUse.client?.name || "Consumidor Final",
-                                taxNumber: payloadToUse.client?.taxNumber || payloadToUse.client?.nif || "999999999",
+                                taxNumber: payloadToUse.client?.taxNumber || payloadToUse.client?.taxNumber || "999999999",
                                 address: payloadToUse.client?.address,
                                 phone: payloadToUse.client?.phone,
                             },

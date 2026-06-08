@@ -249,7 +249,7 @@ export function useCartCheckout({
       if (data.client.email && data.client.email.trim() !== "") c.email = data.client.email.trim();
       if (data.client.address && data.client.address.trim() !== "") c.address = data.client.address.trim();
       if (data.client.taxNumber && data.client.taxNumber.trim() !== "") c.taxNumber = data.client.taxNumber.trim();
-      if (data.client.nif && data.client.nif.trim() !== "") c.nif = data.client.nif.trim();
+      if (data.client.taxNumber && data.client.taxNumber.trim() !== "") c.taxNumber = data.client.taxNumber.trim();
 
       if (Object.keys(c).length > 0) finalClient = c;
     }
@@ -343,7 +343,7 @@ export function useCartCheckout({
     if (payload.receivedValue === 0) {
       delete (payload as any).receivedValue;
     }
-    
+
     setPendingPayload(payload);
     setIsPreviewOpen(true);
   };
@@ -394,7 +394,7 @@ export function useCartCheckout({
           // 🔄 Force synchronization after successful invoice creation
           if (typeof window !== "undefined" && window.ipc?.sync?.triggerSync) {
             const storeId = currentStore?.id || user?.store?.id || "";
-            const token = (user as any)?.token || localStorage.getItem("auth_token") || "";
+            const token = (user as any)?.token || localStorage.getItem("session-accessToken");
             if (token && storeId && user?.id) {
               try {
                 console.log("🔄 [Checkout] Triggering sync after invoice creation...");
@@ -464,7 +464,7 @@ export function useCartCheckout({
           // 🔄 Force synchronization after successful proforma creation
           if (typeof window !== "undefined" && window.ipc?.sync?.triggerSync) {
             const storeId = currentStore?.id || user?.store?.id || "";
-            const token = (user as any)?.token || localStorage.getItem("auth_token") || "";
+            const token = (user as any)?.token || localStorage.getItem("session-accessToken");
             if (token && storeId && user?.id) {
               try {
                 console.log("🔄 [Checkout] Triggering sync after proforma creation...");

@@ -85,14 +85,16 @@ export class SyncManager {
       const categoryResult = await syncService.syncCategories(token, storeId);
       const clientResult = await syncService.syncClients(token, storeId);
       const productResult = await syncService.syncProducts(token, storeId);
+      const documentSequenceResult = await syncService.syncDocumentSequence(token, storeId);
       const agtSeriesResult = await syncService.syncAgtSeries(token, storeId);
 
       const result = {
         online: true,
         outbox: outboxResult,
         categories: categoryResult,
-        clients: clientResult,
+        clients: clientResult, 
         products: productResult,
+        document: documentSequenceResult,
         AGTSeries: agtSeriesResult,
         timestamp: new Date().toISOString()
       };

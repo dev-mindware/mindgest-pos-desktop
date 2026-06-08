@@ -36,7 +36,7 @@ export function PosInvoicePreviewDrawer({
             name: "Consumidor Final",
             phone: "N/A",
             email: "",
-            nif: "999999999",
+            taxNumber: "999999999",
             address: "Loja"
         },
         items: cartItems.map((item) => ({

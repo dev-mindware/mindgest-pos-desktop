@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import axios from "axios";
 import { InvoiceClient, InvoiceItem, InvoiceReceiptCloudPayload } from "./types";
+import { DocumentSequence } from "@prisma/client";
 
 // Configurações da API Cloud (Poderia vir de variáveis de ambiente)
 const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"; // VPS
@@ -39,7 +40,7 @@ async function normalizeInvoicePayload(payload: any): Promise<InvoiceReceiptClou
       if (invoice.client.phone?.trim()) normalizedClient.phone = invoice.client.phone.trim();
       if (invoice.client.email?.trim()) normalizedClient.email = invoice.client.email.trim();
       if (invoice.client.address?.trim()) normalizedClient.address = invoice.client.address.trim();
-      const taxNumber = invoice.client.taxNumber?.trim() || invoice.client.nif?.trim();
+      const taxNumber = invoice.client.taxNumber?.trim() || invoice.client.taxNumber?.trim();
       if (taxNumber) normalizedClient.taxNumber = taxNumber;
     }
 
@@ -118,7 +119,7 @@ async function mergeLocalClientRecords(primaryId: string, duplicateId: string) {
       cloudId: primaryClient.cloudId || duplicateClient.cloudId,
       offlineId: primaryClient.offlineId || duplicateClient.offlineId,
       name: primaryClient.name || duplicateClient.name,
-      nif: primaryClient.nif || duplicateClient.nif,
+      taxNumber: primaryClient.taxNumber || duplicateClient.taxNumber,
       email: primaryClient.email || duplicateClient.email,
       phone: primaryClient.phone || duplicateClient.phone,
       address: primaryClient.address || duplicateClient.address,
@@ -235,6 +236,74 @@ export const syncService = {
     }
   },
 
+
+  /**
+  * Sincroniza todos as séries e sequências da factura proforma da Cloud para o SQLite Local  
+  */
+  syncDocumentSequence: async (token: string, storeId: string) => {
+    try {
+
+      console.log("🔄 [Sync] A iniciar sincronização de séries...");
+
+      const response = await axios.get(`${CLOUD_API_URL}/invoice/proforma/document-sequence`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { storeId }
+      });
+console.log(response)
+      const cloudDocumentSequence = response.data as DocumentSequence[];
+
+      for (const documentSequence of cloudDocumentSequence) {
+        try {
+          // Prevenir erro de Unique Constraint no seriesCode
+          if (documentSequence.seriesCode) {
+
+            await prisma.documentSequence.upsert({
+              where: { cloudId: documentSequence.id },
+              update: {
+                cloudId: documentSequence.id,
+                companyCode: documentSequence.companyCode,
+                storeCode: documentSequence.storeCode,
+                currentSequence: documentSequence.currentSequence,
+                documentType: documentSequence.documentType,
+                seriesCode: documentSequence.seriesCode,
+                isClosed: documentSequence.isClosed,
+                lastDocumentNo: documentSequence.lastDocumentNo,
+                seriesYear: documentSequence.seriesYear,
+                versionCode: documentSequence.versionCode,
+                storeId: documentSequence.storeId,
+                createdAt: documentSequence.createdAt,
+              },
+              create: {
+                cloudId: documentSequence.id,
+                companyCode: documentSequence.companyCode,
+                storeCode: documentSequence.storeCode,
+                currentSequence: documentSequence.currentSequence,
+                documentType: documentSequence.documentType,
+                seriesCode: documentSequence.seriesCode,
+                isClosed: documentSequence.isClosed,
+                lastDocumentNo: documentSequence.lastDocumentNo,
+                seriesYear: documentSequence.seriesYear,
+                versionCode: documentSequence.versionCode,
+                storeId: documentSequence.storeId,
+                createdAt: documentSequence.createdAt,
+                updatedAt: documentSequence.updatedAt,
+              }
+            });
+          }
+        } catch (error: any) {
+          console.error("❌ [Sync] Erro ao sincronizar produtos:", error.message);
+          throw error;
+        }
+      }
+      console.log(`✅ [Sync] ${cloudDocumentSequence.length} séries sincronizados.`);
+      return { success: true, count: cloudDocumentSequence.length };
+    } catch (error: any) {
+      console.error("❌ [Sync] Erro ao sincronizar séries:", error.message);
+      throw error;
+    }
+  },
+
+
   /**
    * Sincroniza categorias da Cloud para Local
    */
@@ -277,7 +346,7 @@ export const syncService = {
       console.log(`✅ [Sync] ${cloudCategories.length} categorias sincronizadas.`);
       return { success: true, count: cloudCategories.length };
     } catch (error: any) {
-    console.error("❌ [Sync] Erro ao sincronizar categorias:", error.message);
+      console.error("❌ [Sync] Erro ao sincronizar categorias:", error.message);
       throw error;
     }
   },
@@ -318,7 +387,7 @@ export const syncService = {
       for (const client of cloudClients) {
         const clientData: any = {
           name: client.name,
-          nif: client.nif,
+          taxNumber: client.taxNumber,
           email: client.email,
           phone: client.phone,
           address: client.address,
@@ -355,7 +424,7 @@ export const syncService = {
           const clientCreate = await prisma.client.create({
             data: {
               cloudId: client.id,
-              offlineId: client.offlineId, 
+              offlineId: client.offlineId,
               ...clientData,
             },
           });
@@ -452,6 +521,7 @@ export const syncService = {
     const categoryResult = await this.syncCategories(token, storeId);
     const clientResult = await this.syncClients(token, storeId);
     const productResult = await this.syncProducts(token, storeId);
+    const documentSequenceResult = await this.syncDocumentSequence(token, storeId);
     const agtSeriesResult = await this.syncAgtSeries(token, storeId);
 
     return {
@@ -460,6 +530,7 @@ export const syncService = {
       categories: categoryResult,
       clients: clientResult,
       products: productResult,
+      document: documentSequenceResult,
       AGTSeries: agtSeriesResult
     };
   },

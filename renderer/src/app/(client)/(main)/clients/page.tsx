@@ -2,13 +2,13 @@
 
 import { PageWrapper } from "@/components/common/page-wrapper";
 import { useGetClients } from "@/hooks";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +53,7 @@ export default function ClientsPage() {
               ) : clients.length > 0 ? (
                 clients.map((client) => (
                   <TableRow key={client.id}>
-                    <TableCell className="font-mono text-xs">{client.nif || "Consumidor Final"}</TableCell>
+                    <TableCell className="font-mono text-xs">{client.taxNumber || "Consumidor Final"}</TableCell>
                     <TableCell className="font-medium">{client.name}</TableCell>
                     <TableCell>{client.email || "---"}</TableCell>
                     <TableCell>{client.phone || "---"}</TableCell>
@@ -67,8 +67,8 @@ export default function ClientsPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    Nenhum cliente encontrado no banco de dados local. 
-                    <br/> Use o botão "Sincronizar Cloud" na barra lateral.
+                    Nenhum cliente encontrado no banco de dados local.
+                    <br /> Use o botão "Sincronizar Cloud" na barra lateral.
                   </TableCell>
                 </TableRow>
               )}

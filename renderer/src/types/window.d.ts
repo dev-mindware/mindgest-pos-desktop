@@ -18,7 +18,7 @@ export interface IpcBridge {
     getCachedProducts: () => Promise<any[]>;
     getCachedClients: () => Promise<any[]>;
     getItemCloudId: (id: string) => Promise<string>;
-    getClientCloudId: (params: { id?: string; nif?: string; email?: string }) => Promise<string | null>;
+    getClientCloudId: (params: { id?: string; taxNumber?: string; email?: string }) => Promise<string | null>;
   };
   security: {
     getHardwareId: () => Promise<string>;
@@ -41,14 +41,14 @@ export interface IpcBridge {
     createInvoice: (params: { invoiceData: InvoiceReceiptPayload; storeId: string; userId: string; user?: { id: string; email: string; name: string; role: string; storeId?: string } }) => Promise<any>;
     createProforma: (params: { proformaData: any; storeId: string; userId: string }) => Promise<any>;
     getPendingOutboxCount: () => Promise<number>;
-    
+
     // Sessões de Caixa
     searchCashSessions: (params: { storeId?: string }) => Promise<any[]>;
     getCurrentSession: (params: { storeId?: string, userId?: string }) => Promise<any>;
     openCashSession: (params: { storeId: string, userId: string, openingBalance: number }) => Promise<any>;
     closeCashSession: (params: { sessionId: string, closingBalance: number, totalSales: number, totalExpenses: number }) => Promise<any>;
     addCashMovement: (params: { sessionId: string, type: string, description: string, amount: number }) => Promise<any>;
-    
+
     // Métodos para persistência de dados quando offline
     persistCashSession: (params: { session: any }) => Promise<any>;
     processOutbox: (params: { token: string, userId: string }) => Promise<{ processed: number; error?: string }>;

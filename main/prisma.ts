@@ -133,7 +133,7 @@ async function ensureSettingsSchema() {
 
 export async function testPrismaConnection() {
   try {
-    
+
     // Emergência: Criar tabelas se não existirem (SQLite não suporta migrations automáticas no Electron empacotado facilmente)
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "CashSession" (
@@ -208,7 +208,7 @@ export async function testPrismaConnection() {
         "cloudId" TEXT UNIQUE,
         "offlineId" TEXT UNIQUE,
         "name" TEXT NOT NULL,
-        "nif" TEXT,
+        "taxNumber" TEXT,
         "email" TEXT,
         "phone" TEXT,
         "address" TEXT,
@@ -264,8 +264,8 @@ export async function testPrismaConnection() {
       );
     `);
 
-      // AGT Series local table (persisted when Cloud sends series to POS)
-      await prisma.$executeRawUnsafe(`
+    // AGT Series local table (persisted when Cloud sends series to POS)
+    await prisma.$executeRawUnsafe(`
         CREATE TABLE IF NOT EXISTS "AgtSeries" (
           "id" TEXT NOT NULL PRIMARY KEY,
           "seriesCode" TEXT UNIQUE,
@@ -282,7 +282,7 @@ export async function testPrismaConnection() {
         );
       `);
 
-      await prisma.$executeRawUnsafe(`
+    await prisma.$executeRawUnsafe(`
         CREATE UNIQUE INDEX IF NOT EXISTS "AgtSeries_documentType_seriesYear_companyId_establishmentNumber_key" ON "AgtSeries"("documentType","seriesYear","companyId","establishmentNumber");
       `);
 

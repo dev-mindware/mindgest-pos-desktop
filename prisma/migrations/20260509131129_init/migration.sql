@@ -26,7 +26,7 @@ CREATE TABLE "Client" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "cloudId" TEXT,
     "name" TEXT NOT NULL,
-    "nif" TEXT,
+    "taxNumber" TEXT,
     "email" TEXT,
     "phone" TEXT,
     "address" TEXT,

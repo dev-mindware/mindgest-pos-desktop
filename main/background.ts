@@ -71,12 +71,12 @@ ipcMain.handle("lan:set-config", async (_, config) => {
   try {
     await prisma.settings.upsert({
       where: { id: 'singleton' },
-      update: { 
+      update: {
         terminalMode: config.terminalMode,
         masterIp: config.masterIp,
         lanSecret: config.lanSecret
       },
-      create: { 
+      create: {
         id: 'singleton',
         terminalMode: config.terminalMode,
         masterIp: config.masterIp,
@@ -178,7 +178,7 @@ ipcMain.handle("sync:search-clients", async (_, { search }) => {
     if (search) {
       where.OR = [
         { name: { contains: search } },
-        { nif: { contains: search } },
+        { taxNumber: { contains: search } },
         { email: { contains: search } },
       ];
     }
@@ -283,11 +283,11 @@ ipcMain.handle("db:get-item-cloud-id", async (_, id: string) => {
   }
 });
 
-ipcMain.handle("db:get-client-cloud-id", async (_, params: { id?: string; nif?: string; email?: string }) => {
+ipcMain.handle("db:get-client-cloud-id", async (_, params: { id?: string; taxNumber?: string; email?: string }) => {
   try {
     const orConditions: any[] = [];
     if (params?.id) orConditions.push({ id: params.id });
-    if (params?.nif) orConditions.push({ nif: params.nif });
+    if (params?.taxNumber) orConditions.push({ taxNumber: params.taxNumber });
     if (params?.email) orConditions.push({ email: params.email });
 
     if (orConditions.length === 0) return null;
@@ -400,7 +400,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
           data: {
             id: clientUuid,
             name: invoiceData.client.name,
-            nif: invoiceData.client.taxNumber || invoiceData.client.nif || null,
+            taxNumber: invoiceData.client.taxNumber || invoiceData.client.taxNumber || null,
             email: invoiceData.client.email || null,
             phone: invoiceData.client.phone || null,
             address: invoiceData.client.address || null,
@@ -488,12 +488,12 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       if (!localAgtNo) {
         const storeIdLocal = invoiceData.storeId || null;
         const documentType = (invoiceData.documentType || invoiceData.type || 'FR').toString().toUpperCase();
-        console.log(documentType +" - "+ storeIdLocal)
+        console.log(documentType + " - " + storeIdLocal)
 
         if (documentType === 'FP' && storeIdLocal) {
           // Lógica Fatura Proforma
           const currentYear = new Date().getFullYear().toString();
-          
+
           // Fallback para companyCode e storeCode caso a UI não tenha enviado
           const companyCode = invoiceData.companyCode || (user?.company?.name?.substring(0, 2).toUpperCase() || 'MC');
           const storeCode = invoiceData.storeCode || (user?.store?.code || 'S1');
@@ -615,7 +615,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
         console.log("/*/*///**////**/**//*/***/*/*/*** ", cloudClient)
         cloudClient.name = clientName;
         if (createdInvoice.client?.id) cloudClient.offlineId = createdInvoice.client.id;
-        if (createdInvoice.client?.nif) cloudClient.nif = createdInvoice.client.nif;
+        if (createdInvoice.client?.taxNumber) cloudClient.taxNumber = createdInvoice.client.taxNumber;
         if (createdInvoice.client?.email) cloudClient.email = createdInvoice.client.email;
         if (createdInvoice.client?.phone) cloudClient.phone = createdInvoice.client.phone;
         if (createdInvoice.client?.address) cloudClient.address = createdInvoice.client.address;
@@ -667,9 +667,9 @@ ipcMain.handle("sync:create-proforma", async (_, { proformaData, storeId, userId
 
     if (!localProformaNo) {
       const currentYear = new Date().getFullYear().toString();
-      
+
       const companyCode = proformaData.companyCode || (proformaData.company?.name ? proformaData.company.name.substring(0, 2).toUpperCase() : 'MC');
-      const storeCode = proformaData.storeCode || 'S1'; 
+      const storeCode = proformaData.storeCode || 'S1';
 
       let sequence = await (prisma as any).documentSequence.findFirst({
         where: {
@@ -1027,47 +1027,47 @@ if (isUpdateEnabled) {
 
 }
 
-  ipcMain.handle("update:check-for-updates", async () => {
-    if (!isUpdateEnabled) {
-      return { success: false, message: "Atualizações só funcionam em produção." };
-    }
+ipcMain.handle("update:check-for-updates", async () => {
+  if (!isUpdateEnabled) {
+    return { success: false, message: "Atualizações só funcionam em produção." };
+  }
 
-    try {
-      const result = await autoUpdater.checkForUpdates();
-      return { success: true, result };
-    } catch (error) {
-      console.error("❌ [Updater] check-for-updates failed:", error);
-      throw error;
-    }
-  });
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { success: true, result };
+  } catch (error) {
+    console.error("❌ [Updater] check-for-updates failed:", error);
+    throw error;
+  }
+});
 
-  ipcMain.handle("update:download-update", async () => {
-    if (!isUpdateEnabled) {
-      return { success: false, message: "Atualizações só funcionam em produção." };
-    }
+ipcMain.handle("update:download-update", async () => {
+  if (!isUpdateEnabled) {
+    return { success: false, message: "Atualizações só funcionam em produção." };
+  }
 
-    try {
-      const result = await autoUpdater.downloadUpdate();
-      return { success: true, result };
-    } catch (error) {
-      console.error("❌ [Updater] download-update failed:", error);
-      throw error;
-    }
-  });
+  try {
+    const result = await autoUpdater.downloadUpdate();
+    return { success: true, result };
+  } catch (error) {
+    console.error("❌ [Updater] download-update failed:", error);
+    throw error;
+  }
+});
 
-  ipcMain.handle("update:install-update", async () => {
-    if (!isUpdateEnabled) {
-      return { success: false, message: "Atualizações só funcionam em produção." };
-    }
+ipcMain.handle("update:install-update", async () => {
+  if (!isUpdateEnabled) {
+    return { success: false, message: "Atualizações só funcionam em produção." };
+  }
 
-    try {
-      autoUpdater.quitAndInstall(true, true);
-      return { success: true };
-    } catch (error) {
-      console.error("❌ [Updater] install-update failed:", error);
-      throw error;
-    }
-  });
+  try {
+    autoUpdater.quitAndInstall(true, true);
+    return { success: true };
+  } catch (error) {
+    console.error("❌ [Updater] install-update failed:", error);
+    throw error;
+  }
+});
 
 ipcMain.handle("app:get-version", () => {
   return app.getVersion();
@@ -1316,8 +1316,8 @@ app.on("ready", async () => {
 
   // Iniciar automaticamente o microserviço de IA da MIND
   startPythonSubprocess();
-    // Iniciar automaticamente o microserviço de geração de documentos (Python)
-    startDocGeneratorSubprocess();
+  // Iniciar automaticamente o microserviço de geração de documentos (Python)
+  startDocGeneratorSubprocess();
 
   createWindow();
 });
@@ -1325,22 +1325,22 @@ app.on("ready", async () => {
 app.on("window-all-closed", () => {
   console.log("Shutdown: All windows closed");
   killPythonSubprocess();
-    killDocGeneratorSubprocess();
+  killDocGeneratorSubprocess();
   app.quit();
 });
 
 process.on("exit", () => {
   killPythonSubprocess();
-    killDocGeneratorSubprocess();
+  killDocGeneratorSubprocess();
 });
 
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION:", err);
   killPythonSubprocess();
-    killDocGeneratorSubprocess();
+  killDocGeneratorSubprocess();
 });
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error("UNHANDLED REJECTION at:", promise, "reason:", reason);
-    killDocGeneratorSubprocess();
+  killDocGeneratorSubprocess();
 });
