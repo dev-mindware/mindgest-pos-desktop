@@ -44,7 +44,7 @@ export const usersByOption = [
 export const invoiceByOption = [
   { value: "createdAt", label: "Mais Recente" },
   { value: "dueDate", label: "Mais Antigo" },
-  { value: "invoiceNumber", label: "Nº Fatura" },
+  { value: "invoiceNumber", label: "Nº Factura" },
   { value: "clientName", label: "Cliente" },
   { value: "total", label: "Total" },
 ];

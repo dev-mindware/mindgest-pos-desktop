@@ -17,7 +17,7 @@ A arquitetura para suportar múltiplos terminais na mesma rede local (LAN) foi i
 ### 3. Servidor Local REST (API do Master)
 - O `server.ts` foi expandido para escutar na interface `0.0.0.0` (acessível na rede LAN, não apenas em localhost).
 - Implementado o **Middleware de Autenticação LAN**, que verifica o header `X-LAN-Secret`. Se configurado, qualquer PC cliente terá que enviar a mesma password para aceder aos dados.
-- Foram criadas as rotas `GET /api/items`, `GET /api/clients`, `GET /api/cash-sessions/current` e `POST /api/invoice` para permitir ao Terminal consultar os dados vitais diretamente na base de dados do Master e registar faturas.
+- Foram criadas as rotas `GET /api/items`, `GET /api/clients`, `GET /api/cash-sessions/current` e `POST /api/invoice` para permitir ao Terminal consultar os dados vitais diretamente na base de dados do Master e registar facturas.
 
 ### 4. Cliente Dinâmico no Frontend (Axios)
 - O ficheiro `api.ts` foi refatorado. Foi criada uma nova instância `localApi` com um interceptor inteligente.

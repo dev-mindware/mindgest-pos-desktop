@@ -63,7 +63,7 @@ export function useConvertProforma() {
       return { id, type };
     },
     onSuccess: (result, { type }) => {
-      const label = type === "invoice" ? "Fatura" : "Fatura Recibo";
+      const label = type === "invoice" ? "Factura" : "Factura Recibo";
       SucessMessage(`Proforma convertida em ${label} com sucesso!`);
       queryClient.invalidateQueries({ queryKey: ["invoice-proforma"] });
       queryClient.invalidateQueries({

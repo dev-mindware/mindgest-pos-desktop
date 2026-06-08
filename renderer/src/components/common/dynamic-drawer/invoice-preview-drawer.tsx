@@ -17,8 +17,8 @@ export function InvoicePreviewDrawer({ type }: { type: DocumentType }) {
     <DynamicDrawer
       open={!!isOpen}
       onOpenChange={(val) => !val && closeModal("details-invoice")}
-      title="Pré-visualização da Fatura"
-      description={`Detalhes da fatura ${currentInvoice.number}`}
+      title="Pré-visualização da Factura"
+      description={`Detalhes da factura ${currentInvoice.number}`}
     >
       <InvoiceTemplate type={type} data={currentInvoice} />
     </DynamicDrawer>

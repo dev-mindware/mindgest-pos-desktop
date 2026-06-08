@@ -17,7 +17,7 @@
 - Estoque por loja (controle básico)
 
 ### Documentos
-- Listagem de faturas e faturas-recibo
+- Listagem de facturas e facturas-recibo
 - Busca por número ou cliente
 - Download em PDF
 
@@ -31,7 +31,7 @@
 
 ### AGT - Fiscalidade Básica
 - Configuração inicial de dados fiscais (NIF, nome, morada, CAE)
-- Emissão de faturas e faturas-recibo no formato exigido
+- Emissão de facturas e facturas-recibo no formato exigido
 - Numeração sequencial por loja
 - QR Code fiscal (se aplicável)
 - Exportação SAF-T/XML (mínimo legal)

@@ -12,7 +12,7 @@ export const invoiceReceiptService = {
       console.log("✅ [InvoiceReceiptService] Resposta da API:", response);
       return response;
     } catch (error: any) {
-      console.error("❌ [InvoiceReceiptService] Erro ao criar fatura recibo:");
+      console.error("❌ [InvoiceReceiptService] Erro ao criar factura recibo:");
       console.error("  Status:", error?.response?.status);
       console.error("  Message:", error?.message);
       console.error("  Data:", error?.response?.data);

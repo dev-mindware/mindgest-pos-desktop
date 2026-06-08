@@ -75,7 +75,7 @@ export function ProformaList({ storeId }: { storeId?: string }) {
           actions={[
             { label: "Ver Proforma", onClick: handlerDetailsProforma },
             {
-              label: "Converter em Fatura",
+              label: "Converter em Factura",
               onClick: handlerConvertProforma,
             },
             {

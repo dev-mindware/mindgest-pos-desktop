@@ -59,7 +59,7 @@ export function InvoiceItems({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground">
-          Itens da Fatura
+          Itens da Factura
         </h3>
         {fields.length > 0 && (
           <span className="text-sm text-foreground bg-card px-3 py-1 rounded-test-full">
@@ -84,7 +84,7 @@ export function InvoiceItems({
             Nenhum item adicionado
           </p>
           <p className="text-xs text-foreground">
-            Use o formulário acima para adicionar itens à fatura
+            Use o formulário acima para adicionar itens à factura
           </p>
         </div>
       ) : (

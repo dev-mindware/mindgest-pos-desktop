@@ -351,12 +351,12 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
     // ✅ VALIDAÇÃO DE SEGURANÇA - Relógio Monotónico (ANTES DE QUALQUER OPERAÇÃO)
     const clockValidation = await validateMonotonicClock();
     if (!clockValidation.valid) {
-      console.error(`🚫 [sync:create-invoice] Criação de fatura bloqueada: ${clockValidation.reason}`);
+      console.error(`🚫 [sync:create-invoice] Criação de factura bloqueada: ${clockValidation.reason}`);
       throw new Error(`Operação bloqueada por segurança: ${clockValidation.reason}`);
     }
 
     if (!userId) {
-      throw new Error("userId obrigatório para criar a fatura localmente.");
+      throw new Error("userId obrigatório para criar a factura localmente.");
     }
 
     const invoiceId = crypto.randomUUID();
@@ -387,7 +387,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
     }
 
     console.log(
-      `[sync:create-invoice] Criar fatura para userId=${userId}, storeId=${storeId}, itemIds=${invoiceData.items?.map((item: any) => item.id).join(",")}`,
+      `[sync:create-invoice] Criar factura para userId=${userId}, storeId=${storeId}, itemIds=${invoiceData.items?.map((item: any) => item.id).join(",")}`,
     );
 
     // 1. Processar cliente se fornecido no payload
@@ -411,7 +411,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
         clientId = clientResult.id;
 
         // Não registrar cliente como um documento separado no outbox.
-        // O cliente novo será enviado dentro do payload da própria fatura.
+        // O cliente novo será enviado dentro do payload da própria factura.
       } else {
         const localClient = await prisma.client.findFirst({
           where: {
@@ -427,7 +427,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       }
     }
 
-    // 2. Calcular totais locais e preparar as linhas da fatura
+    // 2. Calcular totais locais e preparar as linhas da factura
     const linesData = [];
     const itemsForCloud = [];
     let calculatedNetTotal = 0;
@@ -458,7 +458,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       calculatedNetTotal += netTotal;
       calculatedTaxTotal += taxTotal;
 
-      // Guardar na fatura local com referência ao ID local do item
+      // Guardar na factura local com referência ao ID local do item
       linesData.push({
         id: crypto.randomUUID(),
         itemId: localItem.id,
@@ -481,7 +481,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
 
     const calculatedGrossTotal = calculatedNetTotal + calculatedTaxTotal;
 
-    // 3. Tentar gerar AGT number localmente (se a fatura não tiver agtNo fornecido)
+    // 3. Tentar gerar AGT number localmente (se a factura não tiver agtNo fornecido)
     let localAgtNo: string | undefined = invoiceData.agtNo || undefined;
 
     try {
@@ -521,7 +521,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       console.warn('⚠️ [sync:create-invoice] Não foi possível gerar agtNo localmente:', err?.message || err);
     }
 
-    // 4. Criar a Fatura no SQLite
+    // 4. Criar a Factura no SQLite
     const createdInvoice = await prisma.invoice.create({
       data: {
         id: invoiceId,
@@ -545,7 +545,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       }
     });
 
-    // 4. Preparar payload de sincronização da fatura para a Cloud
+    // 4. Preparar payload de sincronização da factura para a Cloud
     // Importante: usar cloudIds dos itens, não IDs locais
     const cloudClient: any = {};
     const clientName = createdInvoice.client?.name?.trim();
@@ -596,7 +596,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       }
     };
   } catch (error) {
-    console.error("❌ [DB] Erro ao criar fatura localmente:", error);
+    console.error("❌ [DB] Erro ao criar factura localmente:", error);
     throw error;
   }
 });
@@ -665,7 +665,7 @@ ipcMain.handle("sync:search-invoices", async (_, { storeId }) => {
       take: 50
     });
   } catch (error) {
-    console.error("❌ [DB] Erro ao buscar faturas locais:", error);
+    console.error("❌ [DB] Erro ao buscar facturas locais:", error);
     return [];
   }
 });

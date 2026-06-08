@@ -23,7 +23,7 @@ export default function ClientsPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Gestão de Clientes</h1>
             <p className="text-muted-foreground">
-              Clientes sincronizados localmente para faturação offline.
+              Clientes sincronizados localmente para facturação offline.
             </p>
           </div>
         </div>

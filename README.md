@@ -98,7 +98,7 @@ O Assistente MIND AI no frontend precisa que o Ollama esteja ativado na máquina
 
 ## ⚡ Fluxo de Modo Offline (Resiliência)
 
-Esta aplicação foi desenhada para nunca parar de faturar:
+Esta aplicação foi desenhada para nunca parar de facturar:
 
 1. Se a internet falhar (`navigator.onLine` e ping a servidores reais), a UI muda silenciosamente para o modo **Offline**.
 2. Faturas, Proformas e Recibos são gravados de forma _assíncrona_ no SQLite nativo.

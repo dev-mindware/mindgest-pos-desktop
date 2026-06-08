@@ -46,7 +46,7 @@ O ambiente offline é altamente suscetível a pirataria. Foram desenhados três 
 
 ### 4.2. Relógio Monotónico (Proteção contra Time-Travel)
 Para evitar que o utilizador atrase a data do Windows para não pagar a subscrição ou falsificar datas na AGT:
-*   Cada transação no SQLite regista o timestamp absoluto. Se o sistema detectar que a hora do Sistema Operativo atual é **inferior** à hora da última fatura emitida, a aplicação é bloqueada.
+*   Cada transação no SQLite regista o timestamp absoluto. Se o sistema detectar que a hora do Sistema Operativo atual é **inferior** à hora da última factura emitida, a aplicação é bloqueada.
 
 ### 4.3. Encriptação de Chaves Fiscais
 A Chave RSA Privada da Empresa (para assinar os hashes da AGT localmente) nunca fica exposta em texto limpo. É encriptada usando AES-256 e protegida no Windows Credential Manager.
@@ -71,7 +71,7 @@ A flexibilidade de instalar novas features sem intervenção técnica será geri
 
 1.  **Distribuição:** Os builds finais são alojados no GitHub Releases ou num S3 Bucket.
 2.  **Verificação em Background:** Ao iniciar (com internet), o Electron verifica silenciosamente a versão.
-3.  **Download Invisível:** A atualização é descarregada em background. O utilizador continua a faturar.
+3.  **Download Invisível:** A atualização é descarregada em background. O utilizador continua a facturar.
 4.  **Aviso de Update:** Um ícone na UI notifica: "Nova versão pronta. Reinicie para aplicar".
 5.  **Instalação Segura:** Ao reiniciar, o executável é substituído de forma atómica.
 
@@ -107,8 +107,8 @@ Esta checklist assegura um desenvolvimento iterativo. A regra é: **Não avança
 - [2/3] UI do Counter (Carrinho, Pesquisa Rápida de Produtos).
 - [2/3] Fluxo de Checkout (Métodos de Pagamento, Troco).
 - [x] Lógica de Criação de Facturas Offline.
-- [2/3] Comunicação com o Python Microservice para gerar e imprimir o PDF da Fatura.
-- [ ] Teste F4: Emitir 10 faturas seguidas. Validar Hashes AGT e integridade da impressão térmica.
+- [2/3] Comunicação com o Python Microservice para gerar e imprimir o PDF da Factura.
+- [ ] Teste F4: Emitir 10 facturas seguidas. Validar Hashes AGT e integridade da impressão térmica.
 
 ### Fase 5: Sincronização Bidirecional (Outbox & Sync)
 - [x] Implementar a tabela e lógica `sync_outbox` no Prisma.

@@ -103,10 +103,10 @@ export function useCreateInvoiceReceipt() {
   return useMutation<CreateInvoiceReceiptResult, unknown, InvoiceReceiptPayload>({
     mutationFn: async (data: InvoiceReceiptPayload) => {
       if (!user?.id) {
-        throw new Error("Usuário não autenticado para criar a fatura.");
+        throw new Error("Usuário não autenticado para criar a factura.");
       }
 
-      console.log("📝 [Receipt] Criar fatura recibo. Online:", isOnline);
+      console.log("📝 [Receipt] Criar factura recibo. Online:", isOnline);
       console.log("📝 [Receipt] Payload items:", data.items?.map((i: any) => ({ id: i.id, cloudId: i.cloudId, qty: i.quantity })));
 
       if (isOnline) {
@@ -115,7 +115,7 @@ export function useCreateInvoiceReceipt() {
           const cloudPayload = await buildCloudInvoicePayload(data);
           console.log("🌐 [Receipt] Enviando para cloud...", JSON.stringify(cloudPayload, null, 2));
           const cloudResponse = await invoiceReceiptService.createInvoiceReceipt(cloudPayload);
-          console.log("✅ [Receipt] Fatura enviada para cloud com sucesso");
+          console.log("✅ [Receipt] Factura enviada para cloud com sucesso");
 
           return {
             offline: false,
@@ -124,8 +124,8 @@ export function useCreateInvoiceReceipt() {
             statusText: cloudResponse.statusText,
           };
         } catch (cloudError: any) {
-          console.error("❌ [Receipt] Erro ao criar fatura na cloud:", cloudError);
-          const message = cloudError?.response?.data?.message || cloudError?.message || "Falha ao criar fatura online.";
+          console.error("❌ [Receipt] Erro ao criar factura na cloud:", cloudError);
+          const message = cloudError?.response?.data?.message || cloudError?.message || "Falha ao criar factura online.";
           throw new Error(message);
         }
       }
@@ -149,7 +149,7 @@ export function useCreateInvoiceReceipt() {
 
           const localId = localSaveResult?.data?.id || localSaveResult?.id;
           console.log(localSaveResult)
-          console.log("📱 [Receipt] Offline - fatura salva localmente", { localId });
+          console.log("📱 [Receipt] Offline - factura salva localmente", { localId });
 
           return {
             offline: true,
@@ -159,23 +159,23 @@ export function useCreateInvoiceReceipt() {
           };
         } catch (localError: any) {
           console.error("❌ [Receipt] Erro ao salvar localmente offline:", localError);
-          const message = localError?.message || "Falha ao salvar fatura localmente.";
+          const message = localError?.message || "Falha ao salvar factura localmente.";
           throw new Error(message);
         }
       }
 
-      throw new Error("Não foi possível salvar a fatura localmente em modo offline.");
+      throw new Error("Não foi possível salvar a factura localmente em modo offline.");
     },
     onSuccess: (response) => {
       const isOffline = (response as any)?.offline;
       const isSyncPending = (response as any)?.syncPending;
 
       if (isOffline && isSyncPending) {
-        SucessMessage("Fatura Recibo salva localmente e será sincronizada quando online!");
+        SucessMessage("Factura Recibo salva localmente e será sincronizada quando online!");
       } else if (isOffline) {
-        SucessMessage("Fatura Recibo salva localmente!");
+        SucessMessage("Factura Recibo salva localmente!");
       } else {
-        SucessMessage("Fatura Recibo criada e enviada com sucesso!");
+        SucessMessage("Factura Recibo criada e enviada com sucesso!");
       }
 
       queryClient.invalidateQueries({ queryKey: ["invoice-receipt"] });

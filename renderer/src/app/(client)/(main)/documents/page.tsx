@@ -38,7 +38,7 @@ export default function DocumentsPage() {
           });
           setInvoices(result || []);
         } catch (e) {
-          console.error("Erro ao carregar faturas locais:", e);
+          console.error("Erro ao carregar facturas locais:", e);
         } finally {
           setIsLoading(false);
         }
@@ -55,7 +55,7 @@ export default function DocumentsPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-outfit font-black tracking-tight">Movimentos de Caixa</h1>
           <p className="text-muted-foreground font-medium">
-            Gerencie faturas-recibo e notas de crédito emitidas nesta loja.
+            Gerencie facturas-recibo e notas de crédito emitidas nesta loja.
           </p>
         </div>
 
@@ -73,7 +73,7 @@ export default function DocumentsPage() {
                 <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input 
                   className="w-full bg-muted/30 border-none rounded-test-xl h-11 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
-                  placeholder="Pesquise por cliente ou nº da Fatura"
+                  placeholder="Pesquise por cliente ou nº da Factura"
                 />
               </div>
               <div className="bg-muted/30 rounded-test-xl h-11 flex items-center px-4 text-sm text-muted-foreground border-none">
@@ -89,7 +89,7 @@ export default function DocumentsPage() {
               <Table>
                 <TableHeader className="bg-muted/20">
                   <TableRow className="hover:bg-transparent border-muted/20">
-                    <TableHead className="font-bold py-5">Nº da Fatura</TableHead>
+                    <TableHead className="font-bold py-5">Nº da Factura</TableHead>
                     <TableHead className="font-bold">Cliente</TableHead>
                     <TableHead className="font-bold">Valor</TableHead>
                     <TableHead className="font-bold">Estado</TableHead>

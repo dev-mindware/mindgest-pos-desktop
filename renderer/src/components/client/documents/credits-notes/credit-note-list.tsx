@@ -45,7 +45,7 @@ export function CreditNotesList({ storeId }: { storeId?: string }) {
     },
     {
       key: "invoiceNumber",
-      header: "Fatura",
+      header: "Factura",
       render: (_, item) => item.invoice.number || "N/A",
     },
     {

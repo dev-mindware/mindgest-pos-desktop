@@ -57,7 +57,7 @@ export function PosInvoicePreviewDrawer({
         <DynamicDrawer
             open={open}
             onOpenChange={onOpenChange}
-            title={`Confirmar ${type === 'invoice' ? 'Fatura Recibo' : 'Proforma'}`}
+            title={`Confirmar ${type === 'invoice' ? 'Factura Recibo' : 'Proforma'}`}
             description="Verifique os dados antes de finalizar."
             className="max-w-4xl"
         >

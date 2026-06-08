@@ -309,7 +309,7 @@ export const AddItemForm = React.memo<AddItemFormProps>(
         <div className="flex items-center justify-between pt-2">
           {isAlreadyAdded && (
             <p className="text-sm text-destructive font-medium">
-              Este item já foi adicionado à fatura
+              Este item já foi adicionado à factura
             </p>
           )}
           {isOverStock && !isAlreadyAdded && (
@@ -324,7 +324,7 @@ export const AddItemForm = React.memo<AddItemFormProps>(
             className="ml-auto flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
-            Adicionar à Fatura
+            Adicionar à Factura
           </Button>
         </div>
       </div>

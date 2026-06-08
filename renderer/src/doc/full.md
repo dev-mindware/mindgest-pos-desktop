@@ -10,7 +10,7 @@
 - Vendas diárias, semanais, mensais
 - Ranking de produtos mais vendidos
 - Avisos de estoque baixo e produtos a vencer
-- Indicadores financeiros (faturamento, lucro, margem)
+- Indicadores financeiros (facturamento, lucro, margem)
 - Comparativos por período
 
 ### Produtos
@@ -24,9 +24,9 @@
 
 ### Documentos
 - Emissão de todos os tipos fiscais:
-  - Fatura
-  - Fatura-recibo
-  - Fatura pró-forma
+  - Factura
+  - Factura-recibo
+  - Factura pró-forma
   - Nota de crédito
   - Orçamento
   - Guia de remessa/devolução

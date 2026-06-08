@@ -23,15 +23,15 @@ Recalcula e reduz automaticamente os preços de produtos perecíveis com base em
 
 ## 2. Motor de Recomendação (Cross-Selling AI)
 
-Treina um modelo de Machine Learning (**Apriori / Association Rules**) com base nas faturas reais emitidas, para sugerir produtos ao operador de caixa de forma não intrusiva.
+Treina um modelo de Machine Learning (**Apriori / Association Rules**) com base nas facturas reais emitidas, para sugerir produtos ao operador de caixa de forma não intrusiva.
 
 **Como funciona:**
 
-1. Ao **ativar o switch** "Motor de Recomendação Inteligente" nas Configurações, o sistema faz fetch autenticado às últimas 1000 faturas (`/invoice/invoice-receipt`) e treina o modelo em background no microserviço Python.
+1. Ao **ativar o switch** "Motor de Recomendação Inteligente" nas Configurações, o sistema faz fetch autenticado às últimas 1000 facturas (`/invoice/invoice-receipt`) e treina o modelo em background no microserviço Python.
 2. As regras geradas (ex: "Quem compra Cerveja, também leva Amendoins") ficam guardadas em cache (`rules_cache.json`).
 3. No ecrã de Vendas (Counter), ao adicionar produtos ao cesto, um botão ✨ pulsa discretamente.
 4. Ao clicar, abre um tooltip **com no máximo 2 sugestões** para não distrair o operador.
-5. O operador pode adicionar os itens sugeridos à fatura com um toque.
+5. O operador pode adicionar os itens sugeridos à factura com um toque.
 
 > **Configuração:** Pode ser ativado/desativado via toggle nas Configurações MIND. Quando desativado, o frontend não efetua nenhum pedido ao microserviço.
 
@@ -58,8 +58,8 @@ Assistente virtual integrado no cabeçalho do POS, com acesso a qualquer momento
 **Funcionalidades:**
 
 - **Motor IA:** Google Gemini 1.5 Flash via API Cloud (requer GEMINI_API_KEY no `.env` do microserviço).
-- **Conhecimento Profundo do POS:** Treinado com mapeamento completo das telas e fluxos de trabalho do Mindgest POS (abertura/fecho de sessão, emissão de faturas e proformas, etc.).
-- **Sugestões Contextuais:** O painel inicial exibe perguntas frequentes baseadas no treino real ("Como abro uma sessão?", "Como crio uma fatura?", etc.).
+- **Conhecimento Profundo do POS:** Treinado com mapeamento completo das telas e fluxos de trabalho do Mindgest POS (abertura/fecho de sessão, emissão de facturas e proformas, etc.).
+- **Sugestões Contextuais:** O painel inicial exibe perguntas frequentes baseadas no treino real ("Como abro uma sessão?", "Como crio uma factura?", etc.).
 - **Efeito de Digitação:** As respostas da IA aparecem com animação de escrita progressiva (typewriter).
 - **Histórico Persistente:** Conversas gravadas localmente (`localStorage`) com aba dedicada de "Histórico".
 - **Limites de Sessão:** Máximo de **150 caracteres por prompt** e **10 mensagens de lifetime por utilizador**.
