@@ -1359,10 +1359,15 @@ function startPythonSubprocess() {
   let pyArgs: string[] = [];
 
   if (isProd) {
-    // 1. Em Produção: Executa o .exe que está embutido na pasta de recursos
+    // Em Produção: Executa o .exe que está embutido na pasta de recursos
     pyPath = path.join(process.resourcesPath, "bin", "mind-ai", "mind-ai.exe");
+    if (!fs.existsSync(pyPath)) {
+      console.warn(`⚠️ [Launcher] Microserviço MIND AI não encontrado em: ${pyPath}`);
+      console.warn("   → Funcionalidades de IA não estarão disponíveis. Compile o microserviço com PyInstaller para activar.");
+      return;
+    }
   } else {
-    // 2. Em Desenvolvimento: Corre via interpretador da nossa venv local
+    // Em Desenvolvimento: Corre via interpretador da nossa venv local
     const venvPython = path.join(
       app.getAppPath(),
       "mind-microservice",
@@ -1379,10 +1384,13 @@ function startPythonSubprocess() {
     if (fs.existsSync(venvPython)) {
       pyPath = venvPython;
       pyArgs = [localMainPy];
-    } else {
+    } else if (fs.existsSync(localMainPy)) {
       // Fallback para comando global python se não houver venv configurada
       pyPath = "python";
       pyArgs = [localMainPy];
+    } else {
+      console.warn("⚠️ [Launcher] Microserviço MIND AI não encontrado (sem venv e sem main.py). A ignorar.");
+      return;
     }
   }
 
@@ -1425,13 +1433,18 @@ function startDocGeneratorSubprocess() {
   let pyArgs: string[] = [];
 
   if (isProd) {
-    // In production we'd expect a packaged binary or a managed service; try to run bundled exe
+    // In production we'd expect a packaged binary; check if it exists before spawning
     pyPath = path.join(
       process.resourcesPath,
       "bin",
       "doc-generator",
       "doc-generator.exe",
     );
+    if (!fs.existsSync(pyPath)) {
+      console.warn(`⚠️ [Launcher] Microserviço Document Generator não encontrado em: ${pyPath}`);
+      console.warn("   → Impressão e geração de PDFs não estarão disponíveis. Compile o microserviço com PyInstaller para activar.");
+      return;
+    }
   } else {
     // Development: prefer venv inside python-microservice
     const venvPython = path.join(

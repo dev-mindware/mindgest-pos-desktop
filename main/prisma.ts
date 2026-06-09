@@ -5,6 +5,20 @@ import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import { app } from 'electron';
 
+// ============================================================
+// DATABASE_URL DINÂMICA — CRÍTICO PARA PRODUÇÃO
+// Deve ser definida ANTES de instanciar o PrismaClient.
+// Em produção: AppData do utilizador (persistente entre atualizações)
+// Em desenvolvimento: dev.db na raiz do projecto
+// ============================================================
+const isProdDb = process.env.NODE_ENV === 'production';
+const dbPath = isProdDb
+  ? path.join(app.getPath('userData'), 'mindgest-pos.db')
+  : path.join(process.cwd(), 'dev.db');
+
+process.env.DATABASE_URL = `file:${dbPath}`;
+
+console.log(`🗄️ [Prisma] Base de dados: ${dbPath} (${isProdDb ? 'produção' : 'desenvolvimento'})`);
 
 // Instancia o cliente do Prisma com logs ativados para vermos as queries no terminal
 export const prisma = new PrismaClient({

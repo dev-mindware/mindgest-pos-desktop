@@ -2,11 +2,12 @@ import axios from "axios";
 
 /**
  * Public API client for unauthenticated requests
- * Used for public endpoints like document verification
+ * Used for public endpoints like document verification and login
  */
 export const publicApi = axios.create({
   baseURL:
-     "http://localhost:3001/api", // VPS
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://mindgest.mindware-vps.cloud/api", // VPS — fallback de segurança
   headers: {
     "Content-Type": "application/json",
   },

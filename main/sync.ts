@@ -4,7 +4,7 @@ import { InvoiceClient, InvoiceItem, InvoiceReceiptCloudPayload } from "./types"
 import { DocumentSequence } from "@prisma/client";
 
 // Configurações da API Cloud (Poderia vir de variáveis de ambiente)
-const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"; // VPS
+const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"; // VPS
 
 async function normalizeInvoicePayload(payload: any): Promise<InvoiceReceiptCloudPayload> {
   const invoice = typeof payload === "string" ? JSON.parse(payload) : { ...payload };
@@ -350,14 +350,12 @@ export const syncService = {
         headers: { Authorization: `Bearer ${token}` },
         params: { storeId }
       });
-console.log(response)
       const cloudDocumentSequence = response.data as DocumentSequence[];
 
       for (const documentSequence of cloudDocumentSequence) {
         try {
           // Prevenir erro de Unique Constraint no seriesCode
           if (documentSequence.seriesCode) {
-            console.log(documentSequence)
             const existingLocal = await prisma.documentSequence.findFirst({
               where: {
                 OR: [
@@ -374,7 +372,6 @@ console.log(response)
               }
             });
             
-            console.log(existingLocal)
             if (existingLocal) {
               await prisma.documentSequence.update({
                 where: { id: existingLocal.id },
@@ -551,7 +548,6 @@ console.log(response)
       }
 
       console.log(`✅ [Sync] ${clientResult.length} clientes sincronizados.`);
-      console.log(`✅✅✅✅✅✅✅✅ [Sync] clientes sincronizados. ${JSON.stringify(clientResult)}`);
       return { success: true, count: cloudClients.length };
     } catch (error: any) {
       console.error("❌ [Sync] Erro ao sincronizar clientes:", error.message, error?.response?.data || "");

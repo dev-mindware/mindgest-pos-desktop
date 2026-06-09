@@ -5,8 +5,8 @@
   "main": "app/background.js",
   "scripts": {
     "dev": "nextron",
-    "build": "nextron build --no-pack && electron-builder",
-    "build:publish": "nextron build --no-pack && electron-builder --publish always",
+    "build": "prisma generate && nextron build --no-pack && electron-builder",
+    "build:publish": "prisma generate && nextron build --no-pack && electron-builder --publish always",
     "test": "echo 'No tests configured yet'",
     "lint": "eslint . --ext .ts,.tsx --fix",
     "postinstall": "electron-builder install-app-deps"
@@ -121,17 +121,28 @@
     },
     "files": [
       "**/*",
+      "!yolov8n.pt",
+      "!*.log",
+      "!dev.db",
+      "!mindgest-pos-dev.db",
       "node_modules/.prisma/**/*",
       "node_modules/@prisma/client/**/*"
     ],
     "asarUnpack": [
       "node_modules/.prisma/**/*",
-      "node_modules/@prisma/client/**/*"
+      "node_modules/@prisma/client/**/*",
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/node-machine-id/**/*"
     ],
     "extraResources": [
       "prisma/schema.prisma"
     ],
-    "win": {},
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
     "publish": [
       {
         "provider": "github",
@@ -142,7 +153,10 @@
     "nsis": {
       "oneClick": false,
       "perMachine": false,
-      "allowElevation": true
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MindGest POS"
     }
   },
   "bugs": {
