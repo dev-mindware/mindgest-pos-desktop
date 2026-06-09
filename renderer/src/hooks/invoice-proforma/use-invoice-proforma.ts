@@ -5,9 +5,14 @@ import { EditProformaFormData, ProformaFormData } from "@/schemas";
 import { ProformData } from "@/types";
 import { useNetworkStatus } from "../common/use-network-status";
 import { useAuth } from "../auth/use-auth";
+import { currentStoreStore } from "@/stores";
 
 async function resolveClientCloudId(client: any): Promise<string | null> {
-  if (!client?.id || typeof window === "undefined" || !window.ipc?.db?.getClientCloudId) {
+  if (
+    !client?.id ||
+    typeof window === "undefined" ||
+    !window.ipc?.db?.getClientCloudId
+  ) {
     return null;
   }
 
@@ -43,17 +48,28 @@ function buildCloudClientPayload(client: any, cloudId: string | null) {
 }
 
 async function buildCloudProformaPayload(data: ProformData) {
-  const clientCloudId = data.client ? await resolveClientCloudId(data.client as any) : null;
-  const client = data.client ? buildCloudClientPayload(data.client as any, clientCloudId) : undefined;
+  const clientCloudId = data.client
+    ? await resolveClientCloudId(data.client as any)
+    : null;
+  const client = data.client
+    ? buildCloudClientPayload(data.client as any, clientCloudId)
+    : undefined;
 
   const items = await Promise.all(
     (data.items || []).map(async (item: any) => {
       let id = item.id;
-      if (typeof window !== "undefined" && window.ipc?.db?.getItemCloudId && item.id) {
+      if (
+        typeof window !== "undefined" &&
+        window.ipc?.db?.getItemCloudId &&
+        item.id
+      ) {
         try {
           id = await window.ipc.db.getItemCloudId(item.id);
         } catch (error) {
-          console.warn("⚠️ [Proforma] Falha ao resolver cloudId do item:", error);
+          console.warn(
+            "⚠️ [Proforma] Falha ao resolver cloudId do item:",
+            error,
+          );
         }
       }
       return { ...item, id };
@@ -92,31 +108,34 @@ export function useCreateProforma() {
   const queryClient = useQueryClient();
   const { isOnline } = useNetworkStatus();
   const { user } = useAuth();
+  const { currentStore } = currentStoreStore();
 
   return useMutation({
     mutationFn: async (data: ProformData) => {
       if (!isOnline) {
         if (typeof window !== "undefined" && window.ipc?.sync?.createProforma) {
-          const storeId = data.store?.id || (user as any)?.store?.id || (user as any)?.storeId || "";
+          const store = data.store?.id || (user as any)?.store || currentStore;
           const proformaResult = await window.ipc.sync.createProforma({
             proformaData: data,
-            storeId,
-            userId: user?.id || "unknown",
+            store,
+            user: user || null,
           });
 
-          console.log(proformaResult)
+          console.log(proformaResult);
 
           // Extract proforma number from response (cloud-synchronized format: "FP {seriesCode}/{sequence}")
-          const proformaNumber = proformaResult?.data?.proformaNumber || proformaResult?.data?.number || "PENDENTE OFFLINE";
+          const proformaNumber =
+            proformaResult?.data?.proformaNumber ||
+            proformaResult?.data?.number ||
+            "PENDENTE OFFLINE";
 
           return {
             offline: true,
             data: { invoiceNumber: proformaNumber, proformaNumber, ...data },
-            localId: proformaResult?.data?.id || proformaResult?.id
-          }
+            localId: proformaResult?.data?.id || proformaResult?.id,
+          };
         }
         throw new Error("Sistema offline não inicializado.");
-
       }
       // When online, build payload with resolved cloudIds (same as invoice receipt)
       const cloudPayload = await buildCloudProformaPayload(data);
@@ -125,8 +144,14 @@ export function useCreateProforma() {
       const axiosResponse = await proformaService.createProforma(cloudPayload);
 
       // Log full response for debugging
-      console.log("🌐 [Proforma] Full axios response:", JSON.stringify(axiosResponse, null, 2));
-      console.log("🌐 [Proforma] Response.data:", JSON.stringify(axiosResponse?.data, null, 2));
+      console.log(
+        "🌐 [Proforma] Full axios response:",
+        JSON.stringify(axiosResponse, null, 2),
+      );
+      console.log(
+        "🌐 [Proforma] Response.data:",
+        JSON.stringify(axiosResponse?.data, null, 2),
+      );
 
       // Return in same format as offline for consistency
       return {

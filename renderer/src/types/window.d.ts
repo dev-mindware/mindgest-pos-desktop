@@ -39,7 +39,7 @@ export interface IpcBridge {
     deleteClient: (id: string, role: string) => Promise<any>;
     searchInvoices: (params: { storeId?: string }) => Promise<any[]>;
     createInvoice: (params: { invoiceData: InvoiceReceiptPayload; storeId: string; userId: string; user?: { id: string; email: string; name: string; role: string; storeId?: string } }) => Promise<any>;
-    createProforma: (params: { proformaData: any; storeId: string; userId: string }) => Promise<any>;
+    createProforma: (params: { proformaData: any; store: any; user: any | null }) => Promise<any>;
     getPendingOutboxCount: () => Promise<number>;
 
     // Sessões de Caixa

@@ -105,6 +105,107 @@ async function normalizeInvoicePayload(payload: any): Promise<InvoiceReceiptClou
   return finalPayload as InvoiceReceiptCloudPayload;
 }
 
+async function normalizeProformaPayload(payload: any): Promise<any> {
+  const invoice = typeof payload === "string" ? JSON.parse(payload) : { ...payload };
+  let finalPayload: any = {};
+
+  if (invoice.client) {
+    const clientId = invoice.client.id;
+    let clientCloudId: string | null = null;
+    let localClient: any = null;
+
+    if (clientId) {
+      localClient = await prisma.client.findFirst({
+        where: {
+          OR: [
+            { id: clientId },
+            { cloudId: clientId }
+          ]
+        },
+        select: { cloudId: true }
+      });
+      clientCloudId = localClient?.cloudId || null;
+    }
+
+    const normalizedClient: InvoiceClient = {};
+    if (clientCloudId) {
+      normalizedClient.id = clientCloudId;
+    }
+
+    const clientName = invoice.client.name?.trim();
+    if (!clientCloudId && clientName) {
+      normalizedClient.name = clientName;
+      if (invoice.client.offlineId?.trim()) normalizedClient.offlineId = invoice.client.offlineId.trim();
+      if (invoice.client.phone?.trim()) normalizedClient.phone = invoice.client.phone.trim();
+      if (invoice.client.email?.trim()) normalizedClient.email = invoice.client.email.trim();
+      if (invoice.client.address?.trim()) normalizedClient.address = invoice.client.address.trim();
+      const taxNumber = invoice.client.taxNumber?.trim() || invoice.client.taxNumber?.trim();
+      if (taxNumber) normalizedClient.taxNumber = taxNumber;
+    }
+
+    if (!(Object.keys(normalizedClient).length === 0)) {
+      finalPayload.client = normalizedClient;
+    }
+  }
+
+  if (Array.isArray(invoice.items)) {
+    const normalizedItems: InvoiceItem[] = [];
+    for (const item of invoice.items) {
+      let itemId = item.id;
+      if (itemId) {
+        const localItem = await prisma.item.findFirst({
+          where: {
+            OR: [
+              { id: itemId },
+              { cloudId: itemId }
+            ]
+          },
+          select: { cloudId: true }
+        });
+        if (localItem?.cloudId) {
+          itemId = localItem.cloudId;
+        }
+      }
+      if (item && typeof item === "object" && itemId) {
+        normalizedItems.push({
+          id: itemId,
+          quantity: item.quantity || 0,
+        });
+      }
+    }
+    finalPayload.items = normalizedItems;
+  }
+
+  if (invoice.issueDate) finalPayload.issueDate = invoice.issueDate;
+  if (invoice.proformaExpiresAt) finalPayload.proformaExpiresAt = invoice.proformaExpiresAt;
+  
+  if (invoice.total !== undefined) finalPayload.total = invoice.total;
+  if (invoice.taxAmount !== undefined) finalPayload.taxAmount = invoice.taxAmount;
+  if (invoice.subtotal !== undefined) finalPayload.subtotal = invoice.subtotal;
+  if (invoice.discountAmount !== undefined) finalPayload.discountAmount = invoice.discountAmount;
+  if (invoice.retentionAmount !== undefined) finalPayload.retentionAmount = invoice.retentionAmount;
+  
+  if (invoice.paymentMethod) finalPayload.paymentMethod = invoice.paymentMethod;
+  if (invoice.notes) finalPayload.notes = invoice.notes;
+  
+  if (invoice.currencyCode) finalPayload.currencyCode = invoice.currencyCode;
+  if (invoice.exchangeRate !== undefined) finalPayload.exchangeRate = invoice.exchangeRate;
+  if (invoice.currencyTotal !== undefined) finalPayload.currencyTotal = invoice.currencyTotal;
+  
+  if (invoice.storeId) finalPayload.storeId = invoice.storeId;
+  if (invoice.companyId) finalPayload.companyId = invoice.companyId;
+
+  if (invoice.documentType) finalPayload.documentType = invoice.documentType;
+  if (invoice.proformaNumber) finalPayload.proformaNumber = invoice.proformaNumber;
+  if (invoice.invoiceNumber) finalPayload.invoiceNumber = invoice.invoiceNumber;
+  if (invoice.offline !== undefined) finalPayload.offline = invoice.offline;
+  if (invoice.establishmentNumber) finalPayload.establishmentNumber = invoice.establishmentNumber;
+
+  if (invoice.proformaExpiresAt) finalPayload.proformaExpiresAt = invoice.proformaExpiresAt;
+
+  return finalPayload;
+}
+
 async function mergeLocalClientRecords(primaryId: string, duplicateId: string) {
   if (primaryId === duplicateId) return;
 
@@ -256,39 +357,55 @@ console.log(response)
         try {
           // Prevenir erro de Unique Constraint no seriesCode
           if (documentSequence.seriesCode) {
-
-            await prisma.documentSequence.upsert({
-              where: { cloudId: documentSequence.id },
-              update: {
-                cloudId: documentSequence.id,
-                companyCode: documentSequence.companyCode,
-                storeCode: documentSequence.storeCode,
-                currentSequence: documentSequence.currentSequence,
-                documentType: documentSequence.documentType,
-                seriesCode: documentSequence.seriesCode,
-                isClosed: documentSequence.isClosed,
-                lastDocumentNo: documentSequence.lastDocumentNo,
-                seriesYear: documentSequence.seriesYear,
-                versionCode: documentSequence.versionCode,
-                storeId: documentSequence.storeId,
-                createdAt: documentSequence.createdAt,
-              },
-              create: {
-                cloudId: documentSequence.id,
-                companyCode: documentSequence.companyCode,
-                storeCode: documentSequence.storeCode,
-                currentSequence: documentSequence.currentSequence,
-                documentType: documentSequence.documentType,
-                seriesCode: documentSequence.seriesCode,
-                isClosed: documentSequence.isClosed,
-                lastDocumentNo: documentSequence.lastDocumentNo,
-                seriesYear: documentSequence.seriesYear,
-                versionCode: documentSequence.versionCode,
-                storeId: documentSequence.storeId,
-                createdAt: documentSequence.createdAt,
-                updatedAt: documentSequence.updatedAt,
+            console.log(documentSequence)
+            const existingLocal = await prisma.documentSequence.findFirst({
+              where: {
+                OR: [
+                  { cloudId: documentSequence.id },
+                  { seriesCode: documentSequence.seriesCode },
+                  {
+                    companyCode: documentSequence.companyCode,
+                    storeCode: documentSequence.storeCode,
+                    documentType: documentSequence.documentType,
+                    seriesYear: documentSequence.seriesYear,
+                    versionCode: documentSequence.versionCode,
+                  }
+                ]
               }
             });
+            
+            console.log(existingLocal)
+            if (existingLocal) {
+              await prisma.documentSequence.update({
+                where: { id: existingLocal.id },
+                data: {
+                  cloudId: documentSequence.id,
+                  // Mantemos o número maior para não andar de cavalo para burro se tiver faturas não sincronizadas localmente
+                  currentSequence: Math.max(existingLocal.currentSequence, documentSequence.currentSequence),
+                  isClosed: documentSequence.isClosed,
+                  lastDocumentNo: documentSequence.lastDocumentNo,
+                  updatedAt: new Date(),
+                }
+              });
+            } else {
+              await prisma.documentSequence.create({
+                data: {
+                  cloudId: documentSequence.id,
+                  companyCode: documentSequence.companyCode,
+                  storeCode: documentSequence.storeCode,
+                  currentSequence: documentSequence.currentSequence,
+                  documentType: documentSequence.documentType,
+                  seriesCode: documentSequence.seriesCode,
+                  isClosed: documentSequence.isClosed,
+                  lastDocumentNo: documentSequence.lastDocumentNo,
+                  seriesYear: documentSequence.seriesYear,
+                  versionCode: documentSequence.versionCode,
+                  storeId: documentSequence.storeId,
+                  createdAt: documentSequence.createdAt,
+                  updatedAt: documentSequence.updatedAt,
+                }
+              });
+            }
           }
         } catch (error: any) {
           console.error("❌ [Sync] Erro ao sincronizar produtos:", error.message);
@@ -616,6 +733,7 @@ console.log(response)
           } else if (doc.entityType === "PROFORMA") {
             endpoint = "/invoice/proforma";
             method = "post";
+            payload = await normalizeProformaPayload(rawPayload);
           }
 
           if (!endpoint) continue;
