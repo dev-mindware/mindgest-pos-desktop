@@ -120,7 +120,16 @@
       "output": "dist"
     },
     "files": [
-      "**/*"
+      "**/*",
+      "node_modules/.prisma/**/*",
+      "node_modules/@prisma/client/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/.prisma/**/*",
+      "node_modules/@prisma/client/**/*"
+    ],
+    "extraResources": [
+      "prisma/schema.prisma"
     ],
     "win": {},
     "publish": [
