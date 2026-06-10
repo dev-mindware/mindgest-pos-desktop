@@ -82,6 +82,7 @@ export function useCartCheckout({
   }, [register]);
 
   const watchedItems = watch("items") as any[];
+  // Keep watchedItems for display only; do NOT use it inside useEffect dependency arrays
 
   const cartTotals = useMemo(() => {
     const subtotal = cartItems.reduce((acc, item) => {
@@ -111,16 +112,19 @@ export function useCartCheckout({
   const totals = cartTotals;
 
   // Synchronize cartItems with form items
+  // NOTE: Do NOT include watchedItems in deps — it changes on every setValue call → infinite loop
   useEffect(() => {
     const items = cartItems.map((item) => ({
       id: (item as any).cloudId || item.id,
       quantity: item.qty,
     }));
 
+    const currentFormItems = form.getValues("items") as any[] | undefined;
     const sameItems =
-      items.length === watchedItems.length &&
+      Array.isArray(currentFormItems) &&
+      items.length === currentFormItems.length &&
       items.every((item, index) => {
-        const watched = watchedItems[index];
+        const watched = currentFormItems[index];
         return watched?.id === item.id && watched?.quantity === item.quantity;
       });
 
@@ -130,31 +134,56 @@ export function useCartCheckout({
 
     console.log("✅ [CartCheckout] Items synced to form (with cloudId as id):", items);
     setValue("items", items as any, { shouldValidate: false });
-  }, [cartItems, setValue, watchedItems]);
+  }, [cartItems, setValue, form]);
 
-  // Synchronize totals to form state
+  // Synchronize totals to form state (com verificação para evitar loop infinito de renderização)
   useEffect(() => {
+    const currentTotal = form.getValues("total");
+    const currentSubtotal = form.getValues("subtotal");
+    const currentTaxAmount = form.getValues("taxAmount");
+    const currentDiscountAmount = form.getValues("discountAmount");
+
+    if (
+      currentTotal === cartTotals.total &&
+      currentSubtotal === cartTotals.subtotal &&
+      currentTaxAmount === cartTotals.taxAmount &&
+      currentDiscountAmount === cartTotals.discountAmount
+    ) {
+      return;
+    }
+
     setValue("total", cartTotals.total);
     setValue("subtotal", cartTotals.subtotal);
     setValue("taxAmount", cartTotals.taxAmount);
     setValue("discountAmount", cartTotals.discountAmount);
-  }, [cartTotals, setValue]);
+  }, [cartTotals, setValue, form]); // form is stable (react-hook-form guarantees this)
 
   // Synchronize payment method
   useEffect(() => {
-    setValue("paymentMethod", paymentMethod === "Cash" ? "CASH" : "CARD");
-  }, [paymentMethod, setValue]);
+    const target = paymentMethod === "Cash" ? "CASH" : "CARD";
+    if (form.getValues("paymentMethod") !== target) {
+      setValue("paymentMethod", target);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentMethod, setValue]); // form intentionally omitted — stable object
 
   // Synchronize storeId
   useEffect(() => {
     const id = currentStore?.id || user?.store?.id;
-    if (id) setValue("storeId", id);
-  }, [currentStore, user, setValue]);
+    if (id && form.getValues("storeId") !== id) {
+      setValue("storeId", id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStore, user, setValue]); // form intentionally omitted — stable object
 
   // Synchronize cashSessionId (always set, even if empty, to handle form reset)
   useEffect(() => {
-    setValue("cashSessionId", cashSessionId || "");
-  }, [cashSessionId, setValue]);
+    const id = cashSessionId || "";
+    if (form.getValues("cashSessionId") !== id) {
+      setValue("cashSessionId", id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cashSessionId, setValue]); // form intentionally omitted — stable object
 
   // Handle Cash & Change
   useEffect(() => {
@@ -164,14 +193,23 @@ export function useCartCheckout({
       const safeChange = isNaN(changeVal) ? 0 : Number(changeVal.toFixed(2));
 
       setChange(safeChange);
-      setValue("receivedValue", cash);
-      setValue("change", safeChange, { shouldValidate: true });
+      if (form.getValues("receivedValue") !== cash) {
+        setValue("receivedValue", cash);
+      }
+      if (form.getValues("change") !== safeChange) {
+        setValue("change", safeChange, { shouldValidate: true });
+      }
     } else {
       setChange(0);
-      setValue("receivedValue", cartTotals.total);
-      setValue("change", 0, { shouldValidate: true });
+      if (form.getValues("receivedValue") !== cartTotals.total) {
+        setValue("receivedValue", cartTotals.total);
+      }
+      if (form.getValues("change") !== 0) {
+        setValue("change", 0, { shouldValidate: true });
+      }
     }
-  }, [cashGiven, cartTotals.total, paymentMethod, setValue]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cashGiven, cartTotals.total, paymentMethod, setValue]); // form intentionally omitted — stable object
 
   const handleQuickCash = (amount: number) => {
     setCashGiven(amount);

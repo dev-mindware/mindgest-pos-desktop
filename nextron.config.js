@@ -17,7 +17,7 @@ module.exports = {
       },
       // Exclusão estrita via Função para garantir o require('commonjs ...')
       function ({ context, request }, callback) {
-        if (/^@prisma\/client(\/.*)?$/.test(request) || /^\.prisma\/client(\/.*)?$/.test(request)) {
+        if (/^@prisma\/client(\/.*)?$/.test(request) || /^\.prisma\/client(\/.*)?$/.test(request) || /^prisma-client(\/.*)?$/.test(request)) {
           return callback(null, 'commonjs ' + request);
         }
         callback();

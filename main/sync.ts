@@ -1,7 +1,7 @@
 import { prisma } from "./prisma";
 import axios from "axios";
 import { InvoiceClient, InvoiceItem, InvoiceReceiptCloudPayload } from "./types";
-import { DocumentSequence } from "@prisma/client";
+import type { DocumentSequence } from "../prisma/client";
 
 // Configurações da API Cloud (Poderia vir de variáveis de ambiente)
 const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"; // VPS

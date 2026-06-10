@@ -2,11 +2,11 @@
   "name": "mindgest-pos-desktop",
   "version": "1.0.0",
   "description": "MindGest POS Desktop Version",
-  "main": "app/background.js",
+  "main": "app/main.js",
   "scripts": {
     "dev": "nextron",
-    "build": "prisma generate && nextron build --no-pack && electron-builder",
-    "build:publish": "prisma generate && nextron build --no-pack && electron-builder --publish always",
+    "build": "prisma generate && nextron build --no-pack && node scripts/fix-404.js && electron-builder",
+    "build:publish": "prisma generate && nextron build --no-pack && node scripts/fix-404.js && electron-builder --publish always",
     "test": "echo 'No tests configured yet'",
     "lint": "eslint . --ext .ts,.tsx --fix",
     "postinstall": "electron-builder install-app-deps"
@@ -125,17 +125,15 @@
       "!*.log",
       "!dev.db",
       "!mindgest-pos-dev.db",
-      "node_modules/.prisma/**/*",
       "node_modules/@prisma/client/**/*"
     ],
     "asarUnpack": [
-      "node_modules/.prisma/**/*",
       "node_modules/@prisma/client/**/*",
       "node_modules/better-sqlite3/**/*",
       "node_modules/node-machine-id/**/*"
     ],
     "extraResources": [
-      "prisma/schema.prisma"
+      "prisma/**/*"
     ],
     "win": {
       "target": [

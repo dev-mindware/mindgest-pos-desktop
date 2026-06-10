@@ -73,7 +73,7 @@ export function AutoUpdateManager() {
 
   const handleUpdateError = useCallback((_event: any, error: any) => {
     console.error("[AutoUpdate] update:error", error);
-    toast.error(`Erro na atualização: ${error?.message || "verifique a ligação"}`);
+    // toast.error(`Erro na atualização: ${error?.message || "verifique a ligação"}`);
   }, []);
 
   useEffect(() => {
@@ -93,7 +93,7 @@ export function AutoUpdateManager() {
         .checkForUpdates()
         .catch((error: any) => {
           console.error("[AutoUpdate] checkForUpdates failed", error);
-          toast.error("Erro ao verificar atualizações.");
+          // toast.error("Erro ao verificar atualizações.");
         });
     }
 
@@ -161,7 +161,7 @@ export function AutoUpdateSection() {
   const handleUpdateError = useCallback((_event: any, error: any) => {
     setIsChecking(false);
     setIsDownloading(false);
-    setStatus(`Erro na atualização: ${error?.message || "verifique a ligação"}`);
+    // setStatus(`Erro na atualização: ${error?.message || "verifique a ligação"}`);
   }, []);
 
   useEffect(() => {

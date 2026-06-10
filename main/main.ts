@@ -1244,7 +1244,7 @@ app.on("second-instance", () => {
 });
 
 if (isProd) {
-  serve({ directory: "app" });
+  serve({ directory: "app", hostname: "localhost" });
 } else {
   app.setPath("userData", `${app.getPath("userData")} (development)`);
 }
@@ -1297,17 +1297,17 @@ async function createWindow() {
   // VALIDAÇÃO DE SEGURANÇA (Anti-Tampering)
   // ==========================================
   const securityCheck = await validateOfflineLicense();
-  let entryPath = "/pos/counter"; // Por defeito vai para o POS
-
+  let entryPath = "pos/counter"; // Por defeito vai para o POS
+ 
   if (!securityCheck.valid) {
     console.warn(
       `🔒 [Lockdown] Acesso Offline Bloqueado: ${securityCheck.reason}`,
     );
-    entryPath = "/auth/login"; // Redireciona para o ecrã de Login Online
+    entryPath = "auth/login"; // Redireciona para o ecrã de Login Online
   }
-
+ 
   const url = isProd
-    ? `app://./${entryPath}`
+    ? `app://localhost/${entryPath}`
     : `http://localhost:${port}/${entryPath}`;
 
   console.log(`Target URL: ${url}`);

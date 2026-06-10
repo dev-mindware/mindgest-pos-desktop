@@ -1,9 +1,18 @@
+import path from 'path';
+import { app } from 'electron';
+import type { PrismaClient as PrismaClientType } from '../prisma/client';
+
 // Força o Prisma a carregar a versão Node (library) e não a do Browser/Edge
 process.env.PRISMA_CLIENT_ENGINE_TYPE = "library";
 
-import { PrismaClient } from '@prisma/client';
-import path from 'path';
-import { app } from 'electron';
+// Resolva o caminho correto do Prisma Client em desenvolvimento e em produção (extraResources)
+const prismaClientPath = process.env.NODE_ENV === 'production'
+  ? path.join(process.resourcesPath, 'prisma', 'client')
+  : path.join(process.cwd(), 'prisma', 'client');
+
+// Importação dinâmica segura (usa __non_webpack_require__ para evitar que o Webpack empacote a pasta dinâmica)
+declare const __non_webpack_require__: typeof require;
+const { PrismaClient } = __non_webpack_require__(prismaClientPath);
 
 // ============================================================
 // DATABASE_URL DINÂMICA — CRÍTICO PARA PRODUÇÃO
@@ -23,7 +32,7 @@ console.log(`🗄️ [Prisma] Base de dados: ${dbPath} (${isProdDb ? 'produção
 // Instancia o cliente do Prisma com logs ativados para vermos as queries no terminal
 export const prisma = new PrismaClient({
   log: ['info', 'warn', 'error'],
-});
+}) as PrismaClientType;
 
 // Teste de conexão e criação de tabelas de emergência
 async function tableHasColumn(tableName: string, columnName: string) {
