@@ -34,10 +34,14 @@ Para inicializar o ambiente de desenvolvimento pela primeira vez, siga estes pas
    cd mindgest-pos-desktop
    ```
 2. Instale as dependências. Como este projeto compila módulos nativos C++ (`better-sqlite3`), é essencial usar o comando completo para reconstruir os binários para a arquitetura local:
+
    ```bash
    pnpm install
    npx electron-builder install-app-deps
+   manual: node node_modules/.pnpm/electron@33.2.1/node_modules/electron/install.js
+
    ```
+
 3. Inicie o servidor de desenvolvimento:
    ```bash
    pnpm dev
@@ -129,6 +133,7 @@ Este projeto está configurado com **GitHub Actions** para automatizar o process
 #### Opção A: Usar script auxiliar (Recomendado)
 
 **Windows:**
+
 ```bash
 scripts\release.bat patch
 scripts\release.bat minor
@@ -136,6 +141,7 @@ scripts\release.bat major
 ```
 
 **macOS/Linux:**
+
 ```bash
 chmod +x scripts/release.sh
 ./scripts/release.sh patch
@@ -146,6 +152,7 @@ chmod +x scripts/release.sh
 #### Opção B: Manualmente
 
 1. Atualizar versão em `package.json`:
+
    ```bash
    npm version patch    # 1.0.0 → 1.0.1
    npm version minor    # 1.0.0 → 1.1.0
@@ -153,6 +160,7 @@ chmod +x scripts/release.sh
    ```
 
 2. Fazer push para `main`:
+
    ```bash
    git push origin main
    ```
