@@ -7119,6 +7119,7 @@ export namespace Prisma {
     grossTotal: number | null
     hash: string | null
     hashControl: string | null
+    syncStatus: string | null
     userId: string | null
     clientId: string | null
     storeId: string | null
@@ -7137,6 +7138,7 @@ export namespace Prisma {
     grossTotal: number | null
     hash: string | null
     hashControl: string | null
+    syncStatus: string | null
     userId: string | null
     clientId: string | null
     storeId: string | null
@@ -7155,6 +7157,7 @@ export namespace Prisma {
     grossTotal: number
     hash: number
     hashControl: number
+    syncStatus: number
     userId: number
     clientId: number
     storeId: number
@@ -7187,6 +7190,7 @@ export namespace Prisma {
     grossTotal?: true
     hash?: true
     hashControl?: true
+    syncStatus?: true
     userId?: true
     clientId?: true
     storeId?: true
@@ -7205,6 +7209,7 @@ export namespace Prisma {
     grossTotal?: true
     hash?: true
     hashControl?: true
+    syncStatus?: true
     userId?: true
     clientId?: true
     storeId?: true
@@ -7223,6 +7228,7 @@ export namespace Prisma {
     grossTotal?: true
     hash?: true
     hashControl?: true
+    syncStatus?: true
     userId?: true
     clientId?: true
     storeId?: true
@@ -7328,6 +7334,7 @@ export namespace Prisma {
     grossTotal: number
     hash: string | null
     hashControl: string | null
+    syncStatus: string
     userId: string
     clientId: string | null
     storeId: string
@@ -7365,6 +7372,7 @@ export namespace Prisma {
     grossTotal?: boolean
     hash?: boolean
     hashControl?: boolean
+    syncStatus?: boolean
     userId?: boolean
     clientId?: boolean
     storeId?: boolean
@@ -7387,6 +7395,7 @@ export namespace Prisma {
     grossTotal?: boolean
     hash?: boolean
     hashControl?: boolean
+    syncStatus?: boolean
     userId?: boolean
     clientId?: boolean
     storeId?: boolean
@@ -7407,6 +7416,7 @@ export namespace Prisma {
     grossTotal?: boolean
     hash?: boolean
     hashControl?: boolean
+    syncStatus?: boolean
     userId?: boolean
     clientId?: boolean
     storeId?: boolean
@@ -7443,6 +7453,7 @@ export namespace Prisma {
       grossTotal: number
       hash: string | null
       hashControl: string | null
+      syncStatus: string
       userId: string
       clientId: string | null
       storeId: string
@@ -7854,6 +7865,7 @@ export namespace Prisma {
     readonly grossTotal: FieldRef<"Invoice", 'Float'>
     readonly hash: FieldRef<"Invoice", 'String'>
     readonly hashControl: FieldRef<"Invoice", 'String'>
+    readonly syncStatus: FieldRef<"Invoice", 'String'>
     readonly userId: FieldRef<"Invoice", 'String'>
     readonly clientId: FieldRef<"Invoice", 'String'>
     readonly storeId: FieldRef<"Invoice", 'String'>
@@ -14504,6 +14516,7 @@ export namespace Prisma {
     grossTotal: 'grossTotal',
     hash: 'hash',
     hashControl: 'hashControl',
+    syncStatus: 'syncStatus',
     userId: 'userId',
     clientId: 'clientId',
     storeId: 'storeId',
@@ -15118,6 +15131,7 @@ export namespace Prisma {
     grossTotal?: FloatFilter<"Invoice"> | number
     hash?: StringNullableFilter<"Invoice"> | string | null
     hashControl?: StringNullableFilter<"Invoice"> | string | null
+    syncStatus?: StringFilter<"Invoice"> | string
     userId?: StringFilter<"Invoice"> | string
     clientId?: StringNullableFilter<"Invoice"> | string | null
     storeId?: StringFilter<"Invoice"> | string
@@ -15139,6 +15153,7 @@ export namespace Prisma {
     grossTotal?: SortOrder
     hash?: SortOrderInput | SortOrder
     hashControl?: SortOrderInput | SortOrder
+    syncStatus?: SortOrder
     userId?: SortOrder
     clientId?: SortOrderInput | SortOrder
     storeId?: SortOrder
@@ -15163,6 +15178,7 @@ export namespace Prisma {
     grossTotal?: FloatFilter<"Invoice"> | number
     hash?: StringNullableFilter<"Invoice"> | string | null
     hashControl?: StringNullableFilter<"Invoice"> | string | null
+    syncStatus?: StringFilter<"Invoice"> | string
     userId?: StringFilter<"Invoice"> | string
     clientId?: StringNullableFilter<"Invoice"> | string | null
     storeId?: StringFilter<"Invoice"> | string
@@ -15184,6 +15200,7 @@ export namespace Prisma {
     grossTotal?: SortOrder
     hash?: SortOrderInput | SortOrder
     hashControl?: SortOrderInput | SortOrder
+    syncStatus?: SortOrder
     userId?: SortOrder
     clientId?: SortOrderInput | SortOrder
     storeId?: SortOrder
@@ -15210,6 +15227,7 @@ export namespace Prisma {
     grossTotal?: FloatWithAggregatesFilter<"Invoice"> | number
     hash?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
     hashControl?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
+    syncStatus?: StringWithAggregatesFilter<"Invoice"> | string
     userId?: StringWithAggregatesFilter<"Invoice"> | string
     clientId?: StringNullableWithAggregatesFilter<"Invoice"> | string | null
     storeId?: StringWithAggregatesFilter<"Invoice"> | string
@@ -16269,6 +16287,7 @@ export namespace Prisma {
     grossTotal: number
     hash?: string | null
     hashControl?: string | null
+    syncStatus?: string
     storeId: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -16288,6 +16307,7 @@ export namespace Prisma {
     grossTotal: number
     hash?: string | null
     hashControl?: string | null
+    syncStatus?: string
     userId: string
     clientId?: string | null
     storeId: string
@@ -16307,6 +16327,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16326,6 +16347,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     clientId?: NullableStringFieldUpdateOperationsInput | string | null
     storeId?: StringFieldUpdateOperationsInput | string
@@ -16345,6 +16367,7 @@ export namespace Prisma {
     grossTotal: number
     hash?: string | null
     hashControl?: string | null
+    syncStatus?: string
     userId: string
     clientId?: string | null
     storeId: string
@@ -16363,6 +16386,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16379,6 +16403,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     clientId?: NullableStringFieldUpdateOperationsInput | string | null
     storeId?: StringFieldUpdateOperationsInput | string
@@ -17477,6 +17502,7 @@ export namespace Prisma {
     grossTotal?: SortOrder
     hash?: SortOrder
     hashControl?: SortOrder
+    syncStatus?: SortOrder
     userId?: SortOrder
     clientId?: SortOrder
     storeId?: SortOrder
@@ -17501,6 +17527,7 @@ export namespace Prisma {
     grossTotal?: SortOrder
     hash?: SortOrder
     hashControl?: SortOrder
+    syncStatus?: SortOrder
     userId?: SortOrder
     clientId?: SortOrder
     storeId?: SortOrder
@@ -17519,6 +17546,7 @@ export namespace Prisma {
     grossTotal?: SortOrder
     hash?: SortOrder
     hashControl?: SortOrder
+    syncStatus?: SortOrder
     userId?: SortOrder
     clientId?: SortOrder
     storeId?: SortOrder
@@ -18544,6 +18572,7 @@ export namespace Prisma {
     grossTotal: number
     hash?: string | null
     hashControl?: string | null
+    syncStatus?: string
     storeId: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -18562,6 +18591,7 @@ export namespace Prisma {
     grossTotal: number
     hash?: string | null
     hashControl?: string | null
+    syncStatus?: string
     clientId?: string | null
     storeId: string
     createdAt?: Date | string
@@ -18608,6 +18638,7 @@ export namespace Prisma {
     grossTotal?: FloatFilter<"Invoice"> | number
     hash?: StringNullableFilter<"Invoice"> | string | null
     hashControl?: StringNullableFilter<"Invoice"> | string | null
+    syncStatus?: StringFilter<"Invoice"> | string
     userId?: StringFilter<"Invoice"> | string
     clientId?: StringNullableFilter<"Invoice"> | string | null
     storeId?: StringFilter<"Invoice"> | string
@@ -18626,6 +18657,7 @@ export namespace Prisma {
     grossTotal: number
     hash?: string | null
     hashControl?: string | null
+    syncStatus?: string
     storeId: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -18644,6 +18676,7 @@ export namespace Prisma {
     grossTotal: number
     hash?: string | null
     hashControl?: string | null
+    syncStatus?: string
     userId: string
     storeId: string
     createdAt?: Date | string
@@ -19075,6 +19108,7 @@ export namespace Prisma {
     grossTotal: number
     hash?: string | null
     hashControl?: string | null
+    syncStatus?: string
     storeId: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -19093,6 +19127,7 @@ export namespace Prisma {
     grossTotal: number
     hash?: string | null
     hashControl?: string | null
+    syncStatus?: string
     userId: string
     clientId?: string | null
     storeId: string
@@ -19166,6 +19201,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -19184,6 +19220,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     clientId?: NullableStringFieldUpdateOperationsInput | string | null
     storeId?: StringFieldUpdateOperationsInput | string
@@ -19386,6 +19423,7 @@ export namespace Prisma {
     grossTotal: number
     hash?: string | null
     hashControl?: string | null
+    syncStatus?: string
     clientId?: string | null
     storeId: string
     createdAt?: Date | string
@@ -19403,6 +19441,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -19421,6 +19460,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     clientId?: NullableStringFieldUpdateOperationsInput | string | null
     storeId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -19439,6 +19479,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     clientId?: NullableStringFieldUpdateOperationsInput | string | null
     storeId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -19456,6 +19497,7 @@ export namespace Prisma {
     grossTotal: number
     hash?: string | null
     hashControl?: string | null
+    syncStatus?: string
     userId: string
     storeId: string
     createdAt?: Date | string
@@ -19473,6 +19515,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -19491,6 +19534,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -19509,6 +19553,7 @@ export namespace Prisma {
     grossTotal?: FloatFieldUpdateOperationsInput | number
     hash?: NullableStringFieldUpdateOperationsInput | string | null
     hashControl?: NullableStringFieldUpdateOperationsInput | string | null
+    syncStatus?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string

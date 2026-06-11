@@ -68,8 +68,12 @@ contextBridge.exposeInMainWorld("ipc", {
       ipcRenderer.invoke("sync:upsert-client", { client, storeId }),
     deleteClient: (id: string, role: string) =>
       ipcRenderer.invoke("sync:delete-client", { id, role }),
-    searchInvoices: (params: { storeId?: string }) =>
+    searchInvoices: (params: { storeId?: string, userId?: string, role?: string }) =>
       ipcRenderer.invoke("sync:search-invoices", params),
+    annulInvoice: (params: { invoiceId: string, storeId: string, reason: string, notes?: string, managerBarcode?: string }) =>
+      ipcRenderer.invoke("sync:annul-invoice", params),
+    searchCreditNotes: (params: { storeId?: string, userId?: string, role?: string }) =>
+      ipcRenderer.invoke("sync:search-credit-notes", params),
     createInvoice: (params: { invoiceData: any, storeId: string, userId: string }) =>
       ipcRenderer.invoke("sync:create-invoice", params),
     createProforma: (params: { proformaData: any, storeId: string, userId: string }) =>

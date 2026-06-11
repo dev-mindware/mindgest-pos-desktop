@@ -199,6 +199,7 @@ exports.Prisma.InvoiceScalarFieldEnum = {
   grossTotal: 'grossTotal',
   hash: 'hash',
   hashControl: 'hashControl',
+  syncStatus: 'syncStatus',
   userId: 'userId',
   clientId: 'clientId',
   storeId: 'storeId',

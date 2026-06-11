@@ -140,6 +140,9 @@ export class SyncManager {
     this.currentParams.intervalMs = intervalMs;
     this.nextSyncAt = this.getNextSyncDate(intervalMs);
 
+    // Run cleanup on start
+    syncService.cleanupOldInvoices().catch(e => console.error(e));
+
     this.intervalId = setInterval(async () => {
       if (!this.currentParams) return;
       await this.runSyncCycle(this.currentParams.token, this.currentParams.storeId, this.currentParams.userId);

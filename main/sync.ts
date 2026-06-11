@@ -648,6 +648,34 @@ export const syncService = {
     };
   },
 
+  cleanupOldInvoices: async () => {
+    try {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const lastWeek = new Date();
+      lastWeek.setDate(lastWeek.getDate() - 7);
+
+      const deletedSynced = await prisma.invoice.deleteMany({
+        where: {
+          syncStatus: "SYNCED",
+          createdAt: { lt: yesterday }
+        }
+      });
+
+      const deletedOld = await prisma.invoice.deleteMany({
+        where: {
+          syncStatus: { not: "SYNCED" },
+          createdAt: { lt: lastWeek }
+        }
+      });
+
+      console.log(`🧹 [Cleanup] Invoices limpas localmente: ${deletedSynced.count} SYNCED, ${deletedOld.count} OLD`);
+    } catch (err: any) {
+      console.error("❌ [Cleanup] Erro ao limpar faturas antigas:", err?.message || err);
+    }
+  },
+
   /**
    * Processa a fila de saída (Outbox) - Local -> Cloud
    */
@@ -714,7 +742,7 @@ export const syncService = {
           console.log(`📡📡📡📡📡 [SyncWorker] Preparando para sincronizar ${doc.entityType} ${doc.entityId}. Payload original:`, rawPayload);
           let payload = rawPayload;
           let endpoint = "";
-          let method: "post" | "put" = "post";
+          let method: "post" | "put" | "delete" = "post";
 
           if (doc.entityType === "CLIENT") {
             endpoint = doc.action === "CREATE" ? "/clients" : `/clients/${doc.entityId}`;
@@ -730,6 +758,14 @@ export const syncService = {
             endpoint = "/invoice/proforma";
             method = "post";
             payload = await normalizeProformaPayload(rawPayload);
+          } else if (doc.entityType === "CREDIT_NOTE") {
+            endpoint = `/credit-note/${rawPayload.invoiceId}/annulment`;
+            method = "delete";
+            payload = {
+              reason: rawPayload.reason,
+              notes: rawPayload.notes,
+              managerBarcode: rawPayload.managerBarcode
+            };
           }
 
           if (!endpoint) continue;
@@ -764,6 +800,7 @@ export const syncService = {
               where: { id: doc.entityId },
               data: {
                 status: "VALID",
+                syncStatus: "SYNCED",
                 agtNo: responseData?.agtNo,
                 hash: responseData?.hash,
                 hashControl: responseData?.hashControl
@@ -787,6 +824,12 @@ export const syncService = {
               where: { id: doc.id },
               data: { status: "FAILED", errorMsg: apiError, lastErrorTime: new Date(), retryCount: newRetry }
             });
+            if (doc.entityType === "INVOICE") {
+              await prisma.invoice.update({
+                where: { id: doc.entityId },
+                data: { syncStatus: "FAILED" }
+              }).catch(() => {});
+            }
           } else {
             await prisma.syncOutbox.update({
               where: { id: doc.id },

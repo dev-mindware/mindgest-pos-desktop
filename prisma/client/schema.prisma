@@ -120,6 +120,8 @@ model Invoice {
   hash        String?
   hashControl String?
 
+  syncStatus String @default("PENDING") // PENDING, SYNCED, FAILED, PENDING_DEPENDENCIES
+
   // Relacionamentos
   userId   String
   user     User    @relation(fields: [userId], references: [id])

@@ -884,10 +884,13 @@ ipcMain.handle("sync:delete-client", async (_, { id, role }) => {
   }
 });
 
-ipcMain.handle("sync:search-invoices", async (_, { storeId }) => {
+ipcMain.handle("sync:search-invoices", async (_, { storeId, userId, role }) => {
   try {
     const where: any = {};
     if (storeId) where.storeId = storeId;
+    if (role === "CASHIER" && userId) {
+      where.userId = userId;
+    }
 
     return await prisma.invoice.findMany({
       where,
@@ -900,6 +903,81 @@ ipcMain.handle("sync:search-invoices", async (_, { storeId }) => {
     });
   } catch (error) {
     console.error("❌ [DB] Erro ao buscar facturas locais:", error);
+    return [];
+  }
+});
+
+ipcMain.handle("sync:annul-invoice", async (_, { invoiceId, storeId, reason, notes, managerBarcode }) => {
+  try {
+    const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
+    if (!invoice) throw new Error("Factura não encontrada");
+
+    await prisma.$transaction([
+      prisma.invoice.update({
+        where: { id: invoiceId },
+        data: { status: "CANCELED" }
+      }),
+      prisma.syncOutbox.create({
+        data: {
+          entityType: "CREDIT_NOTE",
+          entityId: crypto.randomUUID(),
+          action: "CREATE",
+          storeId,
+          payload: JSON.stringify({
+            invoiceId,
+            reason,
+            notes,
+            managerBarcode
+          })
+        }
+      })
+    ]);
+
+    return { success: true };
+  } catch (error) {
+    console.error("❌ [DB] Erro ao anular factura localmente:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("sync:search-credit-notes", async (_, { storeId, userId, role }) => {
+  try {
+    const where: any = { entityType: "CREDIT_NOTE", action: "CREATE" };
+    if (storeId) where.storeId = storeId;
+    
+    // Na listagem real, precisariamos talvez das informacoes da Invoice, entao podemos ir buscar os credit notes e depois a fatura associada
+    const outboxItems = await prisma.syncOutbox.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+    });
+
+    const results = [];
+    for (const item of outboxItems) {
+      const payload = JSON.parse(item.payload);
+      const invoice = await prisma.invoice.findUnique({
+        where: { id: payload.invoiceId },
+        include: { client: true }
+      });
+      
+      // Filtra pelo cashier apenas se for cashier e o invoice tiver esse user.
+      if (role === "CASHIER" && invoice?.userId !== userId) continue;
+
+      results.push({
+        id: item.entityId,
+        invoiceId: payload.invoiceId,
+        invoiceNumber: invoice?.agtNo || invoice?.localNo,
+        clientName: invoice?.client?.name || "CONSUMIDOR FINAL",
+        grossTotal: invoice?.grossTotal || 0,
+        reason: payload.reason,
+        notes: payload.notes,
+        syncStatus: item.status, // "PENDING", "SYNCED", "FAILED"
+        createdAt: item.createdAt,
+      });
+    }
+
+    return results;
+  } catch (error) {
+    console.error("❌ [DB] Erro ao buscar notas de crédito locais:", error);
     return [];
   }
 });
