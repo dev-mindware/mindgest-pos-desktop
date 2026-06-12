@@ -730,6 +730,20 @@ export const syncService = {
             endpoint = "/invoice/proforma";
             method = "post";
             payload = await normalizeProformaPayload(rawPayload);
+          } else if (doc.entityType === "CASH_MOVEMENT") {
+            endpoint = "/cash-sessions/expenses";
+            method = "post";
+            
+            // Map cashSessionId to the session's cloudId if available
+            const session = await prisma.cashSession.findUnique({
+              where: { id: rawPayload.cashSessionId }
+            });
+            
+            payload = {
+              description: rawPayload.description,
+              amount: rawPayload.amount,
+              cashSessionId: session?.cloudId || rawPayload.cashSessionId
+            };
           }
 
           if (!endpoint) continue;
@@ -769,6 +783,14 @@ export const syncService = {
                 hashControl: responseData?.hashControl
               }
             });
+          } else if (doc.entityType === "CASH_MOVEMENT") {
+            const cloudId = responseData?.id || responseData?.cloudId;
+            if (cloudId) {
+              await prisma.cashMovement.update({
+                where: { id: doc.entityId },
+                data: { cloudId }
+              });
+            }
           }
 
           await prisma.syncOutbox.update({ where: { id: doc.id }, data: { status: "SYNCED", syncedAt: new Date(), retryCount: 0 } });

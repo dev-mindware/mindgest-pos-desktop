@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { CategorySelector, ProductList } from "./products";
 import { CartList } from "./cart";
 import { BarcodeProductScanner } from "./modals";
@@ -15,24 +15,19 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  ScrollArea,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
   Button,
-  Input,
-  EmbeddedKeyboard,
+  Icon,
 } from "@/components";
-import { CustomerSelection } from "./cart/checkout-form/customer-selection";
 import {
   useCounterState,
   useRecommendations,
   useMindPricingConfig,
-  useCartCheckout,
 } from "@/hooks";
 import { Sparkles } from "lucide-react";
-import { PaymentMethods } from "./cart/checkout-form/payment-methods";
 import { CartType, Product } from "@/types";
 
 export function CounterContent() {
@@ -237,247 +232,67 @@ export function CounterContent() {
       .filter(Boolean) as Product[];
   }, [recommendations, products]);
 
-  const checkout = useCartCheckout({
-    cartItems: getCartItemsArray(activeCart),
-    type: activeCart,
-    onSuccess:
-      activeCart === "invoice"
-        ? handleClearCartInvoice
-        : handleClearCartProforma,
-    cashSessionId: currentSession?.id || "",
-  });
-
-  const {
-    paymentMethod,
-    setPaymentMethod,
-    cashGiven,
-    setCashGiven,
-    change,
-    isCustomerExpanded,
-    setIsCustomerExpanded,
-    selectedClient,
-    newCustomerPhone,
-    setNewCustomerPhone,
-    newCustomerNif,
-    setNewCustomerNif,
-    handleClientChange,
-    handleQuickCash,
-  } = checkout;
-
-useEffect(() => {
-
-  console.log("Selected client changed:", selectedClient);
-  console.log("Selected client changed:", newCustomerPhone, " -- ", newCustomerNif);
-
-}, [selectedClient, newCustomerPhone, newCustomerNif])
-
-  useEffect(() => {
-    if (activeCart === "proforma") {
-      setIsCustomerExpanded(true);
-    }
-  }, [activeCart, setIsCustomerExpanded]);
-
-  // Resizable keyboard state
-  const controlPanelRef = useRef<HTMLDivElement | null>(null);
-  const [keyboardWidth, setKeyboardWidth] = useState<number | null>(null);
-  const isDraggingRef = useRef(false);
-
-  const calculateKeyboardBounds = useCallback((available: number) => {
-    // Allow the keyboard to shrink more aggressively on narrower screens
-    const minKeyboard = Math.max(180, Math.round(available * 0.14));
-    // Reserve a smaller right-side minimum so the right column can shrink
-    const minRight = Math.max(220, Math.round(available * 0.18));
-    const maxKeyboard = Math.max(
-      Math.min(Math.round(available * 0.75), available - minRight),
-      minKeyboard,
-    );
-    const preferred = Math.round(available * 0.42);
-    return {
-      minKeyboard,
-      maxKeyboard,
-      preferred: Math.min(Math.max(preferred, minKeyboard), maxKeyboard),
-    };
-  }, []);
-
-  const updateKeyboardWidth = useCallback(() => {
-    const el = controlPanelRef.current;
-    if (!el) return;
-
-    const available = el.clientWidth;
-    const { minKeyboard, maxKeyboard, preferred } =
-      calculateKeyboardBounds(available);
-
-    setKeyboardWidth((current) => {
-      if (current === null) return preferred;
-      if (current < minKeyboard) return minKeyboard;
-      if (current > maxKeyboard) return maxKeyboard;
-      return current;
-    });
-  }, [calculateKeyboardBounds]);
-
-  useEffect(() => {
-    updateKeyboardWidth();
-    window.addEventListener("resize", updateKeyboardWidth);
-    return () => {
-      window.removeEventListener("resize", updateKeyboardWidth);
-    };
-  }, [updateKeyboardWidth]);
-
-  const onMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (!isDraggingRef.current) return;
-      const el = controlPanelRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const available = rect.width;
-      const { minKeyboard, maxKeyboard } = calculateKeyboardBounds(available);
-      let newWidth = e.clientX - rect.left;
-      newWidth = Math.max(minKeyboard, Math.min(newWidth, maxKeyboard));
-      setKeyboardWidth(newWidth);
-    },
-    [calculateKeyboardBounds],
-  );
-
-  const onMouseUp = useCallback(() => {
-    isDraggingRef.current = false;
-    window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("mouseup", onMouseUp);
-  }, [onMouseMove]);
-
-  const onMouseDown = (e: any) => {
-    e.preventDefault();
-    isDraggingRef.current = true;
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-  };
-
   return (
-    <div className="flex flex-col xl:flex-row w-full h-full overflow-hidden min-h-0">
-      {/* Left Section */}
-      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
-        {/* Cash Session — 70% */}
-        <div className="flex flex-[6.5] overflow-hidden">
-          <BarcodeProductScanner
-            scannedProduct={scannedProduct}
-            onConfirm={onConfirmScan}
-          />
-          <div className="flex-1 flex flex-col min-w-0 gap-4">
-            <div className="sticky top-0 z-20 bg-background dark:bg-[#121212] p-1">
-              {isLoadingCategories ? (
-                <PosCategorySkeleton />
-              ) : (
-                <CategorySelector
-                  categories={categories}
-                  activeCategory={selectedCategory}
-                  onSelectCategory={handleCategorySelect}
-                />
-              )}
-            </div>
-
-            <ScrollArea className="flex-1 overflow-y-auto custom-scrollbar pb-2 px-4">
-              {isLoadingProducts ? (
-                <PosProductSectionSkeleton />
-              ) : (
-                <ProductList
-                  products={displayedProducts}
-                  cartItems={cartItemsMap}
-                  onAddToCart={handleAddToCart}
-                  onRemoveFromCart={handleRemoveFromCart}
-                  onUpdateQuantity={handleUpdateQuantity}
-                />
-              )}
-            </ScrollArea>
-          </div>
+    <div className="flex w-full h-full overflow-hidden min-h-0">
+      {/* Left Section - Product List and Categories */}
+      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden p-4 gap-4">
+        <BarcodeProductScanner
+          scannedProduct={scannedProduct}
+          onConfirm={onConfirmScan}
+        />
+        <div className="sticky top-0 z-20 bg-background dark:bg-[#121212]">
+          {isLoadingCategories ? (
+            <PosCategorySkeleton />
+          ) : (
+            <CategorySelector
+              categories={categories}
+              activeCategory={selectedCategory}
+              onSelectCategory={handleCategorySelect}
+            />
+          )}
         </div>
 
-        {/* Control Panel — 30% */}
-        <div
-          ref={controlPanelRef}
-          className="flex flex-col lg:flex-row flex-[3.5] overflow-hidden bg-background dark:bg-[#121212] border-t border-border dark:border-white/10 min-h-[320px]"
-        >
-          {/* Left slot: Virtual Keyboard (resizable) */}
-          <div
-            className="h-full overflow-hidden transition-all duration-200"
-            style={{
-              width: keyboardWidth ? `${keyboardWidth}px` : "100%",
-              minWidth: 280,
-              maxWidth: "calc(100% - 340px)",
-            }}
-          >
-            <EmbeddedKeyboard />
-          </div>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">
+            {currentCategoryName || "Todos"}
+          </h2>
+        </div>
 
-          {/* Resizer handle */}
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            onMouseDown={onMouseDown}
-            className="hidden lg:block w-2 cursor-col-resize hover:bg-muted/20 dark:hover:bg-white/10 transition-colors"
-            style={{ background: "transparent" }}
-          />
-
-          {/* Right slot: Payment Summary / Totals */}
-          <div className="flex-1 h-full border-t border-border dark:border-white/10 lg:border-t-0 lg:border-l px-4 py-3 min-w-[220px]">
-            <div className="w-full h-full flex flex-col gap-3">
-              <div className="bg-muted/20 p-3 rounded-md border border-border dark:border-white/5 w-full">
-                <div className="grid gap-3 lg:grid-cols-[min(0,1fr)_320px]">
-                  <div className="min-w-[280px] w-full">
-                    <PaymentMethods
-                      paymentMethod={paymentMethod}
-                      onMethodChange={setPaymentMethod}
-                      cashGiven={cashGiven}
-                      onCashChange={setCashGiven}
-                      onQuickCash={handleQuickCash}
-                      change={change}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-hidden">
-                {/* Placeholder for payment summary, totals or other controls */}
-              </div>
-            </div>
-          </div>
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide pb-2">
+          {isLoadingProducts ? (
+            <PosProductSectionSkeleton />
+          ) : (
+            <ProductList
+              products={displayedProducts}
+              cartItems={cartItemsMap}
+              onAddToCart={handleAddToCart}
+              onRemoveFromCart={handleRemoveFromCart}
+              onUpdateQuantity={handleUpdateQuantity}
+            />
+          )}
         </div>
       </div>
 
       {/* Right Content - Cart & Payment */}
-      <div className="w-full xl:basis-[450px] basis-[320px] min-w-[240px] max-w-[520px] shrink-0 h-full flex flex-col border-l border-border dark:border-white/10 bg-background dark:bg-[#121212]">
-        <div className="flex flex-col border-b justify-between">
-          <div className="min-w-0 w-full p-2">
-            <CustomerSelection
-              isExpanded={isCustomerExpanded}
-              onToggleExpand={() => setIsCustomerExpanded((s) => !s)}
-              selectedClient={selectedClient}
-              onClientChange={handleClientChange}
-              newCustomerPhone={newCustomerPhone}
-              onPhoneChange={setNewCustomerPhone}
-              newCustomerNif={newCustomerNif}
-              onNifChange={setNewCustomerNif}
-              isProforma={activeCart === "proforma"}
-            />
-          </div>
-
-          <div className="flex border-b items-center justify-between">
-            <Tabs
-              value={activeCart}
-              onValueChange={(v) => setActiveCart(v as CartType)}
-              className="flex-1 flex flex-col items-center"
-            >
-              <TabsList className="grid w-full grid-cols-2 m-4 mb-2">
-                <TabsTrigger value="invoice" className="cursor-pointer">
-                  Faturação
-                </TabsTrigger>
-                <TabsTrigger value="proforma" className="cursor-pointer">
-                  Proforma
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+      <div className="w-[400px] shrink-0 h-full flex flex-col border-l border-border dark:border-white/10 bg-sidebar/30">
+        <Tabs
+          value={activeCart}
+          onValueChange={(v) => setActiveCart(v as CartType)}
+          className="flex-1 flex flex-col min-h-0 overflow-hidden"
+        >
+          <div className="flex items-center justify-between p-4 pb-0 gap-2">
+            <TabsList className="grid w-full grid-cols-2 m-0" data-tour="pos-document-tabs">
+              <TabsTrigger value="invoice" className="cursor-pointer">
+                Faturação
+              </TabsTrigger>
+              <TabsTrigger value="proforma" className="cursor-pointer" data-tour="pos-document-tab-proforma">
+                Proforma
+              </TabsTrigger>
+            </TabsList>
 
             {/* Mind AI Recommendations Tooltip */}
             {currentCartArray.length > 0 && (
-              <div className="pr-4 pb-0 items-center justify-center flex">
+              <div className="shrink-0 flex items-center">
                 <TooltipProvider delayDuration={100}>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -534,20 +349,10 @@ useEffect(() => {
               </div>
             )}
           </div>
-        </div>
 
-        <Tabs
-          value={activeCart}
-          onValueChange={(v) => setActiveCart(v as CartType)}
-          className="flex-1 flex flex-col min-h-0 overflow-hidden"
-        >
-          {/* CORREÇÃO NOS TABS CONTENT: 
-            Adicionado 'data-[state=active]:flex h-full flex-col min-h-0' 
-            Isso obriga o Radix UI a se comportar como um flexbox de tamanho rígido.
-          */}
           <TabsContent
             value="invoice"
-            className="mt-0 h-full min-h-0 data-[state=active]:flex flex-col overflow-hidden"
+            className="flex-1 mt-0 min-h-0 data-[state=active]:block overflow-y-auto"
           >
             {isLoadingCategories || !currentSession?.id ? (
               <PosCartSkeleton />
@@ -560,14 +365,13 @@ useEffect(() => {
                 onDelete={handleDeleteItem}
                 onClearCart={handleClearCartInvoice}
                 cashSessionId={currentSession.id}
-                checkout={checkout}
               />
             )}
           </TabsContent>
 
           <TabsContent
             value="proforma"
-            className="mt-0 h-full min-h-0 data-[state=active]:flex flex-col overflow-hidden"
+            className="flex-1 mt-0 min-h-0 data-[state=active]:block overflow-y-auto"
           >
             {isLoadingCategories || !currentSession?.id ? (
               <PosCartSkeleton />
@@ -580,7 +384,6 @@ useEffect(() => {
                 onDelete={handleDeleteItem}
                 onClearCart={handleClearCartProforma}
                 cashSessionId={currentSession.id}
-                checkout={checkout}
               />
             )}
           </TabsContent>
@@ -589,3 +392,4 @@ useEffect(() => {
     </div>
   );
 }
+

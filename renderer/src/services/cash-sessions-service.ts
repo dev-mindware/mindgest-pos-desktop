@@ -102,8 +102,21 @@ export const cashSessionsService = {
     amount: number;
     cashSessionId: string;
   }) => {
-    const response = await api.post("/cash-sessions/expenses", data);
-    return response.data;
+    try {
+      const response = await api.post("/cash-sessions/expenses", data);
+      return response.data;
+    } catch (error: any) {
+      if (!error.response && typeof window !== "undefined" && window.ipc) {
+        console.warn("🌐 [Offline] Registando despesa localmente...");
+        return await window.ipc.sync.addCashMovement({
+          sessionId: data.cashSessionId,
+          type: "OUT",
+          description: data.description,
+          amount: data.amount
+        });
+      }
+      throw error;
+    }
   },
 
   closeSession: async (

@@ -884,25 +884,128 @@ ipcMain.handle("sync:delete-client", async (_, { id, role }) => {
   }
 });
 
-ipcMain.handle("sync:search-invoices", async (_, { storeId }) => {
-  try {
-    const where: any = {};
-    if (storeId) where.storeId = storeId;
+ipcMain.handle(
+  "sync:search-invoices",
+  async (_, { storeId, search, startDate, endDate, documentType }) => {
+    try {
+      const where: any = {};
+      if (storeId) where.storeId = storeId;
 
-    return await prisma.invoice.findMany({
-      where,
-      include: {
-        client: true,
-        user: { select: { name: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
-  } catch (error) {
-    console.error("❌ [DB] Erro ao buscar facturas locais:", error);
-    return [];
-  }
-});
+      // Filter by document type prefix (e.g. FR, FT, NC, FP)
+      if (documentType) {
+        where.OR = [
+          { agtNo: { startsWith: `${documentType} ` } },
+          { localNo: { startsWith: `${documentType} ` } },
+        ];
+      }
+
+      // Add text search
+      if (search) {
+        const searchConditions = [
+          { agtNo: { contains: search } },
+          { localNo: { contains: search } },
+          { client: { name: { contains: search } } },
+        ];
+
+        if (where.OR) {
+          where.AND = [
+            { OR: where.OR },
+            { OR: searchConditions },
+          ];
+          delete where.OR;
+        } else {
+          where.OR = searchConditions;
+        }
+      }
+
+      // Add date filters
+      if (startDate || endDate) {
+        where.issueDate = {};
+        if (startDate) {
+          where.issueDate.gte = new Date(startDate);
+        }
+        if (endDate) {
+          where.issueDate.lte = new Date(endDate);
+        }
+      }
+
+      if (documentType === "FP") {
+        // Proformas can be in Invoice table (synced) or SyncOutbox (offline-only proformas)
+        const localInvoices = await prisma.invoice.findMany({
+          where,
+          include: {
+            client: true,
+            user: { select: { name: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        });
+
+        const outboxProformas = await prisma.syncOutbox.findMany({
+          where: {
+            entityType: "PROFORMA",
+            storeId: storeId || undefined,
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+        const parsedProformas = outboxProformas
+          .map((doc) => {
+            try {
+              const payload = JSON.parse(doc.payload);
+              return {
+                id: doc.entityId,
+                localNo: payload.proformaNumber || payload.invoiceNumber || "FP PENDENTE",
+                agtNo: payload.proformaNumber || payload.invoiceNumber,
+                grossTotal: payload.grossTotal || payload.total || 0,
+                status: "PENDING_SYNC",
+                issueDate: doc.createdAt,
+                client: payload.client || { name: "CONSUMIDOR FINAL" },
+                user: { name: "Local" },
+              };
+            } catch (e) {
+              return null;
+            }
+          })
+          .filter(Boolean);
+
+        let merged = [...localInvoices, ...parsedProformas];
+
+        if (search) {
+          const searchLower = search.toLowerCase();
+          merged = merged.filter((item: any) => {
+            const numberMatch = (item.agtNo || item.localNo || "")
+              .toLowerCase()
+              .includes(searchLower);
+            const clientMatch = (item.client?.name || "")
+              .toLowerCase()
+              .includes(searchLower);
+            return numberMatch || clientMatch;
+          });
+        }
+
+        merged.sort(
+          (a: any, b: any) =>
+            new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime(),
+        );
+        return merged.slice(0, 50);
+      }
+
+      return await prisma.invoice.findMany({
+        where,
+        include: {
+          client: true,
+          user: { select: { name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
+    } catch (error) {
+      console.error("❌ [DB] Erro ao buscar facturas locais:", error);
+      return [];
+    }
+  },
+);
 
 // ==========================================
 // Handlers de Sessão de Caixa (Offline)
@@ -1045,9 +1148,16 @@ ipcMain.handle(
         );
       }
 
-      return await prisma.$transaction([
+      const session = await prisma.cashSession.findUnique({
+        where: { id: sessionId },
+      });
+      const storeId = session?.storeId || "";
+      const movementId = crypto.randomUUID();
+
+      const ops: any[] = [
         prisma.cashMovement.create({
           data: {
+            id: movementId,
             cashSessionId: sessionId,
             type,
             description,
@@ -1062,7 +1172,27 @@ ipcMain.handle(
             totalExpenses: type === "OUT" ? { increment: amount } : undefined,
           },
         }),
-      ]);
+      ];
+
+      if (type === "OUT") {
+        ops.push(
+          prisma.syncOutbox.create({
+            data: {
+              entityType: "CASH_MOVEMENT",
+              entityId: movementId,
+              action: "CREATE",
+              payload: JSON.stringify({
+                description,
+                amount,
+                cashSessionId: sessionId,
+              }),
+              storeId,
+            },
+          })
+        );
+      }
+
+      return await prisma.$transaction(ops);
     } catch (error) {
       console.error("❌ [DB] Erro ao registar movimento local:", error);
       throw error;

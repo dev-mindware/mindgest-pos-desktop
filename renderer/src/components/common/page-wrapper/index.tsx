@@ -45,7 +45,7 @@ export function PageWrapper({
   }, [initialize, user?.id]);
 
   return (
-    <div className={variant === "counter" ? "bg-background h-screen flex flex-col overflow-hidden" : "bg-background"}>
+    <div className={variant === "counter" ? "bg-background h-screen flex flex-col overflow-hidden w-full" : "bg-background"}>
       <header className="flex h-16 sticky top-0 z-50 shrink-0 bg-sidebar border-b items-center gap-2 transition-[width,height] ease-linear justify-between">
         {/* Default Variant Left side */}
         {variant === "default" && (
@@ -98,7 +98,7 @@ export function PageWrapper({
         </div>
       </header>
       {variant === "counter" ? (
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden min-w-0 w-full">
           {children}
         </div>
       ) : (

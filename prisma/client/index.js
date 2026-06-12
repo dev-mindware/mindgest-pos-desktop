@@ -300,7 +300,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\arqui\\Documents\\GitHub\\mindgest-pos-desktop\\prisma\\client",
+      "value": "C:\\Users\\JonataoCardoso\\Documents\\GitHub\\mindgest-pos-desktop\\prisma\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -314,12 +314,11 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\arqui\\Documents\\GitHub\\mindgest-pos-desktop\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Users\\JonataoCardoso\\Documents\\GitHub\\mindgest-pos-desktop\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null,
-    "schemaEnvPath": "../../.env"
+    "rootEnvPath": null
   },
   "relativePath": "..",
   "clientVersion": "5.22.0",

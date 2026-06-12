@@ -37,7 +37,7 @@ export interface IpcBridge {
     deleteItem: (id: string, role: string) => Promise<any>;
     upsertClient: (client: any, storeId: string) => Promise<any>;
     deleteClient: (id: string, role: string) => Promise<any>;
-    searchInvoices: (params: { storeId?: string }) => Promise<any[]>;
+    searchInvoices: (params: { storeId?: string; search?: string; startDate?: string; endDate?: string; documentType?: string }) => Promise<any[]>;
     createInvoice: (params: { invoiceData: InvoiceReceiptPayload; storeId: string; userId: string; user?: { id: string; email: string; name: string; role: string; storeId?: string } }) => Promise<any>;
     createProforma: (params: { proformaData: any; store: any; user: any | null }) => Promise<any>;
     getPendingOutboxCount: () => Promise<number>;
