@@ -301,7 +301,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\arqui\\Documents\\GitHub\\mindgest-pos-desktop\\prisma\\client",
+      "value": "C:\\Users\\GTIMINDCOM\\Documents\\GitHub\\mindgest-pos-desktop\\prisma\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -315,7 +315,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\arqui\\Documents\\GitHub\\mindgest-pos-desktop\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Users\\GTIMINDCOM\\Documents\\GitHub\\mindgest-pos-desktop\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -329,7 +329,7 @@ const config = {
     "db"
   ],
   "activeProvider": "sqlite",
-  "postinstall": false,
+  "postinstall": true,
   "inlineDatasources": {
     "db": {
       "url": {

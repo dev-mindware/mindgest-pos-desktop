@@ -1,0 +1,13 @@
+ignoredBuiltDependencies:
+  - core-js-pure
+  - unrs-resolver
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - better-sqlite3
+  - electron
+  - electron-winstaller
+  - esbuild
+  - prisma
+  - sharp
