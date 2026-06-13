@@ -305,7 +305,7 @@ export const syncService = {
               price: item.price,
               stock: item.quantity || 0,
               taxPercent: item.tax?.rate || 14.0,
-              categoryId: item.categoryId,
+              categoryId: item.categoryId || item.category?.id || null,
               storeId: storeId,
               isActive: item.status === 'ACTIVE'
             },
@@ -318,7 +318,7 @@ export const syncService = {
               price: item.price,
               stock: item.quantity || 0,
               taxPercent: item.tax?.rate || 14.0,
-              categoryId: item.categoryId,
+              categoryId: item.categoryId || item.category?.id || null,
               storeId: storeId,
               isActive: item.status === 'ACTIVE'
             }

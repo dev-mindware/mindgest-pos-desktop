@@ -1,7 +1,11 @@
 {
   "name": "mindgest-pos-desktop",
   "version": "1.0.0",
-  "description": "MindGest POS Desktop Version",
+  "description": "Sistema desktop de faturação e ponto de venda MindGest",
+  "author": {
+    "name": "MindGest"
+  },
+  "copyright": "Copyright © 2026 MindGest",
   "main": "app/main.js",
   "scripts": {
     "dev": "nextron",
@@ -111,11 +115,12 @@
     "url": "git+https://github.com/dev-mindware/mindgest-pos-desktop.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "build": {
     "appId": "com.mindgest.pos",
     "productName": "MindGest POS",
+    "executableName": "MindGest POS",
+    "artifactName": "MindGest-POS-${version}-${arch}.${ext}",
     "directories": {
       "output": "dist"
     },
@@ -136,6 +141,9 @@
       "prisma/**/*"
     ],
     "win": {
+      "icon": "renderer/public/mindgest.png",
+      "signAndEditExecutable": true,
+      "legalTrademarks": "MindGest",
       "target": [
         { "target": "nsis", "arch": ["x64"] },
         { "target": "portable", "arch": ["x64"] }

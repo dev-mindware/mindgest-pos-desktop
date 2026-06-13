@@ -35,6 +35,42 @@ export function CounterContent() {
   const [debouncedSearch, setDebouncedSearch] = useState<string>(search || "");
   const { categories, isLoading: isLoadingCategories } = useGetCategories();
   const [activeCart, setActiveCart] = useState<CartType>("invoice");
+
+  // Resizable cart width state
+  const [cartWidth, setCartWidth] = useState<number>(400);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+
+  const startResizing = useCallback((mouseDownEvent: React.MouseEvent) => {
+    mouseDownEvent.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback((mouseMoveEvent: MouseEvent) => {
+    if (isResizing) {
+      const newWidth = window.innerWidth - mouseMoveEvent.clientX;
+      if (newWidth >= 320 && newWidth <= 600) {
+        setCartWidth(newWidth);
+      }
+    }
+  }, [isResizing]);
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", resize);
+      window.addEventListener("mouseup", stopResizing);
+    } else {
+      window.removeEventListener("mousemove", resize);
+      window.removeEventListener("mouseup", stopResizing);
+    }
+    return () => {
+      window.removeEventListener("mousemove", resize);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
   const { currentStore } = currentStoreStore();
   const { data: currentSession } = useGetCurrentSession(currentStore?.id);
 
@@ -233,9 +269,9 @@ export function CounterContent() {
   }, [recommendations, products]);
 
   return (
-    <div className="flex w-full h-full overflow-hidden min-h-0">
+    <div className="flex w-full h-full overflow-hidden min-h-0 select-none" style={{ cursor: isResizing ? 'col-resize' : 'default' }}>
       {/* Left Section - Product List and Categories */}
-      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden p-4 gap-4">
+      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden p-4 gap-4 select-text">
         <BarcodeProductScanner
           scannedProduct={scannedProduct}
           onConfirm={onConfirmScan}
@@ -273,8 +309,23 @@ export function CounterContent() {
         </div>
       </div>
 
+      {/* Resize Handle */}
+      <div
+        className={`w-1 cursor-col-resize h-full shrink-0 relative z-30 flex items-center justify-center group transition-colors ${
+          isResizing ? "bg-primary/50" : "hover:bg-primary/30"
+        }`}
+        onMouseDown={startResizing}
+      >
+        <div className={`w-[1px] h-full transition-colors ${
+          isResizing ? "bg-primary" : "bg-border dark:bg-white/10 group-hover:bg-primary/50"
+        }`} />
+      </div>
+
       {/* Right Content - Cart & Payment */}
-      <div className="w-[400px] shrink-0 h-full flex flex-col border-l border-border dark:border-white/10 bg-sidebar/30">
+      <div 
+        style={{ width: `${cartWidth}px` }} 
+        className="shrink-0 h-full flex flex-col bg-sidebar/30 select-text"
+      >
         <Tabs
           value={activeCart}
           onValueChange={(v) => setActiveCart(v as CartType)}

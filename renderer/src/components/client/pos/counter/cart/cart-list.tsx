@@ -63,7 +63,7 @@ export const CartList = React.memo<CartSectionProps>(
     }) => {
         return (
             <div
-                className="flex flex-col bg-sidebar rounded-test-md shadow-sm p-4 mx-4 mb-4 mt-2 border border-border/50 h-auto"
+                className="flex flex-col bg-sidebar rounded-test-md shadow-sm p-2 mx-2 mb-4 mt-2 border border-border/50 h-auto"
                 data-tour="pos-cart"
             >
                 <h2 className="text-xl font-bold mb-4">

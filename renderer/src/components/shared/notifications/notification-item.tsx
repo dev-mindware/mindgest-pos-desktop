@@ -60,7 +60,7 @@ export function NotificationItem({
             {notification.title}
           </h4>
           {!notification.isRead && (
-            <div className="flex-shrink-0 w-2 h-2 bg-primary-500 rounded-test-full mt-1" />
+            <div className="flex-shrink-0 w-2 h-2 bg-primary-500 rounded-full mt-1" />
           )}
         </div>
 

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePagination } from "../common/use-pagination";
 import { Category, CategoryData, CategoryResponse } from "@/types/category";
@@ -115,15 +115,31 @@ export function useGetCategories() {
     };
   }, [currentStore?.id]);
 
-  const categoryOptions = categories.map((category) => ({
-    label: category.name,
-    value: category.id,
-  }));
+  const deduplicatedCategories = useMemo(() => {
+    const map = new Map<string, Category>();
+    for (const cat of categories) {
+      const nameKey = cat.name.trim().toLowerCase();
+      const existing = map.get(nameKey);
+      if (existing) {
+        existing.itemsCount = (existing.itemsCount || 0) + (cat.itemsCount || 0);
+      } else {
+        map.set(nameKey, { ...cat, itemsCount: cat.itemsCount || 0 });
+      }
+    }
+    return Array.from(map.values());
+  }, [categories]);
+
+  const categoryOptions = useMemo(() => {
+    return deduplicatedCategories.map((category) => ({
+      label: category.name,
+      value: category.id,
+    }));
+  }, [deduplicatedCategories]);
 
   return {
     ...pagination,
     categoryOptions,
-    categories,
+    categories: deduplicatedCategories,
     isLoading: pagination.isLoading || isLocalLoading,
     // Backward compatibility
     error: pagination.isError,

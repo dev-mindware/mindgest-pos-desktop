@@ -67,8 +67,8 @@ export function PosSettingsSetup() {
                     className="flex-row w-full mt-5"
                     onValueChange={handleTabChange}
                 >
-                    <div className="h-screen bg-sidebar rounded-test-md w-64 shrink-0">
-                        <TabsList className="sticky top-0 flex-col gap-1 px-1 font-normal bg-transparent rounded-test-none w-full text-foreground items-stretch">
+                    <div className="sticky top-5 h-[calc(100vh-160px)] bg-sidebar rounded-test-md w-64 shrink-0">
+                        <TabsList className="flex-col gap-1 px-1 font-normal bg-transparent rounded-test-none w-full text-foreground items-stretch">
                             <div className="p-4 space-y-2">
                                 {tabs.map((tab) => (
                                     <TabsTrigger

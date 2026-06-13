@@ -1,5 +1,5 @@
 import path from "path";
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import { autoUpdater } from "electron-updater";
 import serve from "electron-serve";
 import { database } from "./database";
@@ -14,6 +14,26 @@ import { syncManager } from "./sync-manager";
 import crypto from "crypto";
 import { spawn, ChildProcess } from "child_process";
 import fs from "fs";
+
+ipcMain.handle("window:minimize", (event) => {
+  BrowserWindow.fromWebContents(event.sender)?.minimize();
+});
+
+ipcMain.handle("window:toggle-maximize", (event) => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (!window) return false;
+  if (window.isMaximized()) window.unmaximize();
+  else window.maximize();
+  return window.isMaximized();
+});
+
+ipcMain.handle("window:is-maximized", (event) => {
+  return BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false;
+});
+
+ipcMain.handle("window:close", (event) => {
+  BrowserWindow.fromWebContents(event.sender)?.close();
+});
 
 // ==========================================
 // Security & Anti-Tampering IPC Handlers
@@ -132,10 +152,26 @@ ipcMain.handle("sync:get-sync-status", async () => {
 
 ipcMain.handle("sync:get-categories", async (_, { storeId }) => {
   try {
-    return await prisma.category.findMany({
+    const categories = await prisma.category.findMany({
       where: { storeId, isActive: true },
+      include: {
+        items: {
+          where: { isActive: true }
+        }
+      },
       orderBy: { name: "asc" },
     });
+    return categories.map(cat => ({
+      id: cat.id,
+      cloudId: cat.cloudId,
+      name: cat.name,
+      description: cat.description,
+      storeId: cat.storeId,
+      isActive: cat.isActive,
+      createdAt: cat.createdAt,
+      updatedAt: cat.updatedAt,
+      itemsCount: cat.items.length
+    }));
   } catch (error) {
     console.error("❌ [DB] Erro ao buscar categorias locais:", error);
     return [];
@@ -151,7 +187,32 @@ ipcMain.handle(
       };
 
       if (storeId) where.storeId = storeId;
-      if (categoryId) where.categoryId = categoryId;
+      
+      if (categoryId) {
+        // Find the category's name by its ID
+        const targetCategory = await prisma.category.findUnique({
+          where: { id: categoryId },
+          select: { name: true }
+        });
+
+        if (targetCategory) {
+          // Find all categories with the same name in the same store that are active
+          const sameNameCategories = await prisma.category.findMany({
+            where: {
+              name: targetCategory.name,
+              storeId: storeId || undefined,
+              isActive: true
+            },
+            select: { id: true }
+          });
+          
+          const categoryIds = sameNameCategories.map(c => c.id);
+          where.categoryId = { in: categoryIds };
+        } else {
+          where.categoryId = categoryId;
+        }
+      }
+
       if (search) {
         where.OR = [
           { name: { contains: search } },
@@ -162,6 +223,9 @@ ipcMain.handle(
 
       const items = await prisma.item.findMany({
         where,
+        include: {
+          category: true
+        },
         take: 100,
         orderBy: { name: "asc" },
       });
@@ -1408,9 +1472,35 @@ async function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    minWidth: 1024,
+    minHeight: 700,
+    title: "MindGest POS",
+    icon: isProd
+      ? path.join(app.getAppPath(), "app", "mindgest.png")
+      : path.join(app.getAppPath(), "renderer", "public", "mindgest.png"),
+    frame: false,
+    autoHideMenuBar: true,
+    backgroundColor: "#fcfcfc",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
+    fullscreen: true,
+  });
+
+  Menu.setApplicationMenu(null);
+
+  const sendMaximizedState = () => {
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("window:maximized-changed", mainWindow.isMaximized());
+    }
+  };
+
+  mainWindow.on("maximize", sendMaximizedState);
+  mainWindow.on("unmaximize", sendMaximizedState);
+
+  // Enforce fullscreen usage only
+  mainWindow.on("leave-full-screen", () => {
+    mainWindow.setFullScreen(true);
   });
 
   // Store a global reference so subsequent calls reuse this window

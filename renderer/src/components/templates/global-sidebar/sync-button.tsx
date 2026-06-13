@@ -41,6 +41,9 @@ export function SyncButton() {
       const clientResult = await window.ipc.sync.clients(token, storeId);
 
       SucessMessage(`Sincronização concluída! (${prodResult.count} produtos, ${catResult.count} categorias, ${clientResult.count} clientes)`);
+      
+      // Notificar componentes que os dados locais mudaram
+      window.dispatchEvent(new Event("local-data-updated"));
     } catch (error: any) {
       console.error("❌ [Sync] Erro durante a sincronização:", error);
     } finally {

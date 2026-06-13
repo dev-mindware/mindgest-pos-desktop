@@ -2,6 +2,13 @@ export interface IpcBridge {
   send: (channel: string, data: any) => void;
   on: (channel: string, func: (...args: any[]) => void) => void;
   off: (channel: string, func: (...args: any[]) => void) => void;
+  window: {
+    minimize: () => Promise<void>;
+    toggleMaximize: () => Promise<boolean>;
+    isMaximized: () => Promise<boolean>;
+    close: () => Promise<void>;
+    onMaximizedChange: (callback: (isMaximized: boolean) => void) => () => void;
+  };
   // SQLite Database Bridge — all document operations are user-scoped
   db: {
     saveDocument: (doc: {

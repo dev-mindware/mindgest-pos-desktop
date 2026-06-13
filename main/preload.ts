@@ -12,6 +12,17 @@ contextBridge.exposeInMainWorld("ipc", {
     // Remove a specific listener previously registered with `on`
     ipcRenderer.removeListener(channel, func as any);
   },
+  window: {
+    minimize: () => ipcRenderer.invoke("window:minimize"),
+    toggleMaximize: () => ipcRenderer.invoke("window:toggle-maximize"),
+    isMaximized: () => ipcRenderer.invoke("window:is-maximized"),
+    close: () => ipcRenderer.invoke("window:close"),
+    onMaximizedChange: (callback: (isMaximized: boolean) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, isMaximized: boolean) => callback(isMaximized);
+      ipcRenderer.on("window:maximized-changed", listener);
+      return () => ipcRenderer.removeListener("window:maximized-changed", listener);
+    },
+  },
 
   // SQLite Database Bridge — all document operations are user-scoped
   db: {

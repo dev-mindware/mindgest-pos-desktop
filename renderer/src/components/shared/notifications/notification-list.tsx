@@ -78,7 +78,7 @@ export function NotificationList({
             {(hasNextPage || isFetchingNextPage) && (
               <div ref={ref} className="flex items-center justify-center p-4">
                 {isFetchingNextPage ? (
-                  <div className="h-6 w-6 animate-spin rounded-test-full border-2 border-primary border-t-transparent" />
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 ) : (
                   <span className="text-xs text-muted-foreground">Carregando mais...</span>
                 )}
