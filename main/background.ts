@@ -1,5 +1,5 @@
 import path from "path";
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { autoUpdater } from "electron-updater";
 import serve from "electron-serve";
 import { database } from "./database";
@@ -7,6 +7,9 @@ import { getHardwareFingerprint, validateMonotonicClock, validateOfflineLicense 
 import { prisma } from "./prisma";
 import { syncService } from "./sync";
 import { syncManager } from "./sync-manager";
+import { FiscalSignatureService } from "./fiscal-signature";
+import { SidecarManager } from "./sidecar-manager";
+import { LocalDocumentService } from "./document-service";
 import crypto from "crypto";
 import { spawn, ChildProcess } from "child_process";
 import fs from "fs";
@@ -16,6 +19,21 @@ import fs from "fs";
 // ==========================================
 ipcMain.handle("security:get-hwid", () => {
   return getHardwareFingerprint();
+});
+
+ipcMain.handle("security:get-fiscal-status", async () => {
+  try {
+    const keys = await FiscalSignatureService.getOrInitializeKeys();
+    return {
+      hasKeys: !!keys.privateKey,
+      swValidationNumber: keys.swValidationNumber,
+      companyNif: keys.companyNif,
+      companyName: keys.companyName,
+      publicKey: keys.publicKey,
+    };
+  } catch (err: any) {
+    return { error: err.message };
+  }
 });
 
 ipcMain.handle("security:save-license", async (_, { licenseJwt, storeId }) => {
@@ -481,57 +499,95 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
 
     const calculatedGrossTotal = calculatedNetTotal + calculatedTaxTotal;
 
-    // 3. Tentar gerar AGT number localmente (se a fatura não tiver agtNo fornecido)
-    let localAgtNo: string | undefined = invoiceData.agtNo || undefined;
+    // 3. Resolução Atómica e Encadeamento de Séries Fiscais AGT
+    const documentType = (invoiceData.documentType || invoiceData.type || 'FR').toString().toUpperCase();
+    const currentYear = new Date().getFullYear().toString();
+    const storeIdLocal = storeId || invoiceData.storeId || 'DEFAULT_STORE';
+    const establishmentNumber = invoiceData.establishmentNumber || 'SEDE';
+    const companyId = invoiceData.companyId || 'DEFAULT_COMPANY';
 
-    try {
-      if (!localAgtNo) {
-        const storeIdLocal = invoiceData.storeId || null;
-        const documentType = (invoiceData.documentType || invoiceData.type || 'FR').toString().toUpperCase();
-        console.log(documentType +" - "+ storeIdLocal)
-        if (documentType && storeIdLocal) {
-          const currentYear = new Date().getFullYear().toString();
-          const seriesRow = await prisma.agtSeries.findFirst({
-            where: {
-              documentType,
-              seriesYear: currentYear,
-              storeId: storeIdLocal,
-              isActive: true
-            }
-          });
-          console.log(`------🔢 [sync:create-invoice] AGT number gerado localmente: ${{
-            documentType: documentType,
-            seriesYear: currentYear,
-            storeId: storeIdLocal,
-            isActive: true,
-            seriesRow
-          }}`);
+    let seriesRow = await prisma.agtSeries.findFirst({
+      where: {
+        documentType,
+        seriesYear: currentYear,
+        storeId: storeIdLocal,
+        isActive: true,
+      },
+    });
 
-          if (seriesRow) {
-            const updated = await prisma.agtSeries.update({
-              where: { id: seriesRow.id },
-              data: { currentSequence: { increment: 1 } }
-            });
-            localAgtNo = `${documentType} ${updated.seriesCode}/${updated.currentSequence}`;
-            console.log(`------🔢 [sync:create-invoice] AGT number gerado localmente: ${localAgtNo}`);
-          }
-        }
-      }
-    } catch (err: any) {
-      console.warn('⚠️ [sync:create-invoice] Não foi possível gerar agtNo localmente:', err?.message || err);
+    if (!seriesRow) {
+      const defaultSeriesCode = `POS${currentYear.slice(-2)}`;
+      seriesRow = await prisma.agtSeries.create({
+        data: {
+          seriesCode: defaultSeriesCode,
+          documentType,
+          seriesYear: currentYear,
+          companyId,
+          establishmentNumber,
+          storeId: storeIdLocal,
+          currentSequence: 0,
+          isActive: true,
+        },
+      });
+      console.log(`📄 [sync:create-invoice] Nova série AGT local criada: ${defaultSeriesCode} (${documentType}/${currentYear})`);
     }
 
-    // 4. Criar a Fatura no SQLite
+    const nextSequence = (seriesRow.currentSequence || 0) + 1;
+    const seriesCode = seriesRow.seriesCode || `POS${currentYear.slice(-2)}`;
+    const localAgtNo = `${documentType} ${seriesCode}/${nextSequence}`;
+    const previousHash = seriesRow.lastHash || '';
+
+    // 4. Assinatura Digital Fiscal AGT (RSA-SHA1 + QR Code Modelo 2 v4)
+    let signatureResult: {
+      hash: string;
+      hashControl: string;
+      hashBase: string;
+      qrCode: string;
+      previousHash: string;
+      systemEntryDate: Date;
+      swValidationNumber: string;
+    };
+
+    try {
+      signatureResult = await FiscalSignatureService.signInvoice({
+        docNo: localAgtNo,
+        issueDate,
+        grossTotal: calculatedGrossTotal,
+        taxTotal: calculatedTaxTotal,
+        previousHash,
+      });
+      console.log(`🔐 [sync:create-invoice] Fatura ${localAgtNo} assinada com sucesso! HashControl: [${signatureResult.hashControl}]`);
+    } catch (sigError: any) {
+      console.error(`❌ [sync:create-invoice] Erro crítico na assinatura fiscal:`, sigError);
+      throw new Error(`Falha na assinatura fiscal do documento: ${sigError.message}`);
+    }
+
+    // Atualizar a série AGT atómica com o novo número e o hash encadeado
+    await prisma.agtSeries.update({
+      where: { id: seriesRow.id },
+      data: {
+        currentSequence: nextSequence,
+        lastDocumentNo: localAgtNo,
+        lastHash: signatureResult.hash,
+      },
+    });
+
+    // 5. Criar a Fatura no SQLite com assinatura fiscal completa
     const createdInvoice = await prisma.invoice.create({
       data: {
         id: invoiceId,
         localNo,
         agtNo: localAgtNo,
-        status: "DRAFT",
+        status: "VALID",
         issueDate,
+        systemEntryDate: signatureResult.systemEntryDate,
         netTotal: calculatedNetTotal,
         taxTotal: calculatedTaxTotal,
         grossTotal: calculatedGrossTotal,
+        hash: signatureResult.hash,
+        hashControl: signatureResult.hashControl,
+        previousHash: signatureResult.previousHash,
+        qrCode: signatureResult.qrCode,
         userId,
         clientId,
         storeId,
@@ -545,15 +601,13 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       }
     });
 
-    // 4. Preparar payload de sincronização da fatura para a Cloud
-    // Importante: usar cloudIds dos itens, não IDs locais
+    // 6. Preparar payload de sincronização da fatura para a Cloud
     const cloudClient: any = {};
     const clientName = createdInvoice.client?.name?.trim();
     if (clientName) {
       if (createdInvoice.client?.cloudId) {
         cloudClient.id = createdInvoice.client.cloudId;
       } else {
-        console.log("/*/*///**////**/**//*/***/*/*/*** ", cloudClient)
         cloudClient.name = clientName;
         if (createdInvoice.client?.id) cloudClient.offlineId = createdInvoice.client.id;
         if (createdInvoice.client?.nif) cloudClient.nif = createdInvoice.client.nif;
@@ -562,19 +616,23 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
         if (createdInvoice.client?.address) cloudClient.address = createdInvoice.client.address;
       }
     }
-    console.log("📤📤📤📤📤📤 [sync:create-invoice] Número de AGT:", localAgtNo);
-    console.log(`------🔢 [sync:create-invoice] AGT number gerado localmente: ${invoiceData}`);
 
     const cloudPayload = {
       ...invoiceData,
       agtNo: localAgtNo,
       offline: true,
+      hash: signatureResult.hash,
+      hashControl: signatureResult.hashControl,
+      previousHash: signatureResult.previousHash,
+      systemEntryDate: signatureResult.systemEntryDate.toISOString(),
+      qrCode: signatureResult.qrCode,
+      swValidationNumber: signatureResult.swValidationNumber,
       items: itemsForCloud,
-      establishmentNumber: invoiceData.establishmentNumber,
+      establishmentNumber: invoiceData.establishmentNumber || establishmentNumber,
       client: Object.keys(cloudClient).length > 0 ? cloudClient : undefined,
     };
 
-    console.log("📤 [sync:create-invoice] Payload final a guardar no outbox para invoice:", JSON.stringify(cloudPayload, null, 2));
+    console.log("📤 [sync:create-invoice] Payload assinado guardado no outbox:", JSON.stringify(cloudPayload, null, 2));
 
     await prisma.syncOutbox.create({
       data: {
@@ -586,11 +644,16 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       }
     });
 
-    // Retorna uma resposta compatível para a UI (com id e offline flag)
+    // Retorna a resposta completa e assinada para a UI (para exibição e impressão imediata)
     return {
       data: {
         id: createdInvoice.id,
         localNo: createdInvoice.agtNo,
+        agtNo: createdInvoice.agtNo,
+        hash: signatureResult.hash,
+        hashControl: signatureResult.hashControl,
+        qrCode: signatureResult.qrCode,
+        swValidationNumber: signatureResult.swValidationNumber,
         offline: true,
         invoice: createdInvoice
       }
@@ -948,6 +1011,22 @@ ipcMain.handle("app:get-version", () => {
   return app.getVersion();
 });
 
+// ==========================================
+// Document Generation & Print IPC Handlers
+// ==========================================
+ipcMain.handle("document:generate-local-pdf", async (_, { invoiceId, layout }: { invoiceId: string; layout?: 'a4' | 'thermal' }) => {
+  try {
+    return await LocalDocumentService.generateInvoicePdf(invoiceId, { layout });
+  } catch (error: any) {
+    console.error("❌ [IPC document:generate-local-pdf] Erro ao gerar PDF local:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("document:is-sidecar-healthy", async () => {
+  return await SidecarManager.isHealthy();
+});
+
 console.log("--- Electron Main Process Log ---");
 console.log("Environment:", isProd ? "production" : "development");
 
@@ -1013,6 +1092,15 @@ async function createWindow() {
   } catch (e) {
     console.warn('Falha ao armazenar referência global da janela:', e);
   }
+
+  // Abre links externos no navegador padrão do sistema
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("http:") || url.startsWith("https:")) {
+      shell.openExternal(url);
+      return { action: "deny" };
+    }
+    return { action: "allow" };
+  });
 
   // Nextron passes the port as the first argument in development
   const port = process.argv[2];
@@ -1124,56 +1212,6 @@ function killPythonSubprocess() {
   }
 }
 
-function startDocGeneratorSubprocess() {
-  const isProd = process.env.NODE_ENV === "production";
-  let pyPath = "";
-  let pyArgs: string[] = [];
-
-  if (isProd) {
-    // In production we'd expect a packaged binary or a managed service; try to run bundled exe
-    pyPath = path.join(process.resourcesPath, "bin", "doc-generator", "doc-generator.exe");
-  } else {
-    // Development: prefer venv inside python-microservice
-    const venvPython = path.join(app.getAppPath(), "python-microservice", "venv", "Scripts", "python.exe");
-
-    if (fs.existsSync(venvPython)) {
-      pyPath = venvPython;
-      pyArgs = ["-m", "uvicorn", "app.main:app", "--port", "3002"];
-    } else {
-      // Fallback to global python
-      pyPath = "python";
-      pyArgs = ["-m", "uvicorn", "app.main:app", "--port", "3002"];
-    }
-  }
-
-  console.log(`🚀 [Launcher] A tentar iniciar serviço Document Generator em: ${pyPath}`);
-
-  try {
-    docGenSubprocess = spawn(pyPath, pyArgs, {
-      stdio: "ignore",
-      windowsHide: true,
-    });
-
-    docGenSubprocess.on("error", (err) => {
-      console.error("❌ [Launcher] Erro ao iniciar subprocesso Document Generator:", err);
-    });
-
-    docGenSubprocess.on("close", (code) => {
-      console.log(`🔌 [Launcher] Subprocesso Document Generator fechado com código: ${code}`);
-    });
-  } catch (err) {
-    console.error("❌ [Launcher] Erro crítico ao fazer spawn do subprocesso Document Generator:", err);
-  }
-}
-
-function killDocGeneratorSubprocess() {
-  if (docGenSubprocess) {
-    console.log("🔌 [Launcher] A encerrar serviço Document Generator em background...");
-    docGenSubprocess.kill();
-    docGenSubprocess = null;
-  }
-}
-
 app.on("ready", async () => {
   console.log("Main process READY EVENT triggered");
   await testPrismaConnection();
@@ -1191,8 +1229,9 @@ app.on("ready", async () => {
 
   // Iniciar automaticamente o microserviço de IA da MIND
   startPythonSubprocess();
-    // Iniciar automaticamente o microserviço de geração de documentos (Python)
-    startDocGeneratorSubprocess();
+  
+  // Iniciar o microserviço local de Impressão e Geração de Documentos (Sidecar)
+  SidecarManager.start();
 
   createWindow();
 });
@@ -1200,22 +1239,22 @@ app.on("ready", async () => {
 app.on("window-all-closed", () => {
   console.log("Shutdown: All windows closed");
   killPythonSubprocess();
-    killDocGeneratorSubprocess();
+  SidecarManager.stop();
   app.quit();
 });
 
 process.on("exit", () => {
   killPythonSubprocess();
-    killDocGeneratorSubprocess();
+  SidecarManager.stop();
 });
 
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION:", err);
   killPythonSubprocess();
-    killDocGeneratorSubprocess();
+  SidecarManager.stop();
 });
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error("UNHANDLED REJECTION at:", promise, "reason:", reason);
-    killDocGeneratorSubprocess();
+  SidecarManager.stop();
 });

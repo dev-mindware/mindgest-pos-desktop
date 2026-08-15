@@ -46,6 +46,13 @@ model Settings {
   terminalMode       String    @default("MASTER") // "MASTER" ou "TERMINAL"
   masterIp           String?                      // IP do Master (usado no modo TERMINAL)
   lanSecret          String?                      // Shared secret para autenticação LAN
+
+  // Certificação AGT & Chaves de Assinatura Fiscal Offline
+  softwareValidationNumber String? @default("FE/241/AGT/2026")
+  companyNif               String? @default("0000000000")
+  companyName              String? @default("MINDGEST")
+  encryptedPrivateKey      String? // Chave privada RSA encriptada com AES-256 + HWID
+  publicKey                String? // Chave pública RSA
 }
 
 // ==========================================
@@ -118,6 +125,9 @@ model Invoice {
   // AGT Security - Assinaturas locais
   hash           String?
   hashControl    String?
+  previousHash   String?
+  qrCode         String?
+  systemEntryDate DateTime? @default(now())
   
   // Relacionamentos
   userId         String
@@ -220,6 +230,7 @@ model AgtSeries {
   storeId           String?
   currentSequence   Int      @default(0)
   lastDocumentNo    String?
+  lastHash          String?
   isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

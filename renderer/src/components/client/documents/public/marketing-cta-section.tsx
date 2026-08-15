@@ -11,7 +11,11 @@ export function MarketingCtaSection() {
             <h2 className="text-2xl font-bold mb-2">
                 MindGest: O futuro da sua gestão empresarial começa agora.
             </h2>
-            <Link href="/auth/register">
+            <a
+                href="https://mindgest.mindware.ao/auth/register"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
                 <Button
                     variant="secondary"
                     className="mt-4 bg-white text-purple-700 hover:bg-gray-100"
@@ -19,7 +23,7 @@ export function MarketingCtaSection() {
                     CONHEÇA O MINDGEST
                     <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
-            </Link>
+            </a>
         </div>
     );
 }

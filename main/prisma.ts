@@ -4,10 +4,40 @@ process.env.PRISMA_CLIENT_ENGINE_TYPE = "library";
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import { app } from 'electron';
+import fs from 'fs';
 
+function getDatabaseUrl(): string {
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL;
+  }
+  let dbDir: string;
+  try {
+    dbDir = app ? app.getPath('userData') : path.join(process.cwd(), 'prisma');
+  } catch {
+    dbDir = path.join(process.cwd(), 'prisma');
+  }
 
-// Instancia o cliente do Prisma com logs ativados para vermos as queries no terminal
+  if (!fs.existsSync(dbDir)) {
+    try {
+      fs.mkdirSync(dbDir, { recursive: true });
+    } catch {}
+  }
+
+  const dbPath = path.join(dbDir, 'dev.db');
+  const url = `file:${dbPath}`;
+  process.env.DATABASE_URL = url;
+  return url;
+}
+
+const dbUrl = getDatabaseUrl();
+
+// Instancia o cliente do Prisma com logs ativados e URL explícita
 export const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: dbUrl,
+    },
+  },
   log: ['info', 'warn', 'error'],
 });
 
@@ -120,12 +150,57 @@ async function ensureSettingsSchema() {
       ['terminalMode', 'TEXT NOT NULL DEFAULT "MASTER"'],
       ['masterIp', 'TEXT'],
       ['lanSecret', 'TEXT'],
+      ['softwareValidationNumber', 'TEXT DEFAULT "FE/241/AGT/2026"'],
+      ['companyNif', 'TEXT DEFAULT "0000000000"'],
+      ['companyName', 'TEXT DEFAULT "MINDGEST"'],
+      ['encryptedPrivateKey', 'TEXT'],
+      ['publicKey', 'TEXT'],
     ];
 
     for (const [columnName, definition] of columnsToAdd) {
       if (!(await tableHasColumn('Settings', columnName))) {
         console.log(`🔧 [Prisma] Adicionando coluna ausente Settings.${columnName}...`);
         await prisma.$executeRawUnsafe(`ALTER TABLE "Settings" ADD COLUMN "${columnName}" ${definition};`);
+      }
+    }
+  }
+}
+
+async function ensureInvoiceSchema() {
+  const tableExists = await prisma.$queryRawUnsafe<Array<{ name: string }>>(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name='Invoice'`
+  );
+
+  if (tableExists.length > 0) {
+    const columnsToAdd: Array<[string, string]> = [
+      ['previousHash', 'TEXT'],
+      ['qrCode', 'TEXT'],
+      ['systemEntryDate', 'DATETIME DEFAULT CURRENT_TIMESTAMP'],
+    ];
+
+    for (const [columnName, definition] of columnsToAdd) {
+      if (!(await tableHasColumn('Invoice', columnName))) {
+        console.log(`🔧 [Prisma] Adicionando coluna ausente Invoice.${columnName}...`);
+        await prisma.$executeRawUnsafe(`ALTER TABLE "Invoice" ADD COLUMN "${columnName}" ${definition};`);
+      }
+    }
+  }
+}
+
+async function ensureAgtSeriesSchema() {
+  const tableExists = await prisma.$queryRawUnsafe<Array<{ name: string }>>(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name='AgtSeries'`
+  );
+
+  if (tableExists.length > 0) {
+    const columnsToAdd: Array<[string, string]> = [
+      ['lastHash', 'TEXT'],
+    ];
+
+    for (const [columnName, definition] of columnsToAdd) {
+      if (!(await tableHasColumn('AgtSeries', columnName))) {
+        console.log(`🔧 [Prisma] Adicionando coluna ausente AgtSeries.${columnName}...`);
+        await prisma.$executeRawUnsafe(`ALTER TABLE "AgtSeries" ADD COLUMN "${columnName}" ${definition};`);
       }
     }
   }
@@ -351,6 +426,8 @@ export async function testPrismaConnection() {
 
     await ensureSyncOutboxSchema();
     await ensureSettingsSchema();
+    await ensureInvoiceSchema();
+    await ensureAgtSeriesSchema();
 
     const userCount = await prisma.user.count();
     console.log('✅ [Prisma] Conexão bem-sucedida! Total de Utilizadores na DB:', userCount);

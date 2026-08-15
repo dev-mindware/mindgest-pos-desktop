@@ -575,13 +575,14 @@ export const syncService = {
               }
             }
           } else if (doc.entityType === "INVOICE") {
+            const currentInv = await prisma.invoice.findUnique({ where: { id: doc.entityId } });
             await prisma.invoice.update({
               where: { id: doc.entityId },
               data: {
                 status: "VALID",
-                agtNo: responseData?.agtNo,
-                hash: responseData?.hash,
-                hashControl: responseData?.hashControl
+                agtNo: responseData?.agtNo || currentInv?.agtNo,
+                hash: responseData?.hash || currentInv?.hash,
+                hashControl: responseData?.hashControl || currentInv?.hashControl
               }
             });
           }

@@ -1,13 +1,14 @@
-import { HeroImageSide, LoginForm } from "@/components";
+import { LoginForm, HeroImageSide } from "@/components";
+import loginImage from "@/assets/login.jpg";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen w-full grid lg:grid-cols-2">
+    <div className="grid min-h-screen min-h-dvh w-full overflow-hidden lg:grid-cols-2">
       <div className="hidden lg:block">
-        <HeroImageSide source="/login.svg" />
+        <HeroImageSide source={loginImage} />
       </div>
 
-      <div className="flex items-center justify-center bg-background p-6 md:p-10">
+      <div className="flex min-h-[100svh] items-center justify-center bg-background p-5 md:p-8 lg:min-h-0">
         <div className="w-full max-w-sm">
           <LoginForm />
         </div>

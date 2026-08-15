@@ -1,13 +1,12 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import Logo from "@/assets/brand.png";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { ErrorMessage } from "@/utils/messages";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginFormData, loginSchema } from "@/schemas";
-import { ButtonSubmit, GoogleButton, Input, OrLine } from "@/components";
+import { ButtonSubmit, Input } from "@/components";
 import { authService } from "@/services/auth-service";
 import { useAuthStore } from "@/stores";
 
@@ -43,8 +42,14 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(handleLogin)} className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <Image src={Logo} alt="Logo" className="size-20" />
-        <h1 className="text-2xl font-bold">Bem-vindo de volta</h1>
+        <Image
+          src={"/mindgest.png"}
+          alt="Logótipo do Mindgest"
+          className="size-20 object-contain"
+          width={100}
+          height={100}
+        />
+        <h1 className="text-2xl font-bold">Bem-vindo(a) ao Mindgest</h1>
       </div>
 
       <div className="grid gap-6">
@@ -59,10 +64,10 @@ export function LoginForm() {
         />
         <div className="flex flex-col space-y-2 items-center">
           <Input
-            label="Senha"
+            label="Palavra-passe"
             startIcon="Lock"
             type="password"
-            placeholder="Insira a senha"
+            placeholder="Introduza a palavra-passe"
             {...register("password")}
             autoComplete="current-password"
           />
@@ -70,25 +75,25 @@ export function LoginForm() {
             href="/auth/forgot-password"
             className="ml-auto text-sm text-primary underline-offset-4 hover:underline"
           >
-            Esqueceu sua senha?
+            Esqueceu a sua palavra-passe?
           </Link>
         </div>
 
         <ButtonSubmit isLoading={isSubmitting}>
           {isSubmitting ? "" : "Entrar"}
         </ButtonSubmit>
-
-        {/* <OrLine />
-        <GoogleButton /> */}
       </div>
+
       <div className="text-sm text-center">
-        Não tem uma conta?{" "}
-        <Link
-          href="/auth/register"
+        Ainda não tem uma conta?{" "}
+        <a
+          href="https://mindgest.mindware.ao/auth/register"
+          target="_blank"
+          rel="noopener noreferrer"
           className="font-medium text-primary hover:underline underline-offset-4"
         >
-          Crie nova
-        </Link>
+          Criar conta
+        </a>
       </div>
     </form>
   );

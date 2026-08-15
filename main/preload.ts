@@ -31,12 +31,13 @@ contextBridge.exposeInMainWorld("ipc", {
     getItemCloudId: (id: string) => ipcRenderer.invoke("db:get-item-cloud-id", id),
     getClientCloudId: (params: { id?: string; nif?: string; email?: string }) => ipcRenderer.invoke("db:get-client-cloud-id", params),
   },
-  // Security Bridge (Anti-Tampering)
+  // Security Bridge (Anti-Tampering & Fiscal Status)
   security: {
     getHardwareId: () => ipcRenderer.invoke("security:get-hwid"),
     saveOfflineLicense: (licenseJwt: string, storeId: string) => 
       ipcRenderer.invoke("security:save-license", { licenseJwt, storeId }),
     checkClock: () => ipcRenderer.invoke("security:check-clock"),
+    getFiscalStatus: () => ipcRenderer.invoke("security:get-fiscal-status"),
   },
   // LAN Configuration Bridge
   lan: {
@@ -98,6 +99,12 @@ contextBridge.exposeInMainWorld("ipc", {
     triggerSync: (params: { token: string, storeId: string, userId: string }) =>
       ipcRenderer.invoke("sync:trigger-sync", params),
     getSyncStatus: () => ipcRenderer.invoke("sync:get-sync-status")
+  },
+  document: {
+    generateLocalPdf: (params: { invoiceId: string; layout?: 'a4' | 'thermal' }) =>
+      ipcRenderer.invoke("document:generate-local-pdf", params),
+    isSidecarHealthy: () =>
+      ipcRenderer.invoke("document:is-sidecar-healthy"),
   },
   app: {
     getVersion: () => ipcRenderer.invoke("app:get-version"),

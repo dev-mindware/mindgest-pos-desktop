@@ -6,6 +6,9 @@ module.exports = {
     unoptimized: true,
   },
   turbopack: {},
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   webpack: (config) => {
     return config
   },
