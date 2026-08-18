@@ -65,7 +65,7 @@ const InvoiceBaseSchema = z.object({
 });
 
 /**
- * Invoice (Fatura normal)
+ * Invoice (Factura normal)
  */
 
 export const InvoiceSchema = InvoiceBaseSchema.extend({
@@ -124,7 +124,7 @@ export const InvoiceReceiptSchema = InvoiceBaseSchema.extend({
 export type InvoiceReceiptFormData = z.infer<typeof InvoiceReceiptSchema>;
 
 /**
- * Receipt (Recibo gerado de fatura)
+ * Receipt (Recibo gerado de factura)
  */
 export const ReceiptSchema = z.object({
   issueDate: z.string().trim().min(1, "A data de emissão é obrigatória"),

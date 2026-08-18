@@ -19,7 +19,7 @@ import { useEffect } from "react";
 const clientSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  nif: z.string().min(9, "NIF deve ter pelo menos 9 dígitos"),
+  taxNumber: z.string().min(9, "NIF deve ter pelo menos 9 dígitos"),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   phone: z.string().optional(),
 });
@@ -35,12 +35,12 @@ interface ClientModalProps {
 
 export function ClientModal({ isOpen, onClose, client, onSuccess }: ClientModalProps) {
   const { upsertClient } = useClientActions();
-  
+
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
       name: "",
-      nif: "",
+      taxNumber: "",
       email: "",
       phone: "",
     },
@@ -51,14 +51,14 @@ export function ClientModal({ isOpen, onClose, client, onSuccess }: ClientModalP
       form.reset({
         id: client.id,
         name: client.name,
-        nif: client.nif || "",
+        taxNumber: client.taxNumber || "",
         email: client.email || "",
         phone: client.phone || "",
       });
     } else {
       form.reset({
         name: "",
-        nif: "",
+        taxNumber: "",
         email: "",
         phone: "",
       });
@@ -89,12 +89,12 @@ export function ClientModal({ isOpen, onClose, client, onSuccess }: ClientModalP
               <p className="text-xs text-red-500">{form.formState.errors.name.message}</p>
             )}
           </div>
-          
+
           <div className="space-y-2">
-            <Label htmlFor="nif">NIF</Label>
-            <Input id="nif" {...form.register("nif")} placeholder="Ex: 500123456" />
-            {form.formState.errors.nif && (
-              <p className="text-xs text-red-500">{form.formState.errors.nif.message}</p>
+            <Label htmlFor="taxNumber">NIF</Label>
+            <Input id="taxNumber" {...form.register("taxNumber")} placeholder="Ex: 500123456" />
+            {form.formState.errors.taxNumber && (
+              <p className="text-xs text-red-500">{form.formState.errors.taxNumber.message}</p>
             )}
           </div>
 

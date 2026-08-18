@@ -23,15 +23,15 @@ export function PaymentMethods({
     change,
 }: PaymentMethodsProps) {
     return (
-        <div className="mb-4">
-            <div className="flex items-center gap-2 mb-3">
+        <div className="w-full">
+            <div className="flex items-center gap-2 mb-2">
                 <div className="flex-1 flex p-1 gap-2 bg-muted/50 rounded-test-md">
                     {(["Credit Card", "Cash"] as PaymentMethod[]).map((method) => (
                         <button
                             key={method}
                             onClick={() => onMethodChange(method)}
                             className={cn(
-                                "flex-1 flex flex-col items-center gap-2 py-2 rounded-test-md text-xs font-medium transition-all",
+                                "flex-1 flex flex-col items-center cursor-pointer gap-2 py-2 rounded-test-md text-xs font-medium transition-all",
                                 paymentMethod === method
                                     ? "bg-primary/15 shadow text-primary"
                                     : "text-muted-foreground hover:bg-accent",
@@ -68,7 +68,7 @@ export function PaymentMethods({
             {paymentMethod === "Cash" && (
                 <div className="space-y-3 bg-muted/30 p-3 rounded-test-xl border border-dashed mb-3">
                     <div className="grid grid-cols-4 gap-2">
-                        {[200, 500, 1000, 5000].map((amt) => (
+                        {[100, 150, 200, 500, 1000, 5000].map((amt) => (
                             <Button
                                 key={amt}
                                 variant="outline"

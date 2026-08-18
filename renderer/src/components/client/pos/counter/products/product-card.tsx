@@ -64,7 +64,14 @@ export const ProductCard = React.memo<ProductCardProps>(
     };
 
     return (
-      <Card className="overflow-hidden flex flex-col py-0 relative group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20 bg-card/50 backdrop-blur-sm">
+      <Card 
+        className="overflow-hidden max-w-[250px] min-w-[250px] w-full flex flex-col py-0 relative group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20 bg-card/50 backdrop-blur-sm cursor-pointer"
+        onClick={() => {
+          if (quantity === 0 && product.quantity > 0) {
+            onAdd(product);
+          }
+        }}
+      >
         <CardContent className="p-3 sm:p-4 flex-1 flex flex-col gap-3">
           {/* Top Content: Image & Title */}
           <div className="flex gap-3 sm:gap-3.5">
@@ -123,12 +130,12 @@ export const ProductCard = React.memo<ProductCardProps>(
               <TooltipContent
                 side="right"
                 align="start"
-                className="max-w-[220px] p-3 flex flex-col gap-1.5 shadow-xl border-border/50 z-[100]"
+                className="max-w-[220px] p-3 flex flex-col gap-1.5 shadow-xl border-border bg-background dark:bg-[#1F1F1F] dark:border-white/10 z-[100]"
               >
-                <h4 className="font-bold text-sm leading-tight text-white">
+                <h4 className="font-bold text-sm leading-tight text-foreground">
                   {product.name}
                 </h4>
-                <p className="text-xs text-white/80 leading-relaxed italic border-t border-white/10 pt-1.5 mt-0.5">
+                <p className="text-xs text-muted-foreground leading-relaxed italic border-t border-border/50 pt-1.5 mt-0.5">
                   {product.description ||
                     "Nenhuma descrição disponível para este produto."}
                 </p>
@@ -146,122 +153,6 @@ export const ProductCard = React.memo<ProductCardProps>(
                 {formatCurrency(product.price || 0)}
               </span>
             </div>
-
-            <Popover open={isEditing} onOpenChange={setIsEditing}>
-              <PopoverAnchor asChild>
-                <div className="flex items-center gap-1.5">
-                  {quantity === 0 ? (
-                    <Button
-                      size="icon"
-                      disabled={product.quantity <= 0}
-                      className={cn(
-                        "rounded-full h-9 w-9 sm:h-10 sm:w-10 transition-all duration-300 shadow-sm",
-                        product.quantity <= 0
-                          ? "bg-destructive/10 text-destructive cursor-not-allowed border-destructive/20 hover:bg-destructive/20"
-                          : "bg-primary text-white hover:bg-primary/90 hover:scale-105 shadow-primary/20",
-                      )}
-                      onClick={() => {
-                        if (product.quantity > 0) {
-                          onAdd(product);
-                        } else {
-                          ErrorMessage("Produto sem stock disponível.");
-                        }
-                      }}
-                      onDoubleClick={(e: React.MouseEvent) => {
-                        e.preventDefault();
-                        if (product.quantity > 0) {
-                          handleDoubleClick();
-                        }
-                      }}
-                    >
-                      {product.quantity <= 0 ? (
-                        <Icon name="X" className="h-5 w-5" />
-                      ) : (
-                        <Icon name="Plus" className="h-5 w-5" />
-                      )}
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5 sm:p-1 border border-border/60 shadow-sm">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 sm:h-8 sm:w-8 rounded-test-full hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
-                        onClick={() => onRemove(product.id)}
-                      >
-                        <Icon
-                          name="Minus"
-                          className="h-3.5 w-3.5 sm:h-4 sm:w-4"
-                        />
-                      </Button>
-
-                      <span
-                        className="text-xs sm:text-sm font-bold min-w-5 sm:min-w-6 text-center cursor-pointer select-none tabular-nums hover:text-primary transition-colors px-0.5 sm:px-1"
-                        onDoubleClick={(e: React.MouseEvent) => {
-                          e.preventDefault();
-                          handleDoubleClick();
-                        }}
-                        title="Duplo clique para editar"
-                      >
-                        {quantity}
-                      </span>
-
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        disabled={product.quantity <= quantity}
-                        className={cn(
-                          "h-7 w-7 sm:h-8 sm:w-8 rounded-test-full transition-colors",
-                          product.quantity <= quantity
-                            ? "text-muted-foreground/30 cursor-not-allowed"
-                            : "text-primary hover:bg-primary/10",
-                        )}
-                        onClick={() => onAdd(product)}
-                        onDoubleClick={(e: React.MouseEvent) => {
-                          e.preventDefault();
-                          handleDoubleClick();
-                        }}
-                      >
-                        <Icon name="Plus" className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </PopoverAnchor>
-              <PopoverContent
-                className="w-auto p-3 shadow-2xl border-primary/20 backdrop-blur-md z-110"
-                align="end"
-                side="top"
-                onInteractOutside={(e: any) => {
-                  const target = e.target as HTMLElement;
-                  if (target?.closest("#virtual-keyboard")) {
-                    e.preventDefault();
-                  }
-                }}
-              >
-                <div className="flex flex-col gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Quantidade
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={editQty}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditQty(e.target.value)}
-                      className="h-8 w-16 text-center text-sm font-bold focus-visible:ring-primary/30"
-                      type="number"
-                      onKeyDown={handleKeyDown}
-                      autoFocus
-                    />
-                    <Button
-                      size="icon"
-                      className="h-8 w-8 shrink-0 bg-primary hover:bg-primary/90"
-                      onClick={handleConfirmQty}
-                    >
-                      <Icon name="Check" className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
           </div>
         </CardContent>
       </Card>

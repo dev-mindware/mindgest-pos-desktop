@@ -42,7 +42,7 @@ export function ReceiptTemplate({ data }: ReceiptTemplateProps) {
 
       <div className="bg-muted/50 p-4 rounded-test-lg space-y-2">
         <div className="flex justify-between">
-          <span className="font-medium">Referência Fatura:</span>
+          <span className="font-medium">Referência Factura:</span>
           <span>{data.originalInvoiceId || "N/A"}</span>
         </div>
         <div className="flex justify-between">

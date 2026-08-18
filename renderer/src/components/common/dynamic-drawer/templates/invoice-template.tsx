@@ -19,7 +19,7 @@ export function InvoiceTemplate({ type, data, hideDueDate, hideActions, changeVa
     <div className="space-y-6 text-sm">
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-xl font-bold uppercase tracking-wide">Fatura</h2>
+          <h2 className="text-xl font-bold uppercase tracking-wide">Factura</h2>
           <p className="text-muted-foreground">{data.number}</p>
         </div>
         <div className="text-right">

@@ -252,7 +252,7 @@ export function AsyncCreatableSelectField({
   };
 
   return (
-    <div className={className}>
+    <div className={`w-full ${className || ""}`}>
       <label className="block text-sm font-medium text-foreground mb-1">
         {label}
       </label>
@@ -296,6 +296,7 @@ export function AsyncCreatableSelectField({
             ...base,
             minHeight: "37px",
             height: "37px",
+            width: "100%",
             borderRadius: "6.5px",
             borderColor: error
               ? "var(--destructive)"
@@ -317,6 +318,7 @@ export function AsyncCreatableSelectField({
           valueContainer: (base) => ({
             ...base,
             padding: "0 12px",
+            minWidth: 0,
           }),
 
           input: (base) => ({

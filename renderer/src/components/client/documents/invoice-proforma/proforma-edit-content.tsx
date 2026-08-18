@@ -23,7 +23,7 @@ export function ProformaEditContent({ invoiceId }: { invoiceId: string }) {
       <div className="space-y-6">
         <TitleList
           title="Editar Proforma"
-          suTitle="Edite a proforma para as suas faturas."
+          suTitle="Edite a proforma para as suas facturas."
         />
         <CreditNoteFormSkeleton />
       </div>
@@ -34,7 +34,7 @@ export function ProformaEditContent({ invoiceId }: { invoiceId: string }) {
     return (
       <RequestError
         refetch={refetch}
-        message="Erro ao carregar dados da fatura. Verifique a sua conexão."
+        message="Erro ao carregar dados da factura. Verifique a sua conexão."
       />
     );
   }
@@ -43,7 +43,7 @@ export function ProformaEditContent({ invoiceId }: { invoiceId: string }) {
     return (
       <EmptyState
         icon="FileDiff"
-        description="Fatura não encontrada ou ID inválido."
+        description="Factura não encontrada ou ID inválido."
       />
     );
   }

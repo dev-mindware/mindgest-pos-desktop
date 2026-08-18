@@ -34,7 +34,7 @@ export function useCancelInvoice() {
   return useMutation({
     mutationFn: (id: string) => invoiceService.cancelInvoice(id),
     onSuccess: () => {
-      SucessMessage("Fatura cancelada com sucesso!");
+      SucessMessage("Factura cancelada com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["invoice-normal"] });
     },
   });
@@ -58,12 +58,15 @@ export function useCreateInvoice() {
         }
         throw new Error("Sistema offline não inicializado.");
       }
+
+      console.log("Creating invoice with data:");
+      console.log(data);
       return invoiceService.createInvoice(data);
     },
     onSuccess: (response) => {
       const isOffline = (response as any)?.offline;
       SucessMessage(
-        isOffline ? "Fatura salva localmente!" : "Fatura criada com sucesso!",
+        isOffline ? "Factura salva localmente!" : "Factura criada com sucesso!",
       );
       queryClient.invalidateQueries({ queryKey: ["invoice-normal"] });
       return response.data;

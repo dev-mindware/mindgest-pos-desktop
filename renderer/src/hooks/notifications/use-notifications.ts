@@ -46,9 +46,11 @@ export function useNotifications(
 
   const notifications = data?.pages.flatMap((page) => page.data) ?? [];
 
-  // Socket.IO Connection
+  // Socket.IO Connection — conecta ao servidor VPS (sem o sufixo /api)
   useEffect(() => {
-    socket = io("https://mindgest.mindware-vps.cloud/api", { // VPS
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api";
+    const socketUrl = apiUrl.replace(/\/api$/, ""); // Remove /api para a ligação Socket.IO
+    socket = io(socketUrl, { // VPS
       transports: ["websocket"],
     });
 

@@ -196,7 +196,7 @@ class SubscriptionInvoiceGenerator(BaseDocumentGenerator):
     def _build_header_info(self, request: GenerateDocumentRequest):
         data = [
             [
-                Paragraph("Fatura Nº:", self.styles["BoldText"]),
+                Paragraph("Factura Nº:", self.styles["BoldText"]),
                 Paragraph(request.invoiceNumber, self.styles["NormalText"]),
             ],
             [

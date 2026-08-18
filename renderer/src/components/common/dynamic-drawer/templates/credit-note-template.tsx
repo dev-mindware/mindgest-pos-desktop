@@ -19,7 +19,7 @@ export function CreditNoteTemplate({ data }: Props) {
           </h2>
           <p className="text-muted-foreground">{data.number}</p>
           <p className="text-muted-foreground mt-1">
-            Ref. Fatura: {invoice.number}
+            Ref. Factura: {invoice.number}
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export function CreditNoteTemplate({ data }: Props) {
           <Separator />
 
           <div className="flex justify-between font-bold text-lg">
-            <span>Total da Fatura:</span>
+            <span>Total da Factura:</span>
             <span>{formatCurrency(Number(invoice.total))}</span>
           </div>
         </div>

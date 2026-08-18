@@ -41,7 +41,7 @@ export function mapDocumentToCreditNoteDefaults(
       },
       items: [],
       issueDate: new Date().toISOString().split("T")[0],
-      dueDate: doc.issueDate, // deve vir da fatura recibo
+      dueDate: doc.issueDate, // deve vir da factura recibo
       subtotal: doc.subtotal,
       taxAmount: doc.taxAmount,
       discountAmount: doc.discountAmount,

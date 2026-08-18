@@ -2,16 +2,16 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface WorkspaceState {
-  disableVirtualKeyboard: boolean;
-  setDisableVirtualKeyboard: (value: boolean) => void;
+  enableVirtualKeyboard: boolean;
+  setEnableVirtualKeyboard: (value: boolean) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>()(
   persist(
     (set) => ({
-      disableVirtualKeyboard: true,
-      setDisableVirtualKeyboard: (disableVirtualKeyboard) =>
-        set({ disableVirtualKeyboard }),
+      enableVirtualKeyboard: false,
+      setEnableVirtualKeyboard: (enableVirtualKeyboard) =>
+        set({ enableVirtualKeyboard }),
     }),
     {
       name: "workspace-settings",

@@ -161,8 +161,8 @@ class SAFTGenerator(BaseDocumentGenerator):
         # Customer List
         customer = SubElement(master_files, "Customer")
         # FIX: use cleaned NIF as CustomerID for absolute synchronization
-        raw_nif = request.client.taxId or "999999999"
-        cust_tax = self._clean_nif(raw_nif)
+        raw_taxNumber = request.client.taxId or "999999999"
+        cust_tax = self._clean_taxNumber(raw_taxNumber)
         # Rule: Fallback to 999999999 if invalid/short (AGT requires 9 digits)
         if len(cust_tax) < 9:
             cust_tax = "999999999"
@@ -330,10 +330,10 @@ class SAFTGenerator(BaseDocumentGenerator):
             datetime.utcnow().isoformat().split(".")[0],
         )
         raw_ct = request.client.taxId or "999999999"
-        ct_nif = self._clean_nif(raw_ct)
-        if len(ct_nif) < 9:
-            ct_nif = "999999999"
-        self._add_element(invoice, "CustomerID", ct_nif)
+        ct_taxNumber = self._clean_taxNumber(raw_ct)
+        if len(ct_taxNumber) < 9:
+            ct_taxNumber = "999999999"
+        self._add_element(invoice, "CustomerID", ct_taxNumber)
 
         # --- CURRENCY SUPPORT (AGT - Ponto 7) ---
         currency_code = request.currencyCode or "AOA"
@@ -447,10 +447,10 @@ class SAFTGenerator(BaseDocumentGenerator):
         elem.text = str(text) if text is not None else ""
         return elem
 
-    def _clean_nif(self, nif: str) -> str:
+    def _clean_taxNumber(self, taxNumber: str) -> str:
         """Keeps only digits and uppercase letters."""
-        if not nif:
+        if not taxNumber:
             return ""
         import re
 
-        return re.sub(r"[^0-9A-Z]", "", nif.upper())
+        return re.sub(r"[^0-9A-Z]", "", taxNumber.upper())

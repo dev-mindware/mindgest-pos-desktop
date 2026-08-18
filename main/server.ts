@@ -37,8 +37,8 @@ async function lanAuthMiddleware(req: Request, res: Response, next: NextFunction
 // Rotas de Teste e Healthcheck
 // ==========================================
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'online', 
+  res.json({
+    status: 'online',
     message: 'MindGest Local Master Server is running!',
     timestamp: new Date().toISOString()
   });
@@ -82,7 +82,7 @@ apiRouter.get('/clients', async (req, res) => {
       const s = String(search);
       where.OR = [
         { name: { contains: s } },
-        { nif: { contains: s } },
+        { taxNumber: { contains: s } },
         { email: { contains: s } },
       ];
     }
@@ -98,7 +98,7 @@ apiRouter.get('/cash-sessions/current', async (req, res) => {
   try {
     const { storeId } = req.query;
     const session = await prisma.cashSession.findFirst({
-      where: { 
+      where: {
         storeId: String(storeId),
         status: 'OPEN'
       },
@@ -112,18 +112,18 @@ apiRouter.get('/cash-sessions/current', async (req, res) => {
 
 apiRouter.post('/invoice', async (req, res) => {
   try {
-    // Para simplificar, estamos a assumir que o payload de fatura do Frontend
+    // Para simplificar, estamos a assumir que o payload de factura do Frontend
     // pode ser guardado no SQLite, mas como o Frontend envia para o Outbox do PC local dele,
-    // o modo Terminal precisaria enviar a fatura diretamente para a API do Master!
-    // TODO: A lógica real de faturação pode ser mais complexa. Por enquanto guardamos num Outbox do Master ou inserimos direto.
+    // o modo Terminal precisaria enviar a factura diretamente para a API do Master!
+    // TODO: A lógica real de facturação pode ser mais complexa. Por enquanto guardamos num Outbox do Master ou inserimos direto.
     const payload = req.body;
-    
-    // Inserimos a fatura diretamente na DB do Master (como se fosse criada aqui)
+
+    // Inserimos a factura diretamente na DB do Master (como se fosse criada aqui)
     // Precisaríamos de mapear os campos, mas uma implementação provisória é apenas simular sucesso 
     // ou inserir via prisma.invoice.create se o payload for 1:1 com o prisma.
-    res.json({ success: true, message: 'Fatura recebida pelo Master' });
+    res.json({ success: true, message: 'Factura recebida pelo Master' });
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar fatura no Master.' });
+    res.status(500).json({ error: 'Erro ao criar factura no Master.' });
   }
 });
 

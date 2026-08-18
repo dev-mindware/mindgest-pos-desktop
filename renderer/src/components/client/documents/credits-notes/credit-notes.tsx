@@ -26,7 +26,7 @@ export function CreditNotes({ invoiceId, invoiceType }: CreditNotesProps) {
       <div className="space-y-6">
         <TitleList
           title="Notas de Crédito"
-          suTitle="Emita notas de crédito para as suas faturas."
+          suTitle="Emita notas de crédito para as suas facturas."
         />
         <CreditNoteFormSkeleton />
       </div>
@@ -37,7 +37,7 @@ export function CreditNotes({ invoiceId, invoiceType }: CreditNotesProps) {
     return (
       <RequestError
         refetch={refetch}
-        message="Erro ao carregar dados da fatura. Verifique a sua conexão."
+        message="Erro ao carregar dados da factura. Verifique a sua conexão."
       />
     );
   }
@@ -46,7 +46,7 @@ export function CreditNotes({ invoiceId, invoiceType }: CreditNotesProps) {
     return (
       <EmptyState
         icon="FileDiff"
-        description="Fatura não encontrada ou ID inválido."
+        description="Factura não encontrada ou ID inválido."
       />
     );
   }
@@ -55,7 +55,7 @@ export function CreditNotes({ invoiceId, invoiceType }: CreditNotesProps) {
     <div className="space-y-6 animate-in fade-in duration-500">
       <TitleList
         title="Notas de Crédito"
-        suTitle={`Referente à Fatura: ${data.invoiceNumber}`}
+        suTitle={`Referente à Factura: ${data.invoiceNumber}`}
       />
       <CreditNoteForm invoice={data} />
     </div>

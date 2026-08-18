@@ -4,7 +4,7 @@ import { Card, CardContent, Icon, Switch } from "@/components";
 import { useWorkspaceStore } from "@/stores/pos/workspace-store";
 
 export function PosWorkspaceSettings() {
-    const { disableVirtualKeyboard, setDisableVirtualKeyboard } = useWorkspaceStore();
+    const { enableVirtualKeyboard, setEnableVirtualKeyboard } = useWorkspaceStore();
 
     return (
         <div className="space-y-6">
@@ -29,12 +29,12 @@ export function PosWorkspaceSettings() {
                                     <p className="font-outfit font-bold">Teclado Virtual</p>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    Desative o teclado virtual interno se estiver a usar um teclado físico externo.
+                                    Ative o teclado virtual interno para usar em campos de texto; desative se estiver usando um teclado físico externo.
                                 </p>
                             </div>
                             <Switch
-                                checked={disableVirtualKeyboard}
-                                onCheckedChange={setDisableVirtualKeyboard}
+                                checked={enableVirtualKeyboard}
+                                onCheckedChange={setEnableVirtualKeyboard}
                             />
                         </div>
                     </div>

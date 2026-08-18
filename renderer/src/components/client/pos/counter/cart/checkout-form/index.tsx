@@ -3,7 +3,7 @@
 import { Button } from "@/components";
 import { InvoicePreviewDrawer as PosInvoicePreviewDrawer } from "../../modals/invoice-preview-drawer";
 import { ErrorMessage } from "@/utils";
-import { useCartCheckout, CartItem } from "@/hooks";
+import { CartItem } from "@/hooks";
 import { PaymentSummary } from "./payment-summary";
 import { PaymentMethods } from "./payment-methods";
 import { DocumentSuccessModal } from "@/components/client/documents/modals/document-success-modal";
@@ -13,6 +13,7 @@ interface CartCheckoutFormProps {
     onSuccess?: () => void;
     type?: "invoice" | "proforma";
     cashSessionId: string;
+    checkout: any;
 }
 
 export function CartCheckoutForm({
@@ -20,6 +21,7 @@ export function CartCheckoutForm({
     onSuccess,
     type = "invoice",
     cashSessionId,
+    checkout,
 }: CartCheckoutFormProps) {
     const {
         form: { handleSubmit },
@@ -29,15 +31,6 @@ export function CartCheckoutForm({
         setCashGiven,
         change,
         totals,
-        isCustomerExpanded,
-        setIsCustomerExpanded,
-        newCustomerPhone,
-        setNewCustomerPhone,
-        newCustomerNif,
-        setNewCustomerNif,
-        selectedClient,
-        handleClientChange,
-        handleQuickCash,
         handlePreview,
         handleCancel,
         handleFinalSubmit,
@@ -45,7 +38,7 @@ export function CartCheckoutForm({
         setIsPreviewOpen,
         pendingPayload,
         isPending,
-    } = useCartCheckout({ cartItems, type, onSuccess, cashSessionId });
+    } = checkout;
 
     return (
         <>
@@ -60,9 +53,9 @@ export function CartCheckoutForm({
                 />
 
                 {/* CustomerSelection moved to main Counter layout for improved spacing */}
-                <div className="flex">
+                <div className="flex px-1 gap-4">
                     <Button
-                        className="w-1/3 h-14 bg-red-400 border border-white/10 hover:bg-red-500/80 transition-colors text-md font-bold"
+                        className="max-w-1/3 grow h-14 bg-red-400 border border-white/10 hover:bg-red-500/80 transition-colors text-md font-bold"
                         onClick={() => {
                             handleCancel();
                             onSuccess?.();
@@ -73,8 +66,8 @@ export function CartCheckoutForm({
                     </Button>
 
                     <Button
-                        className="w-2/3 h-14 ml-2 text-md font-bold"
-                        onClick={handleSubmit(handlePreview, (errors) => {
+                        className="w-2/3 grow h-14 text-md font-bold"
+                        onClick={handleSubmit(handlePreview, (errors: any) => {
                             console.error("Form Validation Errors:", errors);
                             ErrorMessage("Verifique os campos obrigatórios");
                         })}

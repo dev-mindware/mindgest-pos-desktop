@@ -12,12 +12,12 @@ type ConversionType = "invoice" | "invoice-receipt";
 const OPTIONS: { type: ConversionType; label: string; description: string }[] = [
     {
         type: "invoice",
-        label: "Fatura",
+        label: "Factura",
         description: "Documento de cobrança com prazo de pagamento",
     },
     {
         type: "invoice-receipt",
-        label: "Fatura Recibo",
+        label: "Factura Recibo",
         description: "Documento com cobrança e recibo integrados",
     },
 ];

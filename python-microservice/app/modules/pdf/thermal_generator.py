@@ -291,7 +291,7 @@ class ThermalPDFGenerator(BaseDocumentGenerator):
         c.drawCentredString(
             self.width / 2,
             y_credits,
-            "Tel: +244 926 665 793 | minwareofficial@gmail.com",
+            "Tel: +244 943 100 922 | geral@mindware.ao",
         )
 
         if request.status == "CANCELLED":
@@ -617,7 +617,7 @@ class ThermalPDFGenerator(BaseDocumentGenerator):
         c.drawCentredString(
             self.width / 2,
             y_credits,
-            "Tel: +244 926 665 793 | minwareofficial@gmail.com",
+            "Tel: +244 943 100 922 | geral@mindware.ao",
         )
 
         # --- MARCA D'ÁGUA "ANULADO" ---

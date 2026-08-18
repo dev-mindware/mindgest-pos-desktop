@@ -282,8 +282,8 @@ export function MindAssistantChat() {
                                 {[
                                     "Como abro uma sessão?",
                                     "Como fecho o meu caixa?",
-                                    "Como crio uma fatura?",
-                                    "Como emitir uma fatura proforma?"
+                                    "Como crio uma factura?",
+                                    "Como emitir uma factura proforma?"
                                 ].map((q) => (
                                     <button
                                         key={q}

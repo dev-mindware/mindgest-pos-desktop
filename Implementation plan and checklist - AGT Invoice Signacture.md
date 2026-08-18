@@ -3,14 +3,14 @@
 ## Objetivo
 - Implementar o fluxo AGT de forma profissional e escalável no `MINDGEST-API`.
 - Garantir que as séries são sempre fornecidas pela AGT e nunca geradas localmente.
-- Assegurar que faturas offline sincronizadas usam a mesma série e sequência do estabelecimento, evitando duplicados.
-- Garantir que o número de fatura oficial é consistente entre todos os nós que partilham a mesma `establishmentNumber`.
+- Assegurar que facturas offline sincronizadas usam a mesma série e sequência do estabelecimento, evitando duplicados.
+- Garantir que o número de factura oficial é consistente entre todos os nós que partilham a mesma `establishmentNumber`.
 
 ## Observações importantes
-- As séries de faturas nunca são criadas localmente; elas são requisitadas diretamente à AGT via `AgtSeriesService.solicitarSerie()`.
+- As séries de facturas nunca são criadas localmente; elas são requisitadas diretamente à AGT via `AgtSeriesService.solicitarSerie()`.
 - O campo `establishmentNumber` distingue o tipo/loja e deve ser usado como identidade de série.
-- A sequência de faturas deve ser gerida atômica e exclusivamente pela série AGT associada a `(documentType, seriesYear, companyId, establishmentNumber)`.
-- O número de fatura deve ser montado como `DOCUMENT_TYPE SERIES_CODE/SEQUENCE`.
+- A sequência de facturas deve ser gerida atômica e exclusivamente pela série AGT associada a `(documentType, seriesYear, companyId, establishmentNumber)`.
+- O número de factura deve ser montado como `DOCUMENT_TYPE SERIES_CODE/SEQUENCE`.
 
 ## Plano de implementação
 
@@ -22,7 +22,7 @@
 2. Garantir que nunca há geração de série local
    - Remover qualquer fallback que crie ou normalize série local para TG-AGT-bound invoices.
    - O `SequenceChainingService` deve exigir `AgtSeries` ativa para o documento AGT.
-   - Se não houver série AGT disponível, a criação da fatura deve falhar com erro claro e instrução para solicitar série.
+   - Se não houver série AGT disponível, a criação da factura deve falhar com erro claro e instrução para solicitar série.
 
 3. Implementar geração de número atômica e segura
    - Atualizar `AgtSeriesService.getNextNumber(companyId, documentType, establishmentNumber)` para:
@@ -32,7 +32,7 @@
    - Garantir que esta operação ocorre dentro de transação quando usada em `generateNextInvoiceSequence()`.
    - Evitar dupla numeração com bloqueio na base de dados (via update atômico e chave única).
 
-4. Atualizar a sequência de faturação na Cloud
+4. Atualizar a sequência de facturação na Cloud
    - Em `SequenceChainingService.generateNextInvoiceSequence(...)`:
      * usar o mesmo `establishmentNumber` do store/terminal;
      * mapear `InvoiceType.INVOICE_RECEIPT` para `FR`, `NORMAL_INVOICE` para `FT`, etc;
@@ -40,7 +40,7 @@
      * construir `nextNumber` com `seriesCode` e sequência oficial.
    - Garantir que o hash encadeado usa apenas documentos da mesma série e tipo.
 
-5. Fluxo de criação de fatura offline sync
+5. Fluxo de criação de factura offline sync
    - O payload do POS deve conter `storeId`, `companyId`, `client.offlineId`, `items`, `establishmentNumber`/loja, e o `agtNo` oficial quando já gerado localmente.
    - O POS offline deve marcar documentos como `offline: true` e preservar o número AGT se já estiver atribuído.
    - A Cloud deve usar este contexto para:
@@ -64,7 +64,7 @@
 
 8. Visibilidade e operação
    - Expor `GET /agt/series` para listar séries ativas.
-   - Documentar que a série deve ser solicitada antes de emitir faturas.
+   - Documentar que a série deve ser solicitada antes de emitir facturas.
    - Fornecer mensagem de erro clara caso série AGT não exista.
 
 ## Checklist de implementação
@@ -73,15 +73,15 @@
 - [x] `AgtSeriesService.getNextNumber()` recebe e usa `establishmentNumber`
 - [x] `AgtSeriesService.getNextNumber()` incrementa `currentSequence` de forma atômica
 - [x] `SequenceChainingService.generateNextInvoiceSequence()` usa a série AGT correta
-- [x] Criação de fatura bloqueada se não existir `AgtSeries` ativa para o estabelecimento
-- [x] Número de fatura gerado como `DOCUMENT_TYPE SERIES_CODE/SEQUENCE`
+- [x] Criação de factura bloqueada se não existir `AgtSeries` ativa para o estabelecimento
+- [x] Número de factura gerado como `DOCUMENT_TYPE SERIES_CODE/SEQUENCE`
 - [x] `previousHash` calculado a partir do último documento da mesma série
 - [x] Payload offline do POS inclui `client.offlineId`, `storeId`, `establishmentNumber` e `agtNo` quando disponível
 
 ## Notas de engenharia para evitar duplicação
 - Use `AgtSeries` como fonte única de verdade para sequência.
-- Nunca use `counter` derivado do número de faturas locais quando `AgtSeries` existe.
-- Se há duas faturas em paralelo com mesma série, a atualização `currentSequence` deve ser atômica no banco.
+- Nunca use `counter` derivado do número de facturas locais quando `AgtSeries` existe.
+- Se há duas facturas em paralelo com mesma série, a atualização `currentSequence` deve ser atômica no banco.
 - Confirme que `invoice.number` tem restrição única e que o mesmo `seriesCode/sequence` não pode ser criado duas vezes.
 
 ## Prioridade imediata

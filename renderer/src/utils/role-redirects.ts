@@ -3,9 +3,9 @@ import { Role } from "@/types";
 export const DEFAULT_LOGIN_REDIRECT = "/auth/login";
 
 export const roleRedirects: Record<Role, string> = {
-  "ADMIN": "/pos/counter",
-  "OWNER": "/pos/counter",
-  "MANAGER": "/pos/counter",
+  "ADMIN": "/documents",
+  "OWNER": "/documents",
+  "MANAGER": "/documents",
   "CASHIER": "/pos/counter",
 };
 

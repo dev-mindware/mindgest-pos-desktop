@@ -5,12 +5,12 @@ import { VirtualKeyboard } from "@/components/common/virtual-keyboard";
 import { useWorkspaceStore } from "@/stores/pos/workspace-store";
 
 export function KeyboardGuard({ children }: { children: React.ReactNode }) {
-    const { disableVirtualKeyboard } = useWorkspaceStore();
+    const { enableVirtualKeyboard } = useWorkspaceStore();
 
     return (
         <KeyboardProvider>
             {children}
-            {!disableVirtualKeyboard && <VirtualKeyboard />}
+            {enableVirtualKeyboard && <VirtualKeyboard />}
         </KeyboardProvider>
     );
 }

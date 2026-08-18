@@ -91,7 +91,7 @@ export function InvoiceFiltersTSX({ type, hasData }: Props) {
           />
           <Input
             type="search"
-            placeholder="Nº Fatura"
+            placeholder="Nº Factura"
             value={filters.invoiceNumber ?? ""}
             onChange={(e) => setFilters({ invoiceNumber: e.target.value })}
             className="w-full"

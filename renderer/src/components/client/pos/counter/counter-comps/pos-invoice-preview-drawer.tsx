@@ -36,7 +36,7 @@ export function PosInvoicePreviewDrawer({
             name: "Consumidor Final",
             phone: "N/A",
             email: "",
-            nif: "999999999",
+            taxNumber: "999999999",
             address: "Loja"
         },
         items: cartItems.map((item) => ({
@@ -57,7 +57,7 @@ export function PosInvoicePreviewDrawer({
         <DynamicDrawer
             open={open}
             onOpenChange={onOpenChange}
-            title={`Confirmar ${type === 'invoice' ? 'Fatura Recibo' : 'Proforma'}`}
+            title={`Confirmar ${type === 'invoice' ? 'Factura Recibo' : 'Proforma'}`}
             description="Verifique os dados antes de finalizar."
             className="max-w-4xl"
         >

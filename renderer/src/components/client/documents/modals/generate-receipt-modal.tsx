@@ -51,7 +51,7 @@ export function GenerateReceiptModal() {
   async function onSubmit(data: ReceiptFormData) {
     try {
       if (!currentInvoice) {
-        ErrorMessage("Fatura não selecionada");
+        ErrorMessage("Factura não selecionada");
         return;
       }
 

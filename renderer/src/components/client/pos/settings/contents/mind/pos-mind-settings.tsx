@@ -32,7 +32,7 @@ export function PosMindSettings() {
         setRecommendationsEnabled(checked);
         if (checked) {
             toast.info("A iniciar treino...", {
-                description: "A MIND está a analisar o histórico de faturas online.",
+                description: "A MIND está a analisar o histórico de facturas online.",
             });
             try {
                 // Fetch invoices from the authenticated Next.js API instance
@@ -46,7 +46,7 @@ export function PosMindSettings() {
             } catch (err) {
                 console.error("Failed to train recommendation model:", err);
                 toast.error("Erro no Treino", {
-                    description: "Falha ao obter faturas online ou servidor AI indisponível.",
+                    description: "Falha ao obter facturas online ou servidor AI indisponível.",
                 });
             }
         }
@@ -143,7 +143,7 @@ export function PosMindSettings() {
                             Motor de Recomendação Inteligente
                         </Label>
                         <p className="text-sm text-muted-foreground max-w-[85%]">
-                            Ative para exibir sugestões dinâmicas de venda-cruzada e "upsell" (max 2 produtos) para o operador de caixa baseadas no histórico real de faturas faturadas.
+                            Ative para exibir sugestões dinâmicas de venda-cruzada e "upsell" (max 2 produtos) para o operador de caixa baseadas no histórico real de facturas facturadas.
                         </p>
                     </div>
                     <Switch

@@ -61,7 +61,6 @@ export function PosSettingsSetup() {
 
     return (
         <div className="p-4">
-            <h1 className="text-2xl font-semibold">Definições do POS</h1>
             <div className="hidden md:block">
                 <Tabs
                     value={activeTab}

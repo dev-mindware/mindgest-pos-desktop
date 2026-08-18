@@ -34,10 +34,14 @@ Para inicializar o ambiente de desenvolvimento pela primeira vez, siga estes pas
    cd mindgest-pos-desktop
    ```
 2. Instale as dependências. Como este projeto compila módulos nativos C++ (`better-sqlite3`), é essencial usar o comando completo para reconstruir os binários para a arquitetura local:
+
    ```bash
    pnpm install
    npx electron-builder install-app-deps
+   manual: node node_modules/.pnpm/electron@33.2.1/node_modules/electron/install.js
+
    ```
+
 3. Inicie o servidor de desenvolvimento:
    ```bash
    pnpm dev
@@ -98,7 +102,7 @@ O Assistente MIND AI no frontend precisa que o Ollama esteja ativado na máquina
 
 ## ⚡ Fluxo de Modo Offline (Resiliência)
 
-Esta aplicação foi desenhada para nunca parar de faturar:
+Esta aplicação foi desenhada para nunca parar de facturar:
 
 1. Se a internet falhar (`navigator.onLine` e ping a servidores reais), a UI muda silenciosamente para o modo **Offline**.
 2. Faturas, Proformas e Recibos são gravados de forma _assíncrona_ no SQLite nativo.
@@ -120,6 +124,72 @@ Para criar o instalador `.exe` (ou `.dmg` no Mac) para distribuir aos clientes:
 
 ---
 
-## 📄 Licença
+## � Workflow de Releases Profissional
+
+Este projeto está configurado com **GitHub Actions** para automatizar o processo de versionamento, build e publicação.
+
+### Como publicar uma nova versão
+
+#### Opção A: Usar script auxiliar (Recomendado)
+
+**Windows:**
+
+```bash
+scripts\release.bat patch
+scripts\release.bat minor
+scripts\release.bat major
+```
+
+**macOS/Linux:**
+
+```bash
+chmod +x scripts/release.sh
+./scripts/release.sh patch
+./scripts/release.sh minor
+./scripts/release.sh major
+```
+
+#### Opção B: Manualmente
+
+1. Atualizar versão em `package.json`:
+
+   ```bash
+   npm version patch    # 1.0.0 → 1.0.1
+   npm version minor    # 1.0.0 → 1.1.0
+   npm version major    # 1.0.0 → 2.0.0
+   ```
+
+2. Fazer push para `main`:
+
+   ```bash
+   git push origin main
+   ```
+
+3. Criar e fazer push da tag:
+   ```bash
+   git tag -a v1.0.1 -m "Release v1.0.1"
+   git push origin v1.0.1
+   ```
+
+### O que acontece automaticamente
+
+Quando uma tag `v*` é feita push:
+
+1. ✅ **CI Checks**: Lint, testes e build validação
+2. 🔨 **Multi-Platform Build**: Gera instaladores para Windows, macOS e Linux
+3. 📦 **Publish Release**: Publica assets (`.exe`, `.dmg`, `.AppImage`, etc.) no GitHub
+4. 🔄 **Auto-Update**: O arquivo `latest.yml` é publicado para permitir auto-updates
+
+### Acompanhar o progresso
+
+- Ir para: [GitHub Actions](https://github.com/dev-mindware/mindgest-pos-desktop/actions)
+- Ver o workflow `Release` em execução
+- Verificar assets publicados: [Releases](https://github.com/dev-mindware/mindgest-pos-desktop/releases)
+
+Para mais detalhes, consulte [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md).
+
+---
+
+## �📄 Licença
 
 Uso exclusivo MindGest. Proibida distribuição não autorizada.

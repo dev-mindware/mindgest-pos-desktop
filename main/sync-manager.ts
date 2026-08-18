@@ -92,14 +92,16 @@ export class SyncManager {
       const categoryResult = await syncService.syncCategories(token, storeId);
       const clientResult = await syncService.syncClients(token, storeId);
       const productResult = await syncService.syncProducts(token, storeId);
+      const documentSequenceResult = await syncService.syncDocumentSequence(token, storeId);
       const agtSeriesResult = await syncService.syncAgtSeries(token, storeId);
 
       const result = {
         online: true,
         outbox: outboxResult,
         categories: categoryResult,
-        clients: clientResult,
+        clients: clientResult, 
         products: productResult,
+        document: documentSequenceResult,
         AGTSeries: agtSeriesResult,
         timestamp: new Date().toISOString()
       };
@@ -144,6 +146,9 @@ export class SyncManager {
     const intervalMs = this.currentParams.intervalMs ?? DEFAULT_SYNC_INTERVAL_MS;
     this.currentParams.intervalMs = intervalMs;
     this.nextSyncAt = this.getNextSyncDate(intervalMs);
+
+    // Run cleanup on start
+    syncService.cleanupOldInvoices().catch(e => console.error(e));
 
     this.intervalId = setInterval(async () => {
       if (!this.currentParams) return;
