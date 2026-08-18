@@ -93,7 +93,7 @@ if (!isMounted) return null;
       <div>
         <h2 className="text-2xl text-center md:text-start">Aparência</h2>
         <p className="text-center text-muted-foreground md:text-start">
-          Personalize o MindGest para se adaptar ao teu negócio.
+          Personalize o Mindgest para se adaptar ao teu negócio.
         </p>
       </div>
         <Separator/>

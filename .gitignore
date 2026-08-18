@@ -1,54 +1,71 @@
-# dependencies
+# Dependencies
 /node_modules
 /.pnpm-debug.log*
 
-# build outputs
+# Build outputs
 /app
 /dist
 /renderer/.next
 /renderer/out
 
-# agent
-/.agent/
+# Generated Prisma Client & Engines
+/main/prisma-client
+/app/generated/prisma
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+prisma/dev.db*
 
-# debug logs
+# Local environment files (Root & Renderer)
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+renderer/.env
+renderer/.env*.local
+renderer/.env.development.local
+renderer/.env.test.local
+renderer/.env.production.local
+
+# Python virtual environments & caches
+**/venv/
+**/__pycache__/
+*.py[cod]
+
+# Electron & OS binaries
+*.app/
+*.dmg/
+*.zip/
+*.exe/
+*.blockmap
+*.pkg
+*.deb
+*.rpm
+electron.zip
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+error.log*
 
-# local env files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# next.js
-/renderer/.next/
-/renderer/out/
-
-# electron-builder
-/dist/
-/*.app/
-/*.dmg/
-/*.zip/
-/*.exe/
-
-# OS files
+# OS Files
 .DS_Store
 Thumbs.db
 *.lnk
 
-# IDEs
+# IDEs & Editor workspaces
 .vscode/
 .idea/
 *.swp
 *.swo
+*.code-workspace
 
-# Temporary files
-error.log
-error.log.txt
+# Agent & Temp
+/.agent/
 test-electron.js
-
-/app/generated/prisma

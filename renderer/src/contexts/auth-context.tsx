@@ -15,8 +15,9 @@ const AUTH_PATHS = ["/", "/auth/login", "/auth/register", "/auth/forgot-password
 export function AuthProvider({ children }: AuthProviderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  // We check if the current path is specifically one of the auth entry pages
-  const isAuthRoute = AUTH_PATHS.includes(pathname);
+  // Normalize pathname to support trailing slashes
+  const normalizedPath = pathname?.replace(/\/+$/, "") || "/";
+  const isAuthRoute = AUTH_PATHS.includes(pathname) || AUTH_PATHS.includes(normalizedPath);
 
   const { isAuthenticating, user } = useAuthStore();
 

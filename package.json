@@ -1,12 +1,12 @@
 {
   "name": "mindgest-pos-desktop",
   "version": "1.0.0",
-  "description": "MindGest POS - Sistema Corporativo de Ponto de Venda e Faturação Eletrónica",
+  "description": "Mindgest POS - Sistema Corporativo de Ponto de Venda e Faturação Eletrónica",
   "main": "app/main.js",
   "scripts": {
     "dev": "nextron --electron-options=\"--no-sandbox\"",
-    "build": "nextron build --no-pack && electron-builder --win",
-    "build:all": "nextron build --no-pack && electron-builder",
+    "build": "nextron build --win",
+    "build:all": "nextron build",
     "postinstall": "prisma generate && electron-builder install-app-deps"
   },
   "dependencies": {
@@ -115,11 +115,18 @@
   "license": "ISC",
   "build": {
     "appId": "com.mindware.mindgest.pos",
-    "productName": "MindGest POS",
+    "productName": "Mindgest POS",
     "copyright": "Copyright © 2026 Mindware - Comércio & Serviços",
     "directories": {
       "output": "dist",
       "buildResources": "resources"
+    },
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true
     },
     "files": [
       "app/**/*",
@@ -141,6 +148,14 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "main/prisma-client/query_engine-windows.dll.node",
+        "to": "prisma/query_engine-windows.dll.node"
+      },
+      {
+        "from": "main/prisma-client/schema.prisma",
+        "to": "prisma/schema.prisma"
       }
     ],
     "win": {
@@ -168,12 +183,12 @@
       "installerHeaderIcon": "resources/icon.ico",
       "installerSidebar": "resources/installerSidebar.bmp",
       "uninstallerSidebar": "resources/installerSidebar.bmp",
-      "uninstallDisplayName": "MindGest POS - Ponto de Venda",
+      "uninstallDisplayName": "Mindgest POS - Ponto de Venda",
       "uninstallUrlHelp": "https://mindgest.mindware.ao/suporte",
       "uninstallUrlInfoAbout": "https://mindgest.mindware.ao",
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "MindGest POS",
+      "shortcutName": "Mindgest POS",
       "include": "resources/installer.nsh",
       "guid": "8f7b58c2-3e21-4f89-8d77-628d09f7a931",
       "differentialPackage": true,

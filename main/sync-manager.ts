@@ -2,6 +2,7 @@ import axios from "axios";
 import { syncService } from "./sync";
 
 const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api";
+const CLOUD_API_KEY = process.env.NEXT_PUBLIC_API_KEY || "MG_REg4eFg5eDJQU0lmNWcKUQU0YN3BDZDNvU2dnSnQ5OXRiL3NtbEhqSzhpdXNDZ2V6T2NwbzlCYnJDRWBTkJna3Foa2lHOXcwQkFRRUZBQVNZkbQo2lmN4eFg_MG";
 const DEFAULT_SYNC_INTERVAL_MS = 2 * 60 * 1000; // 5 minutos
 
 interface AutoSyncParams {
@@ -34,7 +35,10 @@ export class SyncManager {
     for (const path of pingPaths) {
       try {
         console.log(`🔎 [SyncManager] Verificando saúde da Cloud em ${CLOUD_API_URL}${path} ...`);
-        await axios.get(`${CLOUD_API_URL}${path}`, { timeout: 4000 });
+        await axios.get(`${CLOUD_API_URL}${path}`, { 
+          timeout: 4000,
+          headers: { 'x-api-key': CLOUD_API_KEY }
+        });
         console.log(`🔎 [SyncManager] Endpoint ${path} respondeu OK.`);
         return true;
       } catch (err: any) {
@@ -49,7 +53,10 @@ export class SyncManager {
         console.log("🔎 [SyncManager] Tentando chamada autenticada /items como fallback para checagem de rede.");
         await axios.get(`${CLOUD_API_URL}/items`, {
           timeout: 6000,
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'x-api-key': CLOUD_API_KEY
+          },
           params: { limit: 1, storeId }
         });
         console.log("🔎 [SyncManager] Chamada autenticada obteve resposta — nuvem acessível.");

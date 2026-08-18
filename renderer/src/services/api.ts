@@ -21,10 +21,14 @@ const processQueue = (error: any, token: string | null = null) => {
 export const api = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL ||
-   "https://mindgest.mindware-vps.cloud/api", // VPS
+    "https://mindgest.mindware-vps.cloud/api", // VPS
   headers: {
     "Content-Type": "application/json",
+    "x-api-key":
+      process.env.NEXT_PUBLIC_API_KEY ||
+      "MG_REg4eFg5eDJQU0lmNWcKUQU0YN3BDZDNvU2dnSnQ5OXRiL3NtbEhqSzhpdXNDZ2V6T2NwbzlCYnJDRWBTkJna3Foa2lHOXcwQkFRRUZBQVNZkbQo2lmN4eFg_MG",
   },
+  timeout: 30000,
 });
 
 export const localApi = axios.create({

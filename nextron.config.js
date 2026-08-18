@@ -14,13 +14,6 @@ module.exports = {
       {
         'better-sqlite3': 'commonjs better-sqlite3',
         'node-machine-id': 'commonjs node-machine-id'
-      },
-      // Exclusão estrita via Função para garantir o require('commonjs ...')
-      function ({ context, request }, callback) {
-        if (/^@prisma\/client(\/.*)?$/.test(request) || /^\.prisma\/client(\/.*)?$/.test(request)) {
-          return callback(null, 'commonjs ' + request);
-        }
-        callback();
       }
     ];
 

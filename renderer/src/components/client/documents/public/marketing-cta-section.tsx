@@ -9,7 +9,7 @@ export function MarketingCtaSection() {
                 "Tecnologia a favor do seu crescimento."
             </p>
             <h2 className="text-2xl font-bold mb-2">
-                MindGest: O futuro da sua gestão empresarial começa agora.
+                Mindgest: O futuro da sua gestão empresarial começa agora.
             </h2>
             <a
                 href="https://mindgest.mindware.ao/auth/register"

@@ -4,6 +4,18 @@ import { InvoiceClient, InvoiceItem, InvoiceReceiptCloudPayload } from "./types"
 
 // Configurações da API Cloud (Poderia vir de variáveis de ambiente)
 const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"; // VPS
+const CLOUD_API_KEY = process.env.NEXT_PUBLIC_API_KEY || "MG_REg4eFg5eDJQU0lmNWcKUQU0YN3BDZDNvU2dnSnQ5OXRiL3NtbEhqSzhpdXNDZ2V6T2NwbzlCYnJDRWBTkJna3Foa2lHOXcwQkFRRUZBQVNZkbQo2lmN4eFg_MG";
+
+function getCloudHeaders(token?: string) {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "x-api-key": CLOUD_API_KEY,
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 async function normalizeInvoicePayload(payload: any): Promise<InvoiceReceiptCloudPayload> {
   const invoice = typeof payload === "string" ? JSON.parse(payload) : { ...payload };
@@ -157,7 +169,7 @@ export const syncService = {
       console.log("🔄 [Sync] A iniciar sincronização de produtos...");
 
       const response = await axios.get(`${CLOUD_API_URL}/items`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: getCloudHeaders(token),
         params: { limit: 1000, storeId } // Tentamos buscar todos de uma vez para o POS
       });
 
@@ -243,7 +255,7 @@ export const syncService = {
       console.log("🔄🔄🔄 [Sync] A iniciar sincronização de categorias...");
 
       const response = await axios.get(`${CLOUD_API_URL}/categories`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: getCloudHeaders(token),
         params: { limit: 1000, storeId }
       });
 
@@ -289,7 +301,7 @@ export const syncService = {
     const makeRequest = async (params: Record<string, any>) => {
       console.log(`🔄 [Sync] Solicitando clientes Cloud com params: ${JSON.stringify(params)}`);
       return await axios.get(`${CLOUD_API_URL}/clients`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: getCloudHeaders(token),
         params,
       });
     };
@@ -380,7 +392,7 @@ export const syncService = {
     try {
       console.log("🔄 [Sync] A iniciar sincronização de AGT series...");
       const response = await axios.get(`${CLOUD_API_URL}/agt/series`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: getCloudHeaders(token),
         params: { storeId }
       });
 
@@ -555,7 +567,7 @@ export const syncService = {
             method,
             url: `${CLOUD_API_URL}${endpoint}`,
             data: payload,
-            headers: { Authorization: `Bearer ${token}` }
+            headers: getCloudHeaders(token)
           });
 
           const responseData = response.data?.data || response.data;

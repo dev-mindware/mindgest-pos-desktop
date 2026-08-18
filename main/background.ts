@@ -1,5 +1,5 @@
 import path from "path";
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, ipcMain, shell, Menu } from "electron";
 import { autoUpdater } from "electron-updater";
 import serve from "electron-serve";
 import { database } from "./database";
@@ -14,10 +14,28 @@ import crypto from "crypto";
 import { spawn, ChildProcess } from "child_process";
 import fs from "fs";
 
+const isProd: boolean = process.env.NODE_ENV === "production" || app.isPackaged;
+
+/**
+ * Validador de remetente IPC para proteção contra injeções ou frames maliciosos
+ */
+function validateIpcSender(event: Electron.IpcMainInvokeEvent): boolean {
+  try {
+    const senderUrl = event.senderFrame?.url || "";
+    if (!isProd && senderUrl.startsWith("http://localhost:")) return true;
+    if (isProd && senderUrl.startsWith("app://")) return true;
+    console.warn(`⛔ [Security] Chamada IPC bloqueada de remetente não confiável: ${senderUrl}`);
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 // ==========================================
 // Security & Anti-Tampering IPC Handlers
 // ==========================================
-ipcMain.handle("security:get-hwid", () => {
+ipcMain.handle("security:get-hwid", (event) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
   return getHardwareFingerprint();
 });
 
@@ -916,8 +934,6 @@ ipcMain.handle("db:get-cached-clients", async () => {
   return database.getCachedClients();
 });
 
-const isProd: boolean = process.env.NODE_ENV === "production";
-
 function getMainWindow(): BrowserWindow | null {
   const mainWindow = (global as any).__mainWindow;
   return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
@@ -1078,11 +1094,21 @@ async function createWindow() {
     }
   }
 
+  if (isProd) {
+    Menu.setApplicationMenu(null);
+  }
+
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      devTools: !isProd,
     },
   });
 
@@ -1093,17 +1119,27 @@ async function createWindow() {
     console.warn('Falha ao armazenar referência global da janela:', e);
   }
 
-  // Abre links externos no navegador padrão do sistema
+  // Abre links externos no navegador padrão e bloqueia abertura arbitrária de janelas
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("http:") || url.startsWith("https:")) {
       shell.openExternal(url);
-      return { action: "deny" };
     }
-    return { action: "allow" };
+    return { action: "deny" };
   });
 
   // Nextron passes the port as the first argument in development
   const port = process.argv[2];
+
+  // Bloqueia navegação interna para URLs arbitrárias fora da app
+  mainWindow.webContents.on("will-navigate", (event, navigationUrl) => {
+    try {
+      const parsed = new URL(navigationUrl);
+      if (!isProd && parsed.origin === `http://localhost:${port}`) return;
+      if (isProd && parsed.protocol === "app:") return;
+    } catch {}
+    event.preventDefault();
+    shell.openExternal(navigationUrl);
+  });
 
   // ==========================================
   // VALIDAÇÃO DE SEGURANÇA (Anti-Tampering)
@@ -1116,9 +1152,10 @@ async function createWindow() {
     entryPath = "/auth/login"; // Redireciona para o ecrã de Login Online
   }
 
+  const cleanEntryPath = entryPath.replace(/^\/+/, '');
   const url = isProd
-    ? `app://./${entryPath}`
-    : `http://localhost:${port}/${entryPath}`;
+    ? `app://./${cleanEntryPath}`
+    : `http://localhost:${port}/${cleanEntryPath}`;
 
   console.log(`Target URL: ${url}`);
 
@@ -1162,7 +1199,6 @@ let pySubprocess: ChildProcess | null = null;
 // ====================================================
 let docGenSubprocess: ChildProcess | null = null;
 function startPythonSubprocess() {
-  const isProd = process.env.NODE_ENV === "production";
   let pyPath = "";
   let pyArgs: string[] = [];
 

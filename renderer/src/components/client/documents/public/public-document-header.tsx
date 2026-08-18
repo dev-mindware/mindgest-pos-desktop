@@ -27,7 +27,7 @@ export function PublicDocumentHeader({ token, documentNumber }: Props) {
                             <span className="text-white font-bold text-lg">K</span>
                         </div>
                         <div>
-                            <h1 className="font-bold text-lg">MindGest</h1>
+                            <h1 className="font-bold text-lg">Mindgest</h1>
                             <p className="text-xs text-muted-foreground">
                                 PORTAL DE VERIFICAÇÃO
                             </p>

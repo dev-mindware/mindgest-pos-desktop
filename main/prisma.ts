@@ -1,10 +1,33 @@
 // Força o Prisma a carregar a versão Node (library) e não a do Browser/Edge
 process.env.PRISMA_CLIENT_ENGINE_TYPE = "library";
 
-import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import { app } from 'electron';
 import fs from 'fs';
+
+// Resolve o caminho do engine nativo do Prisma (.node)
+(function setupPrismaEngine() {
+  try {
+    const isProd = app ? app.isPackaged : false;
+    if (isProd && process.resourcesPath) {
+      const prodEnginePath = path.join(process.resourcesPath, 'prisma', 'query_engine-windows.dll.node');
+      if (fs.existsSync(prodEnginePath)) {
+        process.env.PRISMA_QUERY_ENGINE_LIBRARY = prodEnginePath;
+        return;
+      }
+    }
+    
+    const devEnginePath = path.join(process.cwd(), 'main', 'prisma-client', 'query_engine-windows.dll.node');
+    if (fs.existsSync(devEnginePath)) {
+      process.env.PRISMA_QUERY_ENGINE_LIBRARY = devEnginePath;
+    }
+  } catch (err) {
+    console.error('[Prisma] Erro ao configurar caminho do query engine:', err);
+  }
+})();
+
+import { PrismaClient } from './prisma-client';
+
 
 function getDatabaseUrl(): string {
   if (process.env.DATABASE_URL) {
