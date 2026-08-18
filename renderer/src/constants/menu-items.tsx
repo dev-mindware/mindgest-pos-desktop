@@ -26,6 +26,13 @@ export type MenuStructure = {
 export const menuItems: MenuStructure = {
   items: [
     {
+      name: "Ponto de Venda",
+      url: "/pos/counter",
+      icon: <Icon name="Computer" className="w-5 h-5" />,
+      roles: ["CASHIER", "MANAGER", "OWNER"],
+      minPlan: "Base",
+    },
+    {
       name: "Clientes",
       url: "/clients",
       icon: <Icon name="Users" className="w-5 h-5" />,
@@ -43,13 +50,6 @@ export const menuItems: MenuStructure = {
       name: "Documentos",
       url: "/documents",
       icon: <Icon name="ScrollText" className="w-5 h-5" />,
-      roles: ["CASHIER", "MANAGER", "OWNER"],
-      minPlan: "Base",
-    },
-    {
-      name: "Ponto de Venda",
-      url: "/pos/counter",
-      icon: <Icon name="Computer" className="w-5 h-5" />,
       roles: ["CASHIER", "MANAGER", "OWNER"],
       minPlan: "Base",
     },

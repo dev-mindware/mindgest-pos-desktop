@@ -14,6 +14,7 @@ import { useModal, currentStoreStore } from "@/stores";
 import { cashSessionsService } from "@/services/cash-sessions-service";
 import { SucessMessage } from "@/utils/messages";
 import { CashSession } from "@/types/cash-session";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const MODAL_POS_REGISTER_EXPENSE_ID = "pos-register-expense-modal";
 
@@ -32,6 +33,7 @@ export function PosRegisterExpenseModal({ currentSession }: PosRegisterExpenseMo
     const { closeModal } = useModal();
     const { currentStore } = currentStoreStore();
     const [isLoading, setIsLoading] = useState(false);
+    const queryClient = useQueryClient();
 
     const {
         register,
@@ -54,6 +56,8 @@ export function PosRegisterExpenseModal({ currentSession }: PosRegisterExpenseMo
                 amount: data.amount,
                 cashSessionId: currentSession.id,
             });
+            queryClient.invalidateQueries({ queryKey: ["current-cash-session"] });
+            queryClient.invalidateQueries({ queryKey: ["cash-sessions"] });
             SucessMessage("Despesa registada com sucesso!");
             closeModal(MODAL_POS_REGISTER_EXPENSE_ID);
             reset();

@@ -61,12 +61,12 @@ export const CategorySelector = React.memo<CategorySectionProps>(
     }
 
     return (
-      <div className="w-full mb-2 relative group">
+      <div className="w-full mb-6 relative group">
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8 shrink-0 rounded-test-full hidden md:flex "
+            className="h-8 w-8 shrink-0 rounded-test-full hidden md:flex"
             onClick={() => scroll("left")}
           >
             <Icon name="ChevronLeft" className="h-4 w-4" />
@@ -74,20 +74,63 @@ export const CategorySelector = React.memo<CategorySectionProps>(
 
           <div
             ref={scrollContainerRef}
-            className="flex-1 overflow-x-auto scrollbar-hide pb-4 -mb-4 flex space-x-4 p-1 scroll-smooth"
+            className="flex-1 min-w-0 overflow-x-auto scrollbar-hide pb-4 -mb-4 flex space-x-4 p-1 scroll-smooth"
           >
             {categories.map((category) => (
               <button
                 key={category.id}
                 onClick={() => onSelectCategory(category.id)}
                 className={cn(
-                  "flex items-center justify-center px-6 py-2.5 rounded-[8px] transition-all min-w-[120px] shrink-0 text-sm font-semibold whitespace-nowrap",
+                  "group flex flex-col items-start gap-3 p-4 rounded-test-xl border transition-all duration-300 min-w-[160px] shrink-0 text-left relative overflow-hidden",
                   activeCategory === category.id
-                    ? "border-[1px] border-primary dark:text-white shadow-sm ring-1 ring-white/10"
-                    : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/70 border-none dark:bg-[#1F1F1F] dark:text-zinc-400 dark:hover:text-white dark:hover:bg-[#2A2A2A]/80",
+                    ? "bg-primary/5 border-primary shadow-sm"
+                    : "bg-card hover:bg-muted/50 border-border hover:border-primary/50 text-muted-foreground hover:text-foreground",
                 )}
               >
-                {category.name}
+                {activeCategory === category.id && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-50" />
+                )}
+
+                <div className="flex items-center justify-between w-full relative z-10">
+                  <div
+                    className={cn(
+                      "p-2.5 rounded-test-lg transition-colors duration-300",
+                      activeCategory === category.id
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "bg-muted hover:bg-primary/10 hover:text-primary",
+                    )}
+                  >
+                    <Icon
+                      name="LayoutGrid"
+                      size={20}
+                    />
+                  </div>
+                  {activeCategory === category.id && (
+                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  )}
+                </div>
+
+                <div className="space-y-1 relative z-10 w-full">
+                  <span className={cn(
+                    "font-bold text-sm block truncate w-full transition-colors",
+                    activeCategory === category.id ? "text-foreground" : "text-foreground/80 group-hover:text-foreground"
+                  )}>
+                    {category.name}
+                  </span>
+                  <div className="flex items-center justify-between text-xs w-full">
+                    <span className="text-muted-foreground truncate max-w-[80px]">
+                      {category.description || "Sem descrição"}
+                    </span>
+                    <span className={cn(
+                      "font-medium px-1.5 py-0.5 rounded text-[10px]",
+                      activeCategory === category.id
+                        ? "bg-primary/20 text-primary"
+                        : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                    )}>
+                      {category.itemsCount || 0}
+                    </span>
+                  </div>
+                </div>
               </button>
             ))}
           </div>

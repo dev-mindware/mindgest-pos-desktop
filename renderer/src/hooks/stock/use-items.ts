@@ -43,10 +43,12 @@ export function useGetItems(params?: {
           storeId: currentStore?.id,
         });
 
-        if (localItems && localItems.length > 0) {
+        if (localItems) {
           console.log(`🔁 [POS] Carregando itens locais: ${localItems.length} items encontrados`);
           setItems(localItems);
-          return;
+          if (localItems.length > 0 || params?.categoryId || params?.search) {
+            return;
+          }
         }
       } catch (e) {
         console.error("Erro na busca local:", e);
@@ -55,11 +57,9 @@ export function useGetItems(params?: {
 
     if (data?.data || data?.items) {
       const fetchedItems = data?.data || data?.items || [];
-      if (fetchedItems.length > 0) {
-        console.log(`🌐 [POS] Carregando itens da Cloud: ${fetchedItems.length} items encontrados`);
-        setItems(fetchedItems);
-      }
-    } else if (!isLoading && items.length === 0) {
+      console.log(`🌐 [POS] Carregando itens da Cloud: ${fetchedItems.length} items encontrados`);
+      setItems(fetchedItems);
+    } else if (!isLoading) {
       setItems([]);
     }
   }

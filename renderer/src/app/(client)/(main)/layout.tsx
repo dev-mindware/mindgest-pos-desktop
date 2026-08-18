@@ -16,7 +16,7 @@ export default function MainLayout({ children }: Props) {
   return (
     <RouteProtector allowed={["ADMIN", "OWNER", "MANAGER", "CASHIER"]}>
       <StoreProvider>
-        <SidebarProvider>
+        <SidebarProvider defaultOpen={false}>
           <TooltipProvider delayDuration={200}>
             <AppSidebar />
             <SidebarInset>

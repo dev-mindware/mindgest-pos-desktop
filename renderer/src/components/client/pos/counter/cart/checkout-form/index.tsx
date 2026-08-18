@@ -3,8 +3,9 @@
 import { Button } from "@/components";
 import { InvoicePreviewDrawer as PosInvoicePreviewDrawer } from "../../modals/invoice-preview-drawer";
 import { ErrorMessage } from "@/utils";
-import { CartItem } from "@/hooks";
+import { useCartCheckout, CartItem } from "@/hooks";
 import { PaymentSummary } from "./payment-summary";
+import { CustomerSelection } from "./customer-selection";
 import { PaymentMethods } from "./payment-methods";
 import { DocumentSuccessModal } from "@/components/client/documents/modals/document-success-modal";
 
@@ -13,7 +14,6 @@ interface CartCheckoutFormProps {
     onSuccess?: () => void;
     type?: "invoice" | "proforma";
     cashSessionId: string;
-    checkout: any;
 }
 
 export function CartCheckoutForm({
@@ -21,8 +21,14 @@ export function CartCheckoutForm({
     onSuccess,
     type = "invoice",
     cashSessionId,
-    checkout,
 }: CartCheckoutFormProps) {
+    const checkout = useCartCheckout({
+        cartItems,
+        type,
+        onSuccess,
+        cashSessionId,
+    });
+
     const {
         form: { handleSubmit },
         paymentMethod,
@@ -31,6 +37,15 @@ export function CartCheckoutForm({
         setCashGiven,
         change,
         totals,
+        isCustomerExpanded,
+        setIsCustomerExpanded,
+        newCustomerPhone,
+        setNewCustomerPhone,
+        newCustomerNif,
+        setNewCustomerNif,
+        selectedClient,
+        handleClientChange,
+        handleQuickCash,
         handlePreview,
         handleCancel,
         handleFinalSubmit,
@@ -42,7 +57,7 @@ export function CartCheckoutForm({
 
     return (
         <>
-            <div className="p-2 h-full flex flex-col justify-between border border-dashed rounded-test-md bg-muted/30">
+            <div className="mt-4 p-4 flex flex-col gap-4 bg-muted/30 border border-dashed rounded-test-md" data-tour="pos-checkout">
                 <PaymentSummary
                     subtotal={totals.subtotal}
                     taxAmount={totals.taxAmount}
@@ -52,31 +67,39 @@ export function CartCheckoutForm({
                     paymentMethod={paymentMethod}
                 />
 
-                {/* CustomerSelection moved to main Counter layout for improved spacing */}
-                <div className="flex px-1 gap-4">
-                    <Button
-                        className="max-w-1/3 grow h-14 bg-red-400 border border-white/10 hover:bg-red-500/80 transition-colors text-md font-bold"
-                        onClick={() => {
-                            handleCancel();
-                            onSuccess?.();
-                        }}
-                        disabled={isPending}
-                    >
-                        Cancelar
-                    </Button>
+                <CustomerSelection
+                    isExpanded={isCustomerExpanded}
+                    onToggleExpand={() => setIsCustomerExpanded((s: boolean) => !s)}
+                    selectedClient={selectedClient}
+                    onClientChange={handleClientChange}
+                    newCustomerPhone={newCustomerPhone}
+                    onPhoneChange={setNewCustomerPhone}
+                    newCustomerNif={newCustomerNif}
+                    onNifChange={setNewCustomerNif}
+                    isProforma={type === "proforma"}
+                />
 
-                    <Button
-                        className="w-2/3 grow h-14 text-md font-bold"
-                        onClick={handleSubmit(handlePreview, (errors: any) => {
-                            console.error("Form Validation Errors:", errors);
-                            ErrorMessage("Verifique os campos obrigatórios");
-                        })}
-                        disabled={isPending}
-                    >
-                        {isPending ? "Processando..." : "Confirmar Pagamento"}
-                    </Button>
-                </div>
+                <PaymentMethods
+                    paymentMethod={paymentMethod}
+                    onMethodChange={setPaymentMethod}
+                    cashGiven={cashGiven}
+                    onCashChange={setCashGiven}
+                    onQuickCash={handleQuickCash}
+                    change={change}
+                />
 
+                <Button
+                    type="button"
+                    className="w-full font-bold text-sm"
+                    onClick={handleSubmit(handlePreview, (errors: any) => {
+                        console.error("Form Validation Errors:", errors);
+                        ErrorMessage("Verifique os campos obrigatórios");
+                    })}
+                    disabled={isPending}
+                    data-tour="pos-submit"
+                >
+                    {isPending ? "Processando..." : "Confirmar Pagamento"}
+                </Button>
             </div>
 
             <PosInvoicePreviewDrawer
@@ -93,3 +116,4 @@ export function CartCheckoutForm({
         </>
     );
 }
+

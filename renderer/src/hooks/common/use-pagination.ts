@@ -73,6 +73,38 @@ export function usePagination<T>({
             localData = await window.ipc.sync.getCategories({ storeId });
           } else if (endpoint.includes("/clients")) {
             localData = await window.ipc.sync.searchClients({ storeId });
+          } else if (endpoint.includes("/invoice/invoice-receipt")) {
+            localData = await window.ipc.sync.searchInvoices({
+              storeId,
+              search: queryParams.search,
+              startDate: queryParams.startDate,
+              endDate: queryParams.endDate,
+              documentType: "FR"
+            });
+          } else if (endpoint.includes("/invoice/normal")) {
+            localData = await window.ipc.sync.searchInvoices({
+              storeId,
+              search: queryParams.search,
+              startDate: queryParams.startDate,
+              endDate: queryParams.endDate,
+              documentType: "FT"
+            });
+          } else if (endpoint.includes("/invoice/proforma")) {
+            localData = await window.ipc.sync.searchInvoices({
+              storeId,
+              search: queryParams.search,
+              startDate: queryParams.startDate,
+              endDate: queryParams.endDate,
+              documentType: "FP"
+            });
+          } else if (endpoint.includes("/credit-note")) {
+            localData = await window.ipc.sync.searchInvoices({
+              storeId,
+              search: queryParams.search,
+              startDate: queryParams.startDate,
+              endDate: queryParams.endDate,
+              documentType: "NC"
+            });
           }
 
           return {

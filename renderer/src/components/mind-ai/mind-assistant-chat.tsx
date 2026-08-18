@@ -28,6 +28,12 @@ interface Conversation {
 
 const MAX_PROMPT_LENGTH = 150;
 const MAX_MESSAGES_PER_USER = 10;
+const MIND_ASSISTANT_PHRASES = [
+    "Fale com MIND",
+    "Como posso ajudar?",
+    "Tire as suas dúvidas",
+    "Estou disponível",
+];
 
 const TypewriterMarkdown = ({ content, isTyping, onComplete }: { content: string, isTyping?: boolean, onComplete?: () => void }) => {
     const [displayedContent, setDisplayedContent] = useState(isTyping ? "" : content);
@@ -70,6 +76,75 @@ export function MindAssistantChat() {
     const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [animationPhase, setAnimationPhase] = useState(1);
+    const [phraseIndex, setPhraseIndex] = useState(0);
+    const [liquidGlass, setLiquidGlass] = useState(true);
+    const [liquidEffect, setLiquidEffect] = useState<"none" | "drop" | "ripple">("none");
+    const [reducedMotion, setReducedMotion] = useState(false);
+    const isFirstAnimationCycle = useRef(true);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+        const updateMotionPreference = () => setReducedMotion(mediaQuery.matches);
+
+        updateMotionPreference();
+        mediaQuery.addEventListener("change", updateMotionPreference);
+        return () => mediaQuery.removeEventListener("change", updateMotionPreference);
+    }, []);
+
+    useEffect(() => {
+        if (reducedMotion) {
+            const interval = window.setInterval(() => {
+                setPhraseIndex((current) => (current + 1) % MIND_ASSISTANT_PHRASES.length);
+            }, 3000);
+            return () => window.clearInterval(interval);
+        }
+
+        const currentPhrase = MIND_ASSISTANT_PHRASES[phraseIndex];
+        const typingDuration = currentPhrase.length * 60;
+        let phaseTimer: ReturnType<typeof setTimeout> | undefined;
+        let impactTimer: ReturnType<typeof setTimeout> | undefined;
+
+        switch (animationPhase) {
+            case 1:
+                setLiquidGlass(true);
+                setLiquidEffect("none");
+                phaseTimer = setTimeout(() => {
+                    isFirstAnimationCycle.current = false;
+                    setAnimationPhase(2);
+                }, isFirstAnimationCycle.current ? typingDuration + 900 : 2500);
+                break;
+            case 2:
+                phaseTimer = setTimeout(() => setAnimationPhase(3), typingDuration + 350);
+                break;
+            case 3:
+                phaseTimer = setTimeout(() => setAnimationPhase(4), 1200);
+                break;
+            case 4:
+                setLiquidGlass(false);
+                phaseTimer = setTimeout(() => {
+                    setPhraseIndex((current) => (current + 1) % MIND_ASSISTANT_PHRASES.length);
+                    setAnimationPhase(5);
+                }, 300);
+                break;
+            case 5:
+                phaseTimer = setTimeout(() => setAnimationPhase(6), typingDuration + 900);
+                break;
+            case 6:
+                setLiquidEffect("drop");
+                impactTimer = setTimeout(() => {
+                    setLiquidEffect("ripple");
+                    setLiquidGlass(true);
+                }, 400);
+                phaseTimer = setTimeout(() => setAnimationPhase(1), 1150);
+                break;
+        }
+
+        return () => {
+            if (phaseTimer) clearTimeout(phaseTimer);
+            if (impactTimer) clearTimeout(impactTimer);
+        };
+    }, [animationPhase, phraseIndex, reducedMotion]);
 
     // Load history from localStorage
     useEffect(() => {
@@ -196,10 +271,34 @@ export function MindAssistantChat() {
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
                 <button
-                    className="flex items-center justify-center gap-2 px-4 h-9 border-2 border-primary/20 rounded-full text-sm font-semibold transition-all hover:border-primary/50 bg-background text-foreground animate-pulse-twice shadow-sm group whitespace-nowrap shrink-0"
+                    className={`mind-assistant-button ${liquidGlass ? "mind-liquid-glass" : "mind-outline-glass"} mind-phase-${animationPhase} ${(animationPhase === 5 || (animationPhase === 1 && isFirstAnimationCycle.current)) ? "mind-typing" : ""}`}
+                    style={{
+                        "--mind-character-count": MIND_ASSISTANT_PHRASES[phraseIndex].length,
+                        "--mind-typing-duration": `${MIND_ASSISTANT_PHRASES[phraseIndex].length * 60}ms`,
+                    } as React.CSSProperties}
+                    aria-label={MIND_ASSISTANT_PHRASES[phraseIndex]}
                 >
-                    <Icon name="Sparkles" className="h-4 w-4 text-primary shrink-0" />
-                    <span>Fale com MIND</span>
+                    <span className="mind-liquid-effects" aria-hidden="true">
+                        {liquidEffect === "drop" && <span className="mind-liquid-drop" />}
+                        {liquidEffect === "ripple" && (
+                            <>
+                                <span className="mind-liquid-ripple mind-liquid-ripple-primary" />
+                                <span className="mind-liquid-ripple mind-liquid-ripple-secondary" />
+                                <span className="mind-liquid-splash mind-liquid-splash-1" />
+                                <span className="mind-liquid-splash mind-liquid-splash-2" />
+                                <span className="mind-liquid-splash mind-liquid-splash-3" />
+                                <span className="mind-liquid-splash mind-liquid-splash-4" />
+                            </>
+                        )}
+                    </span>
+                    <span className="mind-assistant-icon-wrap" aria-hidden="true">
+                        <Icon name="Sparkles" className="mind-assistant-icon" />
+                    </span>
+                    <span className="mind-assistant-text-wrap">
+                        <span className="mind-assistant-text">
+                            {MIND_ASSISTANT_PHRASES[phraseIndex]}
+                        </span>
+                    </span>
                 </button>
             </SheetTrigger>
 

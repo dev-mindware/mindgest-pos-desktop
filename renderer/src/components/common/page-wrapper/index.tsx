@@ -45,7 +45,7 @@ export function PageWrapper({
   }, [initialize, user?.id]);
 
   return (
-    <div className={variant === "counter" ? "bg-background h-screen flex flex-col overflow-hidden" : "bg-background"}>
+    <div className="bg-background h-screen flex flex-col overflow-hidden w-full">
       <header className="flex h-16 sticky top-0 z-50 shrink-0 bg-sidebar border-b items-center gap-2 transition-[width,height] ease-linear justify-between">
         {/* Default Variant Left side */}
         {variant === "default" && (
@@ -80,8 +80,8 @@ export function PageWrapper({
         )}
 
         <div className="flex items-center mr-4 space-x-2 md:space-x-4">
-          <div className="flex items-center gap-2 px-2 py-1 rounded-test-full bg-muted/30 border">
-            <div className={`h-2.5 w-2.5 rounded-test-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
+          <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-muted/30 border">
+            <div className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
             <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mr-1">
               {isOnline ? 'Online' : 'Offline'}
             </span>
@@ -98,13 +98,15 @@ export function PageWrapper({
         </div>
       </header>
       {variant === "counter" ? (
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden min-w-0 w-full">
           {children}
         </div>
       ) : (
-        <div className={`flex flex-col flex-1 w-full mx-auto space-y-4 md:space-y-6`}>
-          <div className={`@container/main flex flex-1 p-4 md:p-8 lg:p-12 flex-col gap-2`}>
-            {children}
+        <div className="flex-1 overflow-y-auto min-w-0 w-full">
+          <div className="flex flex-col flex-1 w-full mx-auto space-y-4 md:space-y-6">
+            <div className="@container/main flex flex-1 p-4 md:p-8 lg:p-12 flex-col gap-2">
+              {children}
+            </div>
           </div>
         </div>
       )}

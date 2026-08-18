@@ -3,7 +3,7 @@ import { PosSettingsSetup } from "@/components/client/pos";
 
 export default function PosSettingsPage() {
     return (
-        <PageWrapper subRoute="pos" variant="counter">
+        <PageWrapper subRoute="Definições" routeLabel="Configurações">
             <PosSettingsSetup />
         </PageWrapper>
     );
