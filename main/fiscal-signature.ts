@@ -8,32 +8,7 @@ import { getHardwareFingerprint } from './security';
 export const DEFAULT_AGT_SOFTWARE_VALIDATION = process.env.AGT_SOFTWARE_VALIDATION_NUMBER || 'FE/241/AGT/2026';
 export const DEFAULT_COMPANY_NIF = process.env.COMPANY_NIF || '999999999';
 
-// Chave mestra de derivação baseada no hardware do POS
-function deriveEncryptionKey(hwid: string): Buffer {
-  return crypto.scryptSync(hwid, 'mindgest-fiscal-vault-salt', 32);
-}
-
-function encryptWithHwid(plaintext: string, hwid: string): string {
-  const key = deriveEncryptionKey(hwid);
-  const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-  let encrypted = cipher.update(plaintext, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  const tag = cipher.getAuthTag().toString('hex');
-  return `${iv.toString('hex')}:${tag}:${encrypted}`;
-}
-
-function decryptWithHwid(payload: string, hwid: string): string {
-  const parts = payload.split(':');
-  if (parts.length !== 3) throw new Error('Cifra de chave corrompida.');
-  const [ivHex, tagHex, encryptedHex] = parts;
-  const key = deriveEncryptionKey(hwid);
-  const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'));
-  decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
-  let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
-}
+import { SafeVault } from './storage-key';
 
 export class FiscalSignatureService {
   private static cachedPrivateKey: string | null = null;
@@ -59,12 +34,20 @@ export class FiscalSignatureService {
    * Assina o HashBase usando RSA-SHA1 (Norma AGT Angola)
    */
   static sign(hashBase: string, privateKeyPem: string): string {
-    if (!privateKeyPem) {
-      throw new Error('Chave privada RSA não fornecida para assinatura fiscal.');
+    if (!privateKeyPem || typeof privateKeyPem !== 'string' || !privateKeyPem.includes('PRIVATE KEY')) {
+      const err: any = new Error('Falha Fiscal Crítica: Chave privada RSA não encontrada ou inválida para assinatura AGT.');
+      err.code = 'ERR_FISCAL_PRIVATE_KEY_MISSING';
+      throw err;
     }
-    const signer = crypto.createSign('RSA-SHA1');
-    signer.update(hashBase);
-    return signer.sign(privateKeyPem, 'base64');
+    try {
+      const signer = crypto.createSign('RSA-SHA1');
+      signer.update(hashBase);
+      return signer.sign(privateKeyPem, 'base64');
+    } catch (cryptoErr: any) {
+      const err: any = new Error(`Falha Fiscal Crítica ao assinar documento com RSA-SHA1: ${cryptoErr.message}`);
+      err.code = 'ERR_FISCAL_SIGNATURE_FAILED';
+      throw err;
+    }
   }
 
   /**
@@ -136,7 +119,7 @@ export class FiscalSignatureService {
     // 1. Tentar ler do Settings criptografado
     if (settings?.encryptedPrivateKey) {
       try {
-        const decryptedKey = decryptWithHwid(settings.encryptedPrivateKey, hwid);
+        const decryptedKey = SafeVault.decrypt(settings.encryptedPrivateKey);
         this.cachedPrivateKey = decryptedKey;
         this.cachedPublicKey = settings.publicKey || '';
         return {
@@ -167,7 +150,7 @@ export class FiscalSignatureService {
       };
     }
 
-    // 3. Se ainda não existir chave, gerar um par RSA 2048-bit local e guardar encriptado
+    // 3. Se ainda não existir chave, gerar um par RSA 2048-bit local e guardar encriptado no SafeVault
     console.log('🔐 [FiscalSignature] Gerando par de chaves RSA 2048-bit para emissão fiscal offline...');
     const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
@@ -175,7 +158,7 @@ export class FiscalSignatureService {
       privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     });
 
-    const encrypted = encryptWithHwid(privateKey, hwid);
+    const encrypted = SafeVault.encrypt(privateKey);
 
     await prisma.settings.upsert({
       where: { id: 'singleton' },

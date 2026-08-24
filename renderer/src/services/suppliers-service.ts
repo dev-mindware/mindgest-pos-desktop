@@ -9,9 +9,20 @@ export const suppliersService = {
     return api.put<SupplierResponse>(`/suppliers/${id}`, data);
   },
   deleteSupplier: async (id: string) => {
-    return api.delete<void>(`/suppliers/${id}`);
+    return api.delete(`/suppliers/${id}`);
   },
-  getSuppliers: async () => {
-    return api.get("/suppliers");
+  getSupplierById: async (id: string) => {
+    return api.get<SupplierResponse>(`/suppliers/${id}`);
+  },
+  addStockEntry: async (data: any) => {
+    return api.post("/suppliers/stock-entry", data);
+  },
+  getStockEntries: async (supplierId: string, params?: Record<string, any>) => {
+    return api.get(`/suppliers/${supplierId}/stock-entries`, { params });
+  },
+  deleteSupplierItemsBulk: async (supplierId: string, itemIds: string[]) => {
+    return api.delete(`/suppliers/${supplierId}/items/bulk`, {
+      data: { itemIds },
+    });
   },
 };

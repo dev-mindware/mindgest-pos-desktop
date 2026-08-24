@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
-import { Icon, Avatar, AvatarFallback, AvatarImage, Popover, PopoverContent, PopoverAnchor, Input, Button } from "@/components";
+import React from "react";
+import { Icon, Avatar, AvatarFallback, AvatarImage } from "@/components";
 import { Product } from "@/types";
 import { CartCheckoutForm } from "./checkout-form";
-import { formatCurrency, ErrorMessage } from "@/utils";
+import { formatCurrency } from "@/utils";
 
 interface CartItem extends Product {
     qty: number;
@@ -25,9 +25,9 @@ const CartItemRow = React.memo<{
     onDelete: (id: string) => void;
 }>(({ item, onDelete }) => (
     <div key={item.id} className="flex gap-3 mb-2 group items-center" data-tour="pos-cart-item">
-        <Avatar className="h-10 w-10 rounded-test-lg shrink-0 border border-border">
+        <Avatar className="h-10 w-10 rounded-lg shrink-0 border border-border">
             <AvatarImage src={item.image} className="object-cover" />
-            <AvatarFallback className="rounded-test-lg bg-primary/10 text-primary font-bold text-xs">{item.name.charAt(0)}</AvatarFallback>
+            <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-bold text-xs">{item.name.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="flex-1 flex flex-col justify-center overflow-hidden">
             <h4 className="font-semibold text-sm line-clamp-1 leading-tight" title={item.name}>{item.name}</h4>
@@ -63,11 +63,11 @@ export const CartList = React.memo<CartSectionProps>(
     }) => {
         return (
             <div
-                className="flex flex-col bg-sidebar rounded-test-md shadow-sm p-2 mx-2 mb-4 mt-2 border border-border/50 h-auto"
+                className="flex flex-col bg-sidebar rounded-md shadow-sm p-3 sm:p-4 m-2 sm:m-4 mt-2 border border-border/50 h-auto"
                 data-tour="pos-cart"
             >
                 <h2 className="text-xl font-bold mb-4">
-                    {type === "invoice" ? "Faturação" : "Proforma"}
+                    {type === "invoice" ? "Facturação" : "Proforma"}
                 </h2>
 
                 {/* Cart Items List */}

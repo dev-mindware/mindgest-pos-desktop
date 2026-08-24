@@ -6,7 +6,7 @@ import {
   TitleList,
 } from "@/components/common";
 import { useFetchById } from "@/hooks/common";
-import { CreditNoteForm } from "./credfit-notes-form";
+import { CreditNoteForm } from "./credit-notes-form";
 import { InvoiceDetails } from "@/types/credit-note";
 
 type CreditNotesProps = {
@@ -26,7 +26,7 @@ export function CreditNotes({ invoiceId, invoiceType }: CreditNotesProps) {
       <div className="space-y-6">
         <TitleList
           title="Notas de Crédito"
-          suTitle="Emita notas de crédito para as suas facturas."
+          suTitle="Emita notas de crédito referentes às suas facturas."
         />
         <CreditNoteFormSkeleton />
       </div>
@@ -37,7 +37,7 @@ export function CreditNotes({ invoiceId, invoiceType }: CreditNotesProps) {
     return (
       <RequestError
         refetch={refetch}
-        message="Erro ao carregar dados da factura. Verifique a sua conexão."
+        message="Erro ao carregar os dados da factura. Verifique a ligação à Internet."
       />
     );
   }
@@ -46,7 +46,7 @@ export function CreditNotes({ invoiceId, invoiceType }: CreditNotesProps) {
     return (
       <EmptyState
         icon="FileDiff"
-        description="Factura não encontrada ou ID inválido."
+        description="A factura não foi encontrada ou o identificador é inválido."
       />
     );
   }
@@ -55,9 +55,9 @@ export function CreditNotes({ invoiceId, invoiceType }: CreditNotesProps) {
     <div className="space-y-6 animate-in fade-in duration-500">
       <TitleList
         title="Notas de Crédito"
-        suTitle={`Referente à Factura: ${data.invoiceNumber}`}
+        suTitle={`Referente à factura: ${data.invoiceNumber}`}
       />
-      <CreditNoteForm invoice={data} />
+      <CreditNoteForm invoice={data} docType={invoiceType} />
     </div>
   );
 }

@@ -42,7 +42,10 @@ export const InputFetch = forwardRef<HTMLInputElement, InputFetchProps>(({
   const [debouncedValue] = useDebounce(inputValue, debounceMs);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState<Option | null>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(0);
   const internalRef = useRef<HTMLInputElement>(null);
+  const optionsContainerRef = useRef<HTMLDivElement>(null);
+  const listboxId = useRef(`listbox-${Math.random().toString(36).substring(2, 9)}`).current;
   useImperativeHandle(ref, () => internalRef.current!);
 
   useEffect(() => {
@@ -88,14 +91,27 @@ export const InputFetch = forwardRef<HTMLInputElement, InputFetchProps>(({
   useEffect(() => {
     if (options.length > 0 && inputValue.trim().length >= minChars) {
       setIsOpen(true);
+      setHighlightedIndex(0);
     } else if (!loading && inputValue.trim().length >= minChars) {
-      setIsOpen(true); // Mantém aberto para mostrar "Nenhum resultado"
+      setIsOpen(true);
+      setHighlightedIndex(-1);
     }
   }, [options, inputValue, minChars, loading]);
+
+  // Efeito para scroll automático do item destacado
+  useEffect(() => {
+    if (isOpen && highlightedIndex >= 0 && optionsContainerRef.current) {
+      const activeEl = optionsContainerRef.current.children[highlightedIndex] as HTMLElement;
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    }
+  }, [highlightedIndex, isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setInputValue(value);
+    setHighlightedIndex(0);
 
     // Se o usuário está digitando algo diferente da seleção, limpa a seleção
     if (selectedOption) {
@@ -126,9 +142,47 @@ export const InputFetch = forwardRef<HTMLInputElement, InputFetchProps>(({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") {
-      setIsOpen(false);
+      if (isOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOpen(false);
+      }
+      return;
     }
-    // TODO: Adicionar navegação por setas (ArrowUp, ArrowDown, Enter)
+
+    if (e.key === "ArrowDown") {
+      if (!isOpen && options.length > 0) {
+        e.preventDefault();
+        setIsOpen(true);
+        setHighlightedIndex(0);
+        return;
+      }
+      if (isOpen && options.length > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedIndex((prev) => (prev + 1) % options.length);
+      }
+      return;
+    }
+
+    if (e.key === "ArrowUp") {
+      if (isOpen && options.length > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedIndex((prev) => (prev - 1 + options.length) % options.length);
+      }
+      return;
+    }
+
+    if (e.key === "Enter") {
+      if (isOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!loading && options.length > 0 && highlightedIndex >= 0 && highlightedIndex < options.length) {
+          handleSelectOption(options[highlightedIndex]);
+        }
+      }
+    }
   };
 
   const getNestedValue = (obj: any, path: string): any => {
@@ -186,6 +240,15 @@ export const InputFetch = forwardRef<HTMLInputElement, InputFetchProps>(({
               }}
               placeholder={placeholder}
               autoComplete="off"
+              role="combobox"
+              aria-expanded={isOpen}
+              aria-autocomplete="list"
+              aria-controls={listboxId}
+              aria-activedescendant={
+                isOpen && highlightedIndex >= 0
+                  ? `${listboxId}-option-${highlightedIndex}`
+                  : undefined
+              }
               className={
                 selectedOption ? "border-primary dark:border-primary" : ""
               }
@@ -204,7 +267,12 @@ export const InputFetch = forwardRef<HTMLInputElement, InputFetchProps>(({
         align="start"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="max-h-60 overflow-auto">
+        <div
+          ref={optionsContainerRef}
+          role="listbox"
+          id={listboxId}
+          className="max-h-60 overflow-auto"
+        >
           {loading ? (
             <div className="px-4 py-3 text-sm text-muted-foreground text-center flex items-center justify-center gap-2">
               <svg
@@ -234,11 +302,19 @@ export const InputFetch = forwardRef<HTMLInputElement, InputFetchProps>(({
               ❌ Erro ao buscar dados
             </div>
           ) : options.length > 0 ? (
-            options.map((option: Option) => (
+            options.map((option: Option, index: number) => (
               <div
                 key={option.id}
+                id={`${listboxId}-option-${index}`}
+                role="option"
+                aria-selected={highlightedIndex === index || selectedOption?.id === option.id}
                 onClick={() => handleSelectOption(option)}
-                className="px-4 py-3 hover:bg-accent hover:text-accent-foreground cursor-pointer transition border-b border-border last:border-b-0 first:rounded-test-t-lg last:rounded-test-b-lg"
+                onMouseEnter={() => setHighlightedIndex(index)}
+                className={`px-4 py-3 cursor-pointer transition border-b border-border last:border-b-0 ${
+                  highlightedIndex === index
+                    ? "bg-accent text-accent-foreground font-medium"
+                    : "hover:bg-accent/60"
+                }`}
               >
                 {renderOptionContent(option)}
               </div>

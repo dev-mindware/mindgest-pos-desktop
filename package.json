@@ -1,11 +1,13 @@
+
 {
   "name": "mindgest-pos-desktop",
   "version": "1.0.0",
   "description": "Mindgest POS - Sistema Corporativo de Ponto de Venda e Faturação Eletrónica",
   "main": "app/main.js",
   "scripts": {
-    "dev": "nextron --electron-options=\"--no-sandbox\"",
+    "dev": "nextron --startup-delay 30000 --electron-options=\"--no-sandbox\"",
     "build": "nextron build --win",
+    "build:staging": "powershell -Command \"$env:NEXT_PUBLIC_API_URL='https://test.mindgest.mindware-vps.cloud/api'; Remove-Item -Recurse -Force app/dev, app, dist -ErrorAction SilentlyContinue; Copy-Item -Path .env.staging -Destination .env.production.local -Force; Copy-Item -Path renderer/.env.staging -Destination renderer/.env.production.local -Force; try { node node_modules/nextron/bin/nextron.cjs build --win } finally { Remove-Item .env.production.local, renderer/.env.production.local -ErrorAction SilentlyContinue }\"",
     "build:all": "nextron build",
     "postinstall": "prisma generate && electron-builder install-app-deps"
   },
@@ -34,6 +36,7 @@
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-table": "^8.21.3",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/jsbarcode": "^3.11.4",
     "@types/qrcode": "^1.5.6",
     "@vercel/analytics": "^1.6.1",
     "axios": "^1.9.0",
@@ -43,12 +46,15 @@
     "cookies-next": "^6.1.0",
     "cors": "^2.8.6",
     "date-fns": "^4.1.0",
+    "driver.js": "^1.8.0",
     "electron-serve": "1.3.0",
     "electron-updater": "^6.8.3",
     "emblor": "^1.4.8",
     "express": "^5.2.1",
+    "html5-qrcode": "^2.3.8",
     "input-otp": "^1.4.2",
     "jose": "^6.0.12",
+    "jsbarcode": "^3.12.3",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.511.0",
     "next": "16.1.6",
@@ -97,14 +103,14 @@
     "electron-builder": "latest",
     "eslint": "latest",
     "eslint-config-next": "latest",
-    "nextron": "latest",
+    "nextron": "10.2.0",
     "ollama": "^0.6.3",
     "orval": "^7.11.2",
     "postcss": "latest",
     "prisma": "^5.22.0",
     "tailwindcss": "latest",
     "tw-animate-css": "^1.3.2",
-    "typescript": "latest"
+    "typescript": "^5.7.2"
   },
   "repository": {
     "type": "git",
@@ -126,7 +132,7 @@
       "enableCookieEncryption": true,
       "enableNodeOptionsEnvironmentVariable": false,
       "enableNodeCliInspectArguments": false,
-      "enableEmbeddedAsarIntegrityValidation": true
+      "enableEmbeddedAsarIntegrityValidation": false
     },
     "files": [
       "app/**/*",

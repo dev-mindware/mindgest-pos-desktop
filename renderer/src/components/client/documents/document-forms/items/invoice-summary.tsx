@@ -16,6 +16,7 @@ interface InvoiceSummaryProps {
   setGlobalRetention: (value: number) => void;
   globalDiscount: number;
   setGlobalDiscount: (value: number) => void;
+  hasServiceItem?: boolean;
 }
 
 export const InvoiceSummary = React.memo<InvoiceSummaryProps>(
@@ -25,21 +26,37 @@ export const InvoiceSummary = React.memo<InvoiceSummaryProps>(
     setGlobalRetention,
     globalDiscount,
     setGlobalDiscount,
+    hasServiceItem = false,
   }) => {
+    // Reset retention to 0 if there are no service items
+    React.useEffect(() => {
+      if (!hasServiceItem && globalRetention !== 0) {
+        setGlobalRetention(0);
+      }
+    }, [hasServiceItem, globalRetention, setGlobalRetention]);
 
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <SelectField
-            label="Retenção na Fonte"
-            value={globalRetention}
-            onValueChange={(v) => setGlobalRetention(Number(v))}
-            options={[
-              { value: 0, label: "Sem retenção (0%)" },
-              { value: 6.5, label: "6.5%" },
-              { value: 10, label: "10%" },
-            ]}
-          />
+          <div className="space-y-1">
+            {hasServiceItem && (
+            <SelectField
+              label="Retenção na Fonte"
+              value={hasServiceItem ? globalRetention : 0}
+              onValueChange={(v) => setGlobalRetention(Number(v))}
+              options={[
+                { value: 0, label: "Sem retenção (0%)" },
+                { value: 6.5, label: "6.5%" },
+                { value: 10, label: "10%" },
+              ]}
+            />
+            )}
+            {!hasServiceItem && (
+              <h1 className="text-destructive">
+                Retenção aplicável apenas a serviços.
+              </h1>
+            )}
+          </div>
 
           <InputCurrency
             label="Desconto (%)"
@@ -48,9 +65,10 @@ export const InvoiceSummary = React.memo<InvoiceSummaryProps>(
             decimalScale={2}
             fixedDecimalScale
             allowNegative={false}
+            currency={false}
+            suffix=" %"
             isAllowed={(values) => (values.floatValue ?? 0) <= 100}
           />
-
         </div>
 
 
@@ -96,7 +114,7 @@ export function InvoiceTotalsSummary({
   retentionAmount = 0,
 }: InvoiceTotalsSummaryProps) {
   return (
-    <div className="w-full space-y-3 border border-dashed rounded-test-lg p-6 bg-card">
+    <div className="w-full space-y-3 border border-dashed rounded-lg p-6 bg-card">
       {/* Subtotal */}
       <div className="flex justify-between items-center text-gray-600">
         <span className="text-sm">Subtotal</span>

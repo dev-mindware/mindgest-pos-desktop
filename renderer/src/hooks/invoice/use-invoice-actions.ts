@@ -22,10 +22,16 @@ export function useInvoiceActions() {
     setCurrentInvoice(invoice);
   }
 
+  function handlerCloneInvoice(invoice: InvoiceResponse) {
+    openModal("clone-invoice");
+    setCurrentInvoice(invoice);
+  }
+
   return {
     handlerGenerateReceipt,
     handlerCancelInvoice,
     handlerDetailsInvoice,
+    handlerCloneInvoice,
   };
 }
 

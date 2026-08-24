@@ -7,6 +7,7 @@ import {
   StockReserveData,
   StockUnreserveData,
 } from "@/types/stock";
+import { stockReservationsService } from "@/services";
 
 export function useAddStock() {
   const queryClient = useQueryClient();
@@ -32,7 +33,7 @@ export function useUpdateStock() {
       data: Partial<StockCreateData>;
     }) => stockService.updateStock(id, data),
     onSuccess: () => {
-      SucessMessage("Stock atualizado com sucesso!");
+      SucessMessage("Stock actualizado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["stocks"] });
     },
   });
@@ -58,19 +59,6 @@ export function useAdjustStock() {
       stockService.adjustStock(id, data),
     onSuccess: () => {
       SucessMessage("Stock ajustado com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["stocks"] });
-    },
-  });
-}
-
-export function useReserveStock() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: StockReserveData }) =>
-      stockService.reserveStock(id, data),
-    onSuccess: () => {
-      SucessMessage("Stock reservado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["stocks"] });
     },
   });

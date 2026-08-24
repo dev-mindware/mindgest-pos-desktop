@@ -1,5 +1,5 @@
 import path from "path";
-import { app, BrowserWindow, ipcMain, shell, Menu } from "electron";
+import { app, BrowserWindow, ipcMain, shell, Menu, Notification } from "electron";
 import { autoUpdater } from "electron-updater";
 import serve from "electron-serve";
 import { database } from "./database";
@@ -10,9 +10,18 @@ import { syncManager } from "./sync-manager";
 import { FiscalSignatureService } from "./fiscal-signature";
 import { SidecarManager } from "./sidecar-manager";
 import { LocalDocumentService } from "./document-service";
+import { PrinterService } from "./printer-service";
+import { CustomerDisplayService } from "./customer-display-service";
+import { SafeVault } from "./storage-key";
 import crypto from "crypto";
 import { spawn, ChildProcess } from "child_process";
 import fs from "fs";
+
+// Definir nome da aplicação e AppUserModelId para notificações nativas do Windows com logótipo Mindgest
+app.name = "Mindgest POS";
+if (process.platform === "win32") {
+  app.setAppUserModelId("com.mindware.mindgest.pos");
+}
 
 const isProd: boolean = process.env.NODE_ENV === "production" || app.isPackaged;
 
@@ -55,16 +64,61 @@ ipcMain.handle("security:get-fiscal-status", async () => {
 });
 
 ipcMain.handle("security:save-license", async (_, { licenseJwt, storeId }) => {
+  const encryptedLicense = SafeVault.encrypt(licenseJwt);
   await prisma.settings.upsert({
     where: { id: 'singleton' },
-    update: { offlineLicense: licenseJwt, storeId },
-    create: { id: 'singleton', offlineLicense: licenseJwt, storeId }
+    update: { offlineLicense: encryptedLicense, storeId },
+    create: { id: 'singleton', offlineLicense: encryptedLicense, storeId }
   });
   return true;
 });
 
 ipcMain.handle("security:check-clock", async () => {
   return validateMonotonicClock();
+});
+
+ipcMain.handle("security:save-credentials", async (event, { email, password }) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  if (!email || !password) return false;
+  try {
+    const payload = JSON.stringify({ email, password, savedAt: Date.now() });
+    const encrypted = SafeVault.encrypt(payload);
+    const credPath = path.join(app.getPath("userData"), ".credentials.enc");
+    await fs.promises.writeFile(credPath, encrypted, "utf8");
+    return true;
+  } catch (err) {
+    console.error("❌ [Security] Erro ao guardar credenciais:", err);
+    return false;
+  }
+});
+
+ipcMain.handle("security:get-saved-credentials", async (event) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  try {
+    const credPath = path.join(app.getPath("userData"), ".credentials.enc");
+    if (!fs.existsSync(credPath)) return null;
+    const raw = await fs.promises.readFile(credPath, "utf8");
+    const decrypted = SafeVault.decrypt(raw);
+    const parsed = JSON.parse(decrypted);
+    return { email: parsed.email, password: parsed.password };
+  } catch (err) {
+    console.warn("⚠️ [Security] Falha ao recuperar credenciais guardadas:", err);
+    return null;
+  }
+});
+
+ipcMain.handle("security:clear-saved-credentials", async (event) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  try {
+    const credPath = path.join(app.getPath("userData"), ".credentials.enc");
+    if (fs.existsSync(credPath)) {
+      await fs.promises.unlink(credPath);
+    }
+    return true;
+  } catch (err) {
+    console.warn("⚠️ [Security] Falha ao limpar credenciais guardadas:", err);
+    return false;
+  }
 });
 
 
@@ -93,13 +147,16 @@ ipcMain.handle("lan:get-config", async () => {
   try {
     const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
     return {
+      enabled: settings?.terminalMode ? true : false,
       terminalMode: settings?.terminalMode || 'MASTER',
       masterIp: settings?.masterIp || null,
-      lanSecret: settings?.lanSecret || null
+      lanSecret: settings?.lanSecret || null,
+      port: 3333,
+      localIp: getLocalIpAddress(),
     };
   } catch (error) {
     console.error("❌ [LAN] Erro ao buscar config LAN:", error);
-    return { terminalMode: 'MASTER', masterIp: null, lanSecret: null };
+    return { enabled: false, terminalMode: 'MASTER', masterIp: null, lanSecret: null, port: 3333, localIp: getLocalIpAddress() };
   }
 });
 
@@ -124,6 +181,149 @@ ipcMain.handle("lan:set-config", async (_, config) => {
     console.error("❌ [LAN] Erro ao guardar config LAN:", error);
     throw error;
   }
+});
+
+ipcMain.handle("lan:rotate-secret", async () => {
+  try {
+    const newSecret = crypto.randomBytes(16).toString('hex').toUpperCase();
+    await prisma.settings.upsert({
+      where: { id: 'singleton' },
+      update: { lanSecret: newSecret },
+      create: { id: 'singleton', lanSecret: newSecret, terminalMode: 'MASTER' }
+    });
+    const { setRotatedSecret } = await import("./server");
+    setRotatedSecret(newSecret);
+    return newSecret;
+  } catch (error) {
+    console.error("❌ [LAN] Erro ao gerar novo segredo LAN:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("lan:get-connected-terminals", async () => {
+  try {
+    const { getConnectedTerminalsList } = await import("./server");
+    return getConnectedTerminalsList();
+  } catch (error) {
+    return [];
+  }
+});
+
+ipcMain.handle("lan:revoke-terminal", async (_, { terminalId }) => {
+  try {
+    const { revokeConnectedTerminal } = await import("./server");
+    return revokeConnectedTerminal(terminalId);
+  } catch (error) {
+    return false;
+  }
+});
+
+ipcMain.handle("lan:test-connection", async (_, { targetIp, lanSecret }) => {
+  const startTime = Date.now();
+  try {
+    const cleanIp = targetIp.trim().replace(/^http:\/\//, '').replace(/\/$/, '');
+    const url = `http://${cleanIp}:3333/api/health`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: lanSecret ? { "x-lan-secret": lanSecret } : {},
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const latencyMs = Date.now() - startTime;
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        success: true,
+        latencyMs,
+        serverTime: data.timestamp,
+        connectedCount: data.connectedCount,
+        message: "Conexão bem sucedida com o Master LAN!"
+      };
+    } else {
+      return {
+        success: false,
+        latencyMs,
+        message: `Servidor respondeu com status ${res.status}: ${res.statusText}`
+      };
+    }
+  } catch (err: any) {
+    return {
+      success: false,
+      latencyMs: Date.now() - startTime,
+      message: err.name === "AbortError" ? "Tempo limite excedido (4s). Verifique o IP ou Firewall." : (err.message || "Não foi possível conectar ao Master.")
+    };
+  }
+});
+
+ipcMain.handle("lan:send-heartbeat", async (_, { masterIp, lanSecret, terminalName }) => {
+  try {
+    const cleanIp = masterIp.trim().replace(/^http:\/\//, '').replace(/\/$/, '');
+    const url = `http://${cleanIp}:3333/api/lan/heartbeat`;
+    const hwid = getHardwareFingerprint();
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(lanSecret ? { "x-lan-secret": lanSecret } : {})
+      },
+      body: JSON.stringify({
+        terminalId: hwid,
+        terminalName: terminalName || os.hostname(),
+        appVersion: app.getVersion(),
+        clientTime: new Date().toISOString()
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      return await res.json();
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+});
+
+ipcMain.handle("lan:check-system-capability", () => {
+  const totalMemBytes = os.totalmem();
+  const freeMemBytes = os.freemem();
+  const totalMemoryGB = Math.round((totalMemBytes / (1024 * 1024 * 1024)) * 10) / 10;
+  const freeMemoryGB = Math.round((freeMemBytes / (1024 * 1024 * 1024)) * 10) / 10;
+  const cpuCores = os.cpus().length;
+  const arch = os.arch();
+  const platform = os.platform();
+
+  // Requisitos mínimos: 4GB para Slave, 8GB recomendado para Master com múltiplos terminais
+  const isMasterEligible = totalMemoryGB >= 4 && cpuCores >= 2;
+  const isOptimalMaster = totalMemoryGB >= 8 && cpuCores >= 4;
+
+  let recommendation = "Adequado para Terminal de Venda (Slave).";
+  if (isOptimalMaster) {
+    recommendation = "Excelente capacidade para Servidor Central (Master Multi-Terminal).";
+  } else if (isMasterEligible) {
+    recommendation = "Adequado para Servidor Central (Master com até 3 terminais).";
+  }
+
+  return {
+    totalMemoryGB,
+    freeMemoryGB,
+    cpuCores,
+    arch,
+    platform,
+    isMasterEligible,
+    isOptimalMaster,
+    recommendation,
+  };
 });
 
 // ==========================================
@@ -517,7 +717,7 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
 
     const calculatedGrossTotal = calculatedNetTotal + calculatedTaxTotal;
 
-    // 3. Resolução Atómica e Encadeamento de Séries Fiscais AGT
+    // 3. Resolução Atómica e Encadeamento de Séries Fiscais AGT Oficiais
     const documentType = (invoiceData.documentType || invoiceData.type || 'FR').toString().toUpperCase();
     const currentYear = new Date().getFullYear().toString();
     const storeIdLocal = storeId || invoiceData.storeId || 'DEFAULT_STORE';
@@ -528,30 +728,36 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       where: {
         documentType,
         seriesYear: currentYear,
-        storeId: storeIdLocal,
         isActive: true,
+        OR: [
+          { storeId: storeIdLocal },
+          { storeId: null },
+          { establishmentNumber: establishmentNumber },
+        ]
       },
+      orderBy: { updatedAt: "desc" },
     });
 
     if (!seriesRow) {
-      const defaultSeriesCode = `POS${currentYear.slice(-2)}`;
-      seriesRow = await prisma.agtSeries.create({
-        data: {
-          seriesCode: defaultSeriesCode,
+      seriesRow = await prisma.agtSeries.findFirst({
+        where: {
           documentType,
-          seriesYear: currentYear,
-          companyId,
-          establishmentNumber,
-          storeId: storeIdLocal,
-          currentSequence: 0,
           isActive: true,
         },
+        orderBy: { updatedAt: "desc" },
       });
-      console.log(`📄 [sync:create-invoice] Nova série AGT local criada: ${defaultSeriesCode} (${documentType}/${currentYear})`);
     }
 
+    // Regra estrita da AGT: Se não houver série oficial disponibilizada pela AGT (sincronizada da Cloud), NÃO pode ocorrer faturação
+    if (!seriesRow || !seriesRow.seriesCode) {
+      console.error(`🚫 [sync:create-invoice] Faturação bloqueada: Nenhuma série fiscal oficial da AGT encontrada para ${documentType}/${currentYear}.`);
+      throw new Error(`Não é possível emitir a fatura: Nenhuma série fiscal oficial da AGT (${documentType}) encontrada. Sincronize as séries com a Cloud antes de faturar.`);
+    }
+
+    console.log(`📄 [sync:create-invoice] Série fiscal AGT oficial encontrada: ${seriesRow.seriesCode} (Seq atual: ${seriesRow.currentSequence})`);
+
     const nextSequence = (seriesRow.currentSequence || 0) + 1;
-    const seriesCode = seriesRow.seriesCode || `POS${currentYear.slice(-2)}`;
+    const seriesCode = seriesRow.seriesCode;
     const localAgtNo = `${documentType} ${seriesCode}/${nextSequence}`;
     const previousHash = seriesRow.lastHash || '';
 
@@ -979,52 +1185,157 @@ if (isUpdateEnabled) {
     console.log("✅ [Updater] update downloaded:", info);
     sendUpdateEvent("update:downloaded", info);
   });
-
-  ipcMain.handle("update:check-for-updates", async () => {
-    if (!isUpdateEnabled) {
-      return { success: false, message: "Atualizações só funcionam em produção." };
-    }
-
-    try {
-      const result = await autoUpdater.checkForUpdates();
-      return { success: true, result };
-    } catch (error) {
-      console.error("❌ [Updater] check-for-updates failed:", error);
-      throw error;
-    }
-  });
-
-  ipcMain.handle("update:download-update", async () => {
-    if (!isUpdateEnabled) {
-      return { success: false, message: "Atualizações só funcionam em produção." };
-    }
-
-    try {
-      const result = await autoUpdater.downloadUpdate();
-      return { success: true, result };
-    } catch (error) {
-      console.error("❌ [Updater] download-update failed:", error);
-      throw error;
-    }
-  });
-
-  ipcMain.handle("update:install-update", async () => {
-    if (!isUpdateEnabled) {
-      return { success: false, message: "Atualizações só funcionam em produção." };
-    }
-
-    try {
-      autoUpdater.quitAndInstall(true, true);
-      return { success: true };
-    } catch (error) {
-      console.error("❌ [Updater] install-update failed:", error);
-      throw error;
-    }
-  });
 }
+
+ipcMain.handle("update:check-for-updates", async () => {
+  if (!isUpdateEnabled) {
+    return { success: false, message: "Atualizações só funcionam em produção." };
+  }
+
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { success: true, result };
+  } catch (error: any) {
+    console.error("❌ [Updater] check-for-updates failed:", error?.message || error);
+    return { success: false, message: error?.message || "Falha ao verificar atualizações." };
+  }
+});
+
+ipcMain.handle("update:download-update", async () => {
+  if (!isUpdateEnabled) {
+    return { success: false, message: "Atualizações só funcionam em produção." };
+  }
+
+  try {
+    const result = await autoUpdater.downloadUpdate();
+    return { success: true, result };
+  } catch (error: any) {
+    console.error("❌ [Updater] download-update failed:", error?.message || error);
+    return { success: false, message: error?.message || "Falha ao descarregar atualização." };
+  }
+});
+
+ipcMain.handle("update:install-update", async () => {
+  if (!isUpdateEnabled) {
+    return { success: false, message: "Atualizações só funcionam em produção." };
+  }
+
+  try {
+    autoUpdater.quitAndInstall(true, true);
+    return { success: true };
+  } catch (error: any) {
+    console.error("❌ [Updater] install-update failed:", error?.message || error);
+    return { success: false, message: error?.message || "Falha ao instalar atualização." };
+  }
+});
 
 ipcMain.handle("app:get-version", () => {
   return app.getVersion();
+});
+
+// ==========================================
+// Native Notifications IPC Handler
+// ==========================================
+ipcMain.handle("notification:show", async (event, { title, body, silent }: { title: string; body: string; silent?: boolean }) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  try {
+    const iconCandidates = [
+      path.join(process.resourcesPath || "", "resources", "icon.png"),
+      path.join(__dirname, "..", "resources", "icon.png"),
+      path.join(__dirname, "..", "renderer", "public", "mindgest.png"),
+    ];
+
+    const foundIcon = iconCandidates.find((p) => fs.existsSync(p));
+
+    const notification = new Notification({
+      title: title || "Mindgest POS",
+      body: body || "",
+      icon: foundIcon,
+      silent: silent ?? true,
+    });
+
+    notification.on("click", () => {
+      const mainWindow = getMainWindow();
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+      }
+    });
+
+    notification.show();
+    return true;
+  } catch (err) {
+    console.error("❌ [Notification] Erro ao disparar notificação nativa:", err);
+    return false;
+  }
+});
+
+// ==========================================
+// Hardware & Cash Drawer IPC Handlers
+// ==========================================
+ipcMain.handle("printer:open-cash-drawer", async (event, { options, auditEntry }: { options?: any; auditEntry?: any }) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  return await PrinterService.openCashDrawer(options || { transport: 'spooler' }, auditEntry);
+});
+
+ipcMain.handle("printer:test-connection", async (event, { options }: { options?: any }) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  return await PrinterService.testConnection(options || { transport: 'spooler' });
+});
+
+ipcMain.handle("printer:get-system-printers", async (event) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  const mainWindow = getMainWindow();
+  if (!mainWindow) return [];
+  try {
+    return await mainWindow.webContents.getPrintersAsync();
+  } catch (err) {
+    console.warn("Falha ao listar impressoras do sistema:", err);
+    return [];
+  }
+});
+
+// ==========================================
+// Customer Display IPC Handlers
+// ==========================================
+ipcMain.handle("customer-display:toggle", async (event) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  const port = process.argv[2] || '8888';
+  return CustomerDisplayService.toggle(port);
+});
+
+ipcMain.handle("customer-display:open", async (event) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  const port = process.argv[2] || '8888';
+  return CustomerDisplayService.open(port);
+});
+
+ipcMain.handle("customer-display:close", async (event) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  CustomerDisplayService.close();
+  return true;
+});
+
+ipcMain.handle("customer-display:is-open", async (event) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  return CustomerDisplayService.isOpen();
+});
+
+ipcMain.handle("customer-display:request-state", async (event) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  return CustomerDisplayService.getState();
+});
+
+ipcMain.handle("customer-display:update", async (event, partialState: any) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  CustomerDisplayService.updateState(partialState || {});
+  return true;
+});
+
+ipcMain.handle("customer-display:clear", async (event, storeName?: string) => {
+  if (!validateIpcSender(event)) throw new Error("Acesso IPC não autorizado.");
+  CustomerDisplayService.clear(storeName);
+  return true;
 });
 
 // ==========================================
@@ -1268,6 +1579,14 @@ app.on("ready", async () => {
   
   // Iniciar o microserviço local de Impressão e Geração de Documentos (Sidecar)
   SidecarManager.start();
+
+  // Inicializar listeners de ecrãs para o Ecrã de Cliente
+  CustomerDisplayService.initDisplayListeners((event) => {
+    const mainWindow = getMainWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("customer-display:hardware-change", { event });
+    }
+  });
 
   createWindow();
 });

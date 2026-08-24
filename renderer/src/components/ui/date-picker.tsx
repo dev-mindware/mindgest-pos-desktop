@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select"
 import { ptBR } from "date-fns/locale"
+import { Matcher } from "react-day-picker"
 
 interface DatePickerProps {
   startYear?: number;
@@ -22,6 +23,8 @@ interface DatePickerProps {
   onChange: (date: Date | undefined, formatted?: string) => void;
   placeholder?: string;
   id?: string;
+  disabledDates?: Matcher | Matcher[];
+  className?: string;
 }
 
 export function DatePicker({
@@ -30,13 +33,15 @@ export function DatePicker({
   value,
   onChange,
   placeholder = "Escolha a data",
+  disabledDates = { before: new Date() },
+  className,
 }: DatePickerProps) {
-  // fallback: se não tiver value, usa data atual só pra montar selects
+  // Se não existir um valor, utiliza a data actual apenas para montar os selectores.
   const date = value ?? new Date();
 
   const months = [
-    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro",
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
   ];
 
   const years = Array.from(
@@ -68,8 +73,9 @@ export function DatePicker({
         <Button
           variant="outline"
           className={cn(
-            "w-full sm:w-[250px] justify-start text-left font-normal",
-            !value && "text-muted-foreground"
+            "w-full justify-start text-left font-normal",
+            !value && "text-muted-foreground",
+            className
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -118,6 +124,7 @@ export function DatePicker({
           initialFocus
           locale={ptBR}
           onMonthChange={(newMonth) => onChange(newMonth, format(newMonth, "yyyy-MM-dd"))}
+          disabled={disabledDates}
         />
       </PopoverContent>
     </Popover>

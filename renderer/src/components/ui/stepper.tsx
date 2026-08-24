@@ -172,7 +172,7 @@ function StepperTrigger({
     <button
       data-slot="stepper-trigger"
       className={cn(
-        "focus-visible:border-ring focus-visible:ring-ring/50 inline-flex items-center gap-3 rounded-test-full outline-none focus-visible:z-10 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50",
+        "focus-visible:border-ring focus-visible:ring-ring/50 inline-flex items-center gap-3 rounded-full outline-none focus-visible:z-10 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50",
         className
       )}
       onClick={() => setActiveStep(step)}
@@ -201,7 +201,7 @@ function StepperIndicator({
     <span
       data-slot="stepper-indicator"
       className={cn(
-        "bg-sidebar text-muted-foreground data-[state=active]:bg-primary data-[state=completed]:bg-primary data-[state=active]:text-primary-foreground data-[state=completed]:text-primary-foreground relative flex size-6 shrink-0 items-center justify-center rounded-test-full text-xs font-medium",
+        "bg-sidebar text-muted-foreground data-[state=active]:bg-primary data-[state=completed]:bg-primary data-[state=active]:text-primary-foreground data-[state=completed]:text-primary-foreground relative flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-medium",
         className
       )}
       data-state={state}

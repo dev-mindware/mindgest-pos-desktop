@@ -28,10 +28,10 @@ export interface StoresResponse {
 export interface Stores {
   id: string;
   name: string;
-  code?: string;
   email: string;
   phone: string;
   address: string;
+  code: string;
   isActive: boolean;
   companyId: string;
   createdAt: string;

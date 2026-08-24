@@ -25,7 +25,7 @@ export function DocumentVerificationView({ document, token }: Props) {
             <PublicDocumentHeader token={token} documentNumber={document.number} />
 
             <main className="container mx-auto px-4 py-8 max-w-3xl">
-                <div className="bg-white rounded-test-lg shadow-sm border p-6 md:p-8 space-y-8">
+                <div className="bg-white rounded-lg shadow-sm border p-6 md:p-8 space-y-8">
                     {/* Payment Status Badge */}
                     <div className="flex justify-end">
                         <Badge
@@ -41,7 +41,7 @@ export function DocumentVerificationView({ document, token }: Props) {
                         <p className="text-xs text-muted-foreground uppercase">
                             DOCUMENTO OFICIAL
                         </p>
-                        <h2 className="text-xl font-bold">Factura #{document.number}</h2>
+                        <h2 className="text-xl font-bold">Factura n.º {document.number}</h2>
                     </div>
 
                     {/* Issue Date */}

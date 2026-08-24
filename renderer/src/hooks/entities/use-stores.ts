@@ -12,7 +12,7 @@ export function useGetStores(role?: Role, enabled: boolean = true) {
   const route = role === "OWNER" ? "stores" : "stores/my-stores";
 
   const { data, error, isLoading, refetch } = useFetch<StoresResponse>(
-    `stores-${user?.id}`,
+    "stores",
     `${route}?page=1&limit=10`,
     { enabled },
   );
@@ -76,7 +76,7 @@ export function useUpdateStore() {
     mutationFn: ({ id, data }: { id: string; data: Partial<StoreData> }) =>
       storesService.updateStore(id, data),
     onSuccess: () => {
-      SucessMessage("Loja atualizada com sucesso!");
+      SucessMessage("Loja actualizada com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["stores"] });
     },
   });

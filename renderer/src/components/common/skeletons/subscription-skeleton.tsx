@@ -22,10 +22,10 @@ export function SubscriptionSkeleton() {
             <div className="space-y-2">
               <Skeleton className="h-5 w-40" />
               {[...Array(2)].map((_, i) => (
-                <Skeleton key={i} className="h-28 w-full rounded-test-lg" />
+                <Skeleton key={i} className="h-28 w-full rounded-lg" />
               ))}
             </div>
-            <Skeleton className="h-12 w-full rounded-test-md" />
+            <Skeleton className="h-12 w-full rounded-md" />
           </CardContent>
         </Card>
       </div>
@@ -39,7 +39,7 @@ export function SubscriptionSkeleton() {
             <Skeleton className="h-4 w-48" />
             <Skeleton className="h-4 w-40" />
             <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-14 w-full rounded-test-md" />
+            <Skeleton className="h-14 w-full rounded-md" />
           </CardContent>
         </Card>
 
@@ -58,7 +58,7 @@ export function SubscriptionSkeleton() {
             <Skeleton className="h-4 w-64" />
             <div className="flex space-x-2">
               {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-6 w-12 rounded-test-md" />
+                <Skeleton key={i} className="h-6 w-12 rounded-md" />
               ))}
             </div>
           </CardContent>

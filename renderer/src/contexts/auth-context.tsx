@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useFetchUser } from "@/hooks/common";
 import { useAuthStore } from "@/stores";
@@ -10,11 +10,17 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-const AUTH_PATHS = ["/", "/auth/login", "/auth/register", "/auth/forgot-password", "/auth/reset-password"];
+const AUTH_PATHS = ["/", "/auth/login", "/auth/register"];
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Normalize pathname to support trailing slashes
   const normalizedPath = pathname?.replace(/\/+$/, "") || "/";
   const isAuthRoute = AUTH_PATHS.includes(pathname) || AUTH_PATHS.includes(normalizedPath);
@@ -26,20 +32,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useFetchUser();
 
   useEffect(() => {
-    if (!isAuthenticating && user && isAuthRoute) {
-      // User is already logged in but tried to access login page, redirect to dashboard based on role
-      const redirectPath = roleRedirects[user.role] || "/pos";
-      router.replace(redirectPath);
-    }
-  }, [user, isAuthenticating, isAuthRoute, router]);
+    if (!isMounted) return;
+    const hasToken = Boolean(localStorage.getItem("access_token") || localStorage.getItem("session-accessToken"));
 
-  // If the user is authenticated and is on an auth route, we show the Loader while redirecting
-  if (isAuthRoute && user) {
+    if (!isAuthenticating && isAuthRoute) {
+      if (user && !hasToken) {
+        useAuthStore.getState().setUser(null);
+        return;
+      }
+
+      if (user && hasToken) {
+        if (user.role === "ADMIN") {
+          router.replace("/unauthorized");
+          return;
+        }
+        const userPlan = user.company?.subscription?.plan?.name;
+        if (userPlan && userPlan.toUpperCase().includes("BASE")) {
+          router.replace("/unauthorized");
+          return;
+        }
+        // User is already logged in but tried to access login page, redirect to POS based on role
+        const redirectPath = roleRedirects[user.role] || "/pos/counter";
+        router.replace(redirectPath);
+      }
+    }
+  }, [user, isAuthenticating, isAuthRoute, isMounted, router]);
+
+  if (!isMounted) {
+    return <>{children}</>;
+  }
+
+  const hasToken = Boolean(localStorage.getItem("access_token") || localStorage.getItem("session-accessToken"));
+
+  // If the user is authenticated and has a valid token on an auth route, we show the Loader while redirecting
+  if (isAuthRoute && user && hasToken) {
     return <Loader />;
   }
 
   // If we are still checking authentication state and it's NOT an auth route, show loader
-  // (We don't block auth routes so users can immediately see the login form while checking session in background)
   if (isAuthenticating && !isAuthRoute) {
     return <Loader />;
   }

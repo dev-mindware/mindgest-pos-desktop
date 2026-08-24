@@ -16,10 +16,12 @@ import {
   useSidebar,
 } from "@/components";
 import { useAuth } from "@/hooks/auth";
+import { useAuthStore } from "@/stores";
 import Link from "next/link";
 
 export function UserInfo() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { logout } = useAuthStore();
   const { isMobile } = useSidebar();
 
   if (!user) return null;
@@ -89,7 +91,10 @@ export function UserInfo() {
               </Link>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-500" onClick={onLogout}>
+            <DropdownMenuItem
+              className="text-red-500 cursor-pointer"
+              onClick={onLogout}
+            >
               <Icon name="LogOut" className="text-red-500" />
               Terminar Sessão
             </DropdownMenuItem>

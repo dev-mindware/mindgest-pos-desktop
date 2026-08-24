@@ -10,7 +10,7 @@ export function useUpdateBank() {
     mutationFn: ({ id, data }: { id: string; data: BankFormData }) =>
       banksService.updateBank(id, data),
     onSuccess: () => {
-      SucessMessage("Banco atualizado com sucesso!");
+      SucessMessage("Banco actualizado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["bank-accounts"] });
     },
   });

@@ -41,16 +41,16 @@ export function DynamicMetricCard({
             <CardContent className="p-3 md:p-4 flex justify-between items-start">
                 <div className="flex flex-col h-full flex-1">
                     <div className="space-y-1">
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center gap-2">
                             <h2 className={cn(
-                                "text-xl md:text-2xl font-bold tracking-tight",
+                                "text-lg sm:text-xl md:text-2xl font-bold tracking-tight truncate",
                                 variant === "action" && (isDestructive ? "text-destructive" : "text-primary")
                             )}>
                                 {title}
                             </h2>
                             {icon && (
                                 <div className={cn(
-                                    "p-2 rounded-test-md shrink-0",
+                                    "p-2 rounded-md shrink-0",
                                     variant === "action"
                                         ? (isDestructive ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary")
                                         : "bg-muted text-muted-foreground"
@@ -60,14 +60,14 @@ export function DynamicMetricCard({
                             )}
                         </div>
                         <p className={cn(
-                            "text-base md:text-lg text-foreground",
+                            "text-xs sm:text-sm md:text-base text-foreground line-clamp-1",
                             variant === "action" && (isDestructive ? "text-destructive font-medium" : "text-primary font-medium")
                         )}>
                             {subtitle}
                         </p>
                     </div>
                     {description && (
-                        <p className="text-sm text-muted-foreground w-full font-medium mt-2">
+                        <p className="text-[11px] md:text-xs text-muted-foreground w-full font-medium mt-1.5 line-clamp-2">
                             {description}
                         </p>
                     )}

@@ -1,7 +1,7 @@
 import { CreateItemData } from "@/types";
 import { itemsService } from "@/services/items-service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { SucessMessage } from "@/utils/messages";
+import { SucessMessage, ErrorMessage } from "@/utils/messages";
 
 export function useAddItem() {
   const queryClient = useQueryClient();
@@ -22,7 +22,7 @@ export function useUpdateItem() {
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateItemData> }) =>
       itemsService.updateItem(id, data),
     onSuccess: () => {
-      SucessMessage("Item atualizado com sucesso!");
+      SucessMessage("Item actualizado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["items"] });
     },
   });
@@ -37,6 +37,13 @@ export function useDeleteItem() {
       SucessMessage("Item removido com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["items"] });
     },
+    onError: (error: any) => {
+      ErrorMessage(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Erro ao remover o item."
+      );
+    },
   });
 }
 
@@ -48,6 +55,13 @@ export function useToggleStatusItem() {
     onSuccess: () => {
       SucessMessage("Status do item alterado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["items"] });
+    },
+    onError: (error: any) => {
+      ErrorMessage(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Erro ao alterar o status do item."
+      );
     },
   });
 }

@@ -229,6 +229,50 @@ async function ensureAgtSeriesSchema() {
   }
 }
 
+async function ensureAgtImmutabilityTriggers() {
+  try {
+    // 1. Bloquear UPDATE em Invoice emitidas (imutabilidade AGT)
+    await prisma.$executeRawUnsafe(`
+      CREATE TRIGGER IF NOT EXISTS "agt_prevent_invoice_update"
+      BEFORE UPDATE ON "Invoice"
+      BEGIN
+        SELECT RAISE(ABORT, 'AGT_COMPLIANCE_ERROR: Documentos fiscais emitidos sao estritamente imutaveis.');
+      END;
+    `);
+
+    // 2. Bloquear DELETE em Invoice
+    await prisma.$executeRawUnsafe(`
+      CREATE TRIGGER IF NOT EXISTS "agt_prevent_invoice_delete"
+      BEFORE DELETE ON "Invoice"
+      BEGIN
+        SELECT RAISE(ABORT, 'AGT_COMPLIANCE_ERROR: Proibida a eliminacao de documentos fiscais.');
+      END;
+    `);
+
+    // 3. Bloquear DELETE em InvoiceLine (linhas de fatura)
+    await prisma.$executeRawUnsafe(`
+      CREATE TRIGGER IF NOT EXISTS "agt_prevent_invoiceline_delete"
+      BEFORE DELETE ON "InvoiceLine"
+      BEGIN
+        SELECT RAISE(ABORT, 'AGT_COMPLIANCE_ERROR: Proibida a eliminacao de linhas de documentos fiscais.');
+      END;
+    `);
+
+    // 4. Bloquear UPDATE em InvoiceLine
+    await prisma.$executeRawUnsafe(`
+      CREATE TRIGGER IF NOT EXISTS "agt_prevent_invoiceline_update"
+      BEFORE UPDATE ON "InvoiceLine"
+      BEGIN
+        SELECT RAISE(ABORT, 'AGT_COMPLIANCE_ERROR: Proibida a alteracao de linhas de documentos fiscais.');
+      END;
+    `);
+
+    console.log('🛡️ [Prisma] Triggers de Imutabilidade Fiscal AGT ativados com sucesso.');
+  } catch (err) {
+    console.warn('⚠️ [Prisma] Erro ao criar triggers de imutabilidade AGT:', err);
+  }
+}
+
 export async function testPrismaConnection() {
   try {
     
@@ -451,6 +495,7 @@ export async function testPrismaConnection() {
     await ensureSettingsSchema();
     await ensureInvoiceSchema();
     await ensureAgtSeriesSchema();
+    await ensureAgtImmutabilityTriggers();
 
     const userCount = await prisma.user.count();
     console.log('✅ [Prisma] Conexão bem-sucedida! Total de Utilizadores na DB:', userCount);

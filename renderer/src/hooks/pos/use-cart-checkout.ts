@@ -1,20 +1,24 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateInvoiceReceipt, useCreateProforma } from "@/hooks";
-import { useQueryClient } from "@tanstack/react-query";
-import { currentStoreStore, useAuthStore, useModal } from "@/stores";
-import { ErrorMessage, formatCurrency, parseCurrency } from "@/utils";
-import { useClientSelection } from "@/hooks/invoice";
+import { currentStoreStore, useAuthStore } from "@/stores";
+import { ErrorMessage, WarningMessage, printPosDocument } from "@/utils";
+import { useInvoiceTotals, useClientSelection } from "@/hooks/invoice";
 import { PosSalesFormData, PosSalesSchema } from "@/schemas";
-import { Product } from "@/types";
+import { ContributorVerificationStatus, DocumentType, Product } from "@/types";
+import { useQueryClient } from "@tanstack/react-query";
+import { useWorkspaceStore } from "@/stores/pos/workspace-store";
+import { isValidAngolanTaxNumber } from "@/lib/contributor";
 
 export interface CartItem extends Product {
   qty: number;
 }
 
 export type PaymentMethod = "Credit Card" | "Cash";
+
+const posPhoneRegex = /^(92|99|91|95|93|94|97)\d{7}$/;
 
 interface UseCartCheckoutProps {
   cartItems: CartItem[];
@@ -31,7 +35,7 @@ export function useCartCheckout({
 }: UseCartCheckoutProps) {
   const { user } = useAuthStore();
   const { currentStore } = currentStoreStore();
-  const { openModal } = useModal();
+  const { useThermalPrinter } = useWorkspaceStore();
   const queryClient = useQueryClient();
 
   const [paymentMethod, setPaymentMethod] =
@@ -39,14 +43,18 @@ export function useCartCheckout({
   const [cashGiven, setCashGiven] = useState<number | "">("");
   const [change, setChange] = useState<number>(0);
 
-
   const [isCustomerExpanded, setIsCustomerExpanded] = useState(false);
-  const [newCustomerNif, setNewCustomerNif] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [pendingPayload, setPendingPayload] = useState<PosSalesFormData | null>(
-    null,
-  );
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerTaxNumber, setNewCustomerTaxNumber] = useState("");
+  const [newCustomerAddress, setNewCustomerAddress] = useState("");
+  const [newCustomerVerification, setNewCustomerVerification] =
+    useState<ContributorVerificationStatus>("idle");
+  const [printDocument, setPrintDocument] = useState<{
+    id: string;
+    type: DocumentType;
+  } | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const { mutateAsync: createInvoiceReceipt, isPending: isPendingInvoice } =
     useCreateInvoiceReceipt();
@@ -61,6 +69,7 @@ export function useCartCheckout({
       issueDate: new Date().toLocaleDateString("en-CA"),
       items: [],
       client: undefined,
+      clientId: "",
       storeId: currentStore?.id || user?.store?.id || "",
       total: 0,
       subtotal: 0,
@@ -73,174 +82,118 @@ export function useCartCheckout({
     },
   });
 
-  const { handleSubmit, setValue, watch, reset, register } = form;
-  const { handleClientChange, selectedClient, setSelectedClient } =
-    useClientSelection(setValue);
+  const { handleSubmit, setValue, watch, reset } = form;
+  const {
+    handleClientChange: handleBaseClientChange,
+    selectedClient,
+    setSelectedClient,
+  } = useClientSelection(setValue);
 
-  useEffect(() => {
-    register("client");
-  }, [register]);
+  const handleClientChange = (option: any) => {
+    handleBaseClientChange(option);
+
+    if (option?.__isNew__) {
+      setNewCustomerName(option.label || "");
+      setValue("client", undefined, {
+        shouldValidate: false,
+        shouldDirty: true,
+      });
+    }
+  };
 
   const watchedItems = watch("items") as any[];
-  // Keep watchedItems for display only; do NOT use it inside useEffect dependency arrays
-
-  const cartTotals = useMemo(() => {
-    const subtotal = cartItems.reduce((acc, item) => {
-      const price = Number(item.price) || 0;
-      const qty = Number(item.qty) || 0;
-      return acc + price * qty;
-    }, 0);
-
-    const discountAmount = 0;
-    const taxAmount = cartItems.reduce((acc, item) => {
-      const price = Number(item.price) || 0;
-      const qty = Number(item.qty) || 0;
-      const rate = Number(item.tax?.rate ?? (item as any).taxPercent ?? 0) || 0;
-      return acc + price * qty * (rate / 100);
-    }, 0);
-
-    const total = subtotal + taxAmount - discountAmount;
-
-    return {
-      subtotal: Number(subtotal.toFixed(2)),
-      taxAmount: Number(taxAmount.toFixed(2)),
-      discountAmount: Number(discountAmount.toFixed(2)),
-      total: Number(total.toFixed(2)),
-    };
-  }, [cartItems]);
-
-  const totals = cartTotals;
+  const totals = useInvoiceTotals({
+    items: watchedItems || [],
+    retention: 0,
+    discount: 0, // POS não usa desconto global
+  });
 
   // Synchronize cartItems with form items
-  // NOTE: Do NOT include watchedItems in deps — it changes on every setValue call → infinite loop
   useEffect(() => {
     const items = cartItems.map((item) => ({
-      id: (item as any).cloudId || item.id,
+      id: item.id,
+      description: item.name,
+      type: "PRODUCT" as const,
       quantity: item.qty,
+      unitPrice: item.price || 0,
+      tax: Number((item as any).tax?.rate || (item as any).taxRate || 0), // ✅ Convert string to number
+      discount: 0,
+      total: (item.price || 0) * item.qty,
+      isFromAPI: true,
     }));
 
-    const currentFormItems = form.getValues("items") as any[] | undefined;
-    const sameItems =
-      Array.isArray(currentFormItems) &&
-      items.length === currentFormItems.length &&
-      items.every((item, index) => {
-        const watched = currentFormItems[index];
-        return watched?.id === item.id && watched?.quantity === item.quantity;
-      });
+    setValue("items", items as any, { shouldValidate: true });
+  }, [cartItems, setValue]);
 
-    if (sameItems) {
-      return;
-    }
-
-    console.log("✅ [CartCheckout] Items synced to form (with cloudId as id):", items);
-    setValue("items", items as any, { shouldValidate: false });
-  }, [cartItems, setValue, form]);
-
-  // Synchronize totals to form state (com verificação para evitar loop infinito de renderização)
+  // Synchronize totals to form state
   useEffect(() => {
-    const currentTotal = form.getValues("total");
-    const currentSubtotal = form.getValues("subtotal");
-    const currentTaxAmount = form.getValues("taxAmount");
-    const currentDiscountAmount = form.getValues("discountAmount");
-
-    if (
-      currentTotal === cartTotals.total &&
-      currentSubtotal === cartTotals.subtotal &&
-      currentTaxAmount === cartTotals.taxAmount &&
-      currentDiscountAmount === cartTotals.discountAmount
-    ) {
-      return;
-    }
-
-    setValue("total", cartTotals.total);
-    setValue("subtotal", cartTotals.subtotal);
-    setValue("taxAmount", cartTotals.taxAmount);
-    setValue("discountAmount", cartTotals.discountAmount);
-  }, [cartTotals, setValue, form]); // form is stable (react-hook-form guarantees this)
+    setValue("total", totals.total);
+    setValue("subtotal", totals.subtotal);
+    setValue("taxAmount", totals.taxAmount);
+    setValue("discountAmount", totals.discountAmount);
+  }, [totals, setValue]);
 
   // Synchronize payment method
   useEffect(() => {
-    const target = paymentMethod === "Cash" ? "CASH" : "CARD";
-    if (form.getValues("paymentMethod") !== target) {
-      setValue("paymentMethod", target);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentMethod, setValue]); // form intentionally omitted — stable object
+    setValue("paymentMethod", paymentMethod === "Cash" ? "CASH" : "CARD");
+  }, [paymentMethod, setValue]);
 
   // Synchronize storeId
   useEffect(() => {
     const id = currentStore?.id || user?.store?.id;
-    if (id && form.getValues("storeId") !== id) {
-      setValue("storeId", id);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStore, user, setValue]); // form intentionally omitted — stable object
+    if (id) setValue("storeId", id);
+  }, [currentStore, user, setValue]);
 
-  // Synchronize cashSessionId (always set, even if empty, to handle form reset)
+  // Synchronize cashSessionId
   useEffect(() => {
-    const id = cashSessionId || "";
-    if (form.getValues("cashSessionId") !== id) {
-      setValue("cashSessionId", id);
+    if (cashSessionId) {
+      setValue("cashSessionId", cashSessionId);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cashSessionId, setValue]); // form intentionally omitted — stable object
+  }, [cashSessionId, setValue]);
 
   // Handle Cash & Change
   useEffect(() => {
     if (paymentMethod === "Cash") {
       const cash = typeof cashGiven === "number" ? cashGiven : 0;
-      const changeVal = cash >= cartTotals.total ? cash - cartTotals.total : 0;
+      const changeVal = cash >= totals.total ? cash - totals.total : 0;
       const safeChange = isNaN(changeVal) ? 0 : Number(changeVal.toFixed(2));
 
       setChange(safeChange);
-      if (form.getValues("receivedValue") !== cash) {
-        setValue("receivedValue", cash);
-      }
-      if (form.getValues("change") !== safeChange) {
-        setValue("change", safeChange, { shouldValidate: true });
+      setValue("receivedValue", cash);
+      setValue("change", safeChange, { shouldValidate: true });
+
+      // Transmitir troco e valor entregue em tempo real para o ecrã do cliente
+      if (typeof window !== "undefined" && window.ipc?.customerDisplay?.update && totals.total > 0) {
+        void window.ipc.customerDisplay.update({
+          status: "payment",
+          total: totals.total,
+          receivedValue: cash,
+          change: safeChange,
+          paymentMethod: "CASH",
+        });
       }
     } else {
       setChange(0);
-      if (form.getValues("receivedValue") !== cartTotals.total) {
-        setValue("receivedValue", cartTotals.total);
-      }
-      if (form.getValues("change") !== 0) {
-        setValue("change", 0, { shouldValidate: true });
+      setValue("receivedValue", totals.total);
+      setValue("change", 0, { shouldValidate: true });
+
+      if (typeof window !== "undefined" && window.ipc?.customerDisplay?.update && totals.total > 0) {
+        void window.ipc.customerDisplay.update({
+          status: "payment",
+          total: totals.total,
+          receivedValue: totals.total,
+          change: 0,
+          paymentMethod: paymentMethod,
+        });
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cashGiven, cartTotals.total, paymentMethod, setValue]); // form intentionally omitted — stable object
+  }, [cashGiven, totals.total, paymentMethod, setValue]);
 
   const handleQuickCash = (amount: number) => {
     setCashGiven(amount);
   };
 
-  const handleCancel = () => {
-    setCashGiven("");
-    setPaymentMethod("Credit Card");
-    setChange(0);
-    setSelectedClient(null);
-    setNewCustomerPhone("");
-    setNewCustomerNif("");
-    reset({
-      issueDate: new Date().toLocaleDateString("en-CA"),
-      items: [],
-      client: undefined,
-      storeId: currentStore?.id || user?.store?.id || "",
-      total: 0,
-      subtotal: 0,
-      taxAmount: 0,
-      discountAmount: 0,
-      receivedValue: 0,
-      change: 0,
-      paymentMethod: "CARD",
-      cashSessionId: cashSessionId || "", // Preserve cashSessionId
-    });
-    setIsPreviewOpen(false);
-    setPendingPayload(null);
-  };
-
-  const handlePreview = async (data: any) => {
+  const handleCheckout = async (data: any) => {
     if (cartItems.length === 0) {
       ErrorMessage("O carrinho está vazio!");
       return;
@@ -253,80 +206,63 @@ export function useCartCheckout({
       return;
     }
 
-    const simplifiedItems = await Promise.all(
-      cartItems.map(async (item) => {
-        const cloudId = (item as any).cloudId ||
-          (typeof window !== "undefined" && window.ipc?.db?.getItemCloudId
-            ? await window.ipc.db.getItemCloudId(item.id)
-            : item.id);
+    const normalizedNewCustomerPhone = newCustomerPhone
+      .replace(/\D/g, "")
+      .slice(0, 9);
+    const isCreatingClient = !!selectedClient?.__isNew__;
+    const hasInvalidNewPhone =
+      normalizedNewCustomerPhone.length > 0 &&
+      !posPhoneRegex.test(normalizedNewCustomerPhone);
 
-        if (!cloudId) {
-          console.warn(
-            "⚠️ [CartCheckout] Não foi possível resolver cloudId para o item:",
-            item.id,
-          );
-        }
-
-        return {
-          id: cloudId,
-          quantity: item.qty,
-        };
-      }),
-    );
-
-    console.log("✅ [CartCheckout] Items ready for cloud (id=cloudId):", simplifiedItems);
-    console.log("✅ [CartCheckout] selectedClient:", selectedClient);
-    console.log(data);
-
-    let finalClient = undefined;
-    if (data.client && (data.client.id || (data.client.name && data.client.name.trim() !== ""))) {
-      const c: any = {};
-      if (data.client.id) c.id = data.client.id;
-      if (data.client.name && data.client.name.trim() !== "") c.name = data.client.name.trim();
-      if (data.client.phone && data.client.phone.trim() !== "") c.phone = data.client.phone.trim();
-      if (data.client.email && data.client.email.trim() !== "") c.email = data.client.email.trim();
-      if (data.client.address && data.client.address.trim() !== "") c.address = data.client.address.trim();
-      if (data.client.taxNumber && data.client.taxNumber.trim() !== "") c.taxNumber = data.client.taxNumber.trim();
-      if (data.client.taxNumber && data.client.taxNumber.trim() !== "") c.taxNumber = data.client.taxNumber.trim();
-
-      if (Object.keys(c).length > 0) finalClient = c;
+    if (
+      hasInvalidNewPhone ||
+      (isCreatingClient && !posPhoneRegex.test(normalizedNewCustomerPhone))
+    ) {
+      ErrorMessage("Insira um número de telemóvel válido para o cliente.");
+      return;
     }
 
-    if (!finalClient && data.clientId) {
-      finalClient = { id: data.clientId };
+    if (isCreatingClient && !isValidAngolanTaxNumber(newCustomerTaxNumber)) {
+      ErrorMessage("Introduza um NIF válido para o novo cliente.");
+      return;
     }
 
-    // If the form did not populate `client`, fall back to `selectedClient` (selection UI)
-    if (!finalClient && selectedClient) {
-      const option: any = selectedClient;
-      if (option.__isNew__) {
-        finalClient = { name: option.label };
-      } else if (option.data) {
-        const d = option.data;
-        const c: any = {
-          id: d.id,
-          name: d.name,
-          taxNumber: d.taxNumber || undefined,
-          address: d.address || undefined,
-          phone: d.phone || undefined,
-        };
-        // Remove undefined/empty fields
-        Object.keys(c).forEach((k) => {
-          if (c[k] === undefined || (typeof c[k] === "string" && c[k].trim() === "")) delete c[k];
-        });
-        if (Object.keys(c).length > 0) finalClient = c;
-      }
+    if (
+      isCreatingClient &&
+      ["idle", "checking"].includes(newCustomerVerification)
+    ) {
+      ErrorMessage(
+        "Aguarde pela verificação do NIF.",
+      );
+      return;
     }
+
+    if (
+      isCreatingClient &&
+      ["not_found", "unavailable"].includes(newCustomerVerification)
+    ) {
+      WarningMessage(
+        "A factura será criada, mas se o NIF não existir a AGT poderá não validar o documento.",
+      );
+    }
+
+    // Prepare payload
+    const simplifiedItems = data.items.map((item: any) => ({
+      id: item.id,
+      quantity: item.quantity,
+    }));
 
     const payload: PosSalesFormData = {
-      ...data,
+      issueDate: data.issueDate,
       items: simplifiedItems,
+      client: data.client,
+      total: data.total,
+      subtotal: data.subtotal,
+      taxAmount: data.taxAmount,
+      discountAmount: data.discountAmount,
+      receivedValue: data.receivedValue,
+      paymentMethod: data.paymentMethod,
       storeId: currentStore?.id || user?.store?.id || data.storeId,
-      subtotal: cartTotals.subtotal,
-      taxAmount: cartTotals.taxAmount,
-      documentType: type === "proforma" ? "FP" : "FR",
-      discountAmount: cartTotals.discountAmount,
-      total: cartTotals.total,
       change:
         typeof data.change === "number" && !isNaN(data.change)
           ? Number(data.change.toFixed(2))
@@ -334,123 +270,84 @@ export function useCartCheckout({
       cashSessionId,
     };
 
-    if (finalClient) {
-      payload.client = finalClient;
-    } else {
-      delete (payload as any).client;
-    }
-
-    // If creating a new anonymous customer by phone/NIF, build minimal client object
-    if ((!selectedClient || selectedClient.__isNew__) && (newCustomerPhone || newCustomerNif)) {
-      payload.client = payload.client || {};
-      payload.client.name = payload.client.name || "Consumidor Final";
-
-      if (newCustomerPhone && typeof newCustomerPhone === "string" && newCustomerPhone.trim() !== "") {
-        payload.client.phone = newCustomerPhone.trim();
-      }
-
-      if (newCustomerNif && typeof newCustomerNif === "string" && newCustomerNif.trim() !== "") {
-        // prefer taxNumber field used elsewhere
-        payload.client.taxNumber = newCustomerNif.trim();
-      }
-
-      // sensible defaults (do not include if empty)
-      if (!payload.client.email) delete payload.client.email;
-      if (!payload.client.address) delete payload.client.address;
-    }
-
-    // Remove any empty string / null / undefined fields from client before sending
-    if (payload.client) {
-      for (const k of Object.keys(payload.client)) {
-        const v = (payload.client as any)[k];
-        if (v === undefined || v === null || (typeof v === "string" && v.trim() === "")) {
-          delete (payload.client as any)[k];
-        }
-      }
-      if (Object.keys(payload.client).length === 0) {
-        delete (payload as any).client;
-      }
-    }
-
-    // Validation: Proforma Invoices require an identified client
-    if (type === "proforma" && !payload.client) {
-      ErrorMessage("É obrigatório identificar o cliente para emitir uma Fatura Proforma.");
+    if (!payload.storeId) {
+      ErrorMessage("Loja não identificada. Recarregue a página.");
       return;
     }
 
-    if (payload.receivedValue === 0) {
-      delete (payload as any).receivedValue;
+    // Custom adjustments for client
+    if (data.clientId) {
+      payload.client = {
+        id: data.clientId,
+      } as PosSalesFormData["client"];
+    } else if (selectedClient?.__isNew__) {
+      payload.client = {
+        name: newCustomerName || selectedClient.label,
+        phone: normalizedNewCustomerPhone,
+        address: undefined,
+        taxNumber: newCustomerTaxNumber,
+      };
+    } else if (!selectedClient && normalizedNewCustomerPhone) {
+      payload.client = {
+        name: "Consumidor Final",
+        phone: normalizedNewCustomerPhone,
+        email: "consumidor@final.com",
+        address: "Loja",
+        taxNumber: "999999999",
+      };
     }
 
-    setPendingPayload(payload);
-    setIsPreviewOpen(true);
+    await performSubmit(payload);
   };
 
-  const handleFinalSubmit = async () => {
-    if (!pendingPayload) return;
-
+  const performSubmit = async (payload: PosSalesFormData) => {
     try {
-      console.log("FINAL PAYLOAD:", JSON.stringify(pendingPayload, null, 2));
       if (type === "invoice") {
-        const response = await createInvoiceReceipt(pendingPayload as any);
-        const invoiceId = response?.data?.id || response?.localId;
-        const invoiceNumber = response?.data?.agtNo || response?.data?.invoiceNumber || response?.data?.number || "PENDENTE OFFLINE";
-
-        console.log("📋 [Checkout] Invoice creation response:", JSON.stringify(response, null, 2));
-        console.log("📋 [Checkout] Extracted invoiceNumber:", invoiceNumber);
-        console.log("📋 [Checkout] Response.data:", JSON.stringify(response?.data, null, 2));
+        const response = await createInvoiceReceipt(payload as any);
+        const invoiceId = response?.data?.id;
 
         if (invoiceId) {
-          // Enrich payload with response data and full item details
-          const enrichedPayload = {
-            ...pendingPayload,
-            invoiceNumber: invoiceNumber,
-            invoiceDate: new Date().toISOString().split('T')[0],
-            items: (cartItems || []).map((item) => ({
-              name: item.name,
-              description: item.description,
-              quantity: item.qty,
-              price: item.price,
-              tax: item.tax?.rate || 0,
-            })),
-            company: {
-              name: currentStore?.name || "A Minha Empresa",
-              address: currentStore?.address || "Endereço da Empresa",
-              email: currentStore?.email || "geral@empresa.com",
-              phone: currentStore?.phone || "900000000",
-              taxNumber: "000000000",
-            },
-          };
-
-          openModal("document-success", {
+          setPrintDocument({
             id: invoiceId,
             type: "invoice-receipt",
-            format: "thermal",
-            payload: enrichedPayload,
           });
 
-          // 🔄 Force synchronization after successful invoice creation
-          if (typeof window !== "undefined" && window.ipc?.sync?.triggerSync) {
-            const storeId = currentStore?.id || user?.store?.id || "";
-            const token = (user as any)?.token || localStorage.getItem("session-accessToken");
-            if (token && storeId && user?.id) {
-              try {
-                console.log("🔄 [Checkout] Triggering sync after invoice creation...");
-                window.ipc.sync.triggerSync({
-                  token,
-                  storeId,
-                  userId: user.id,
+          // Atualizar o ecrã de cliente com o estado de conclusão e troco
+          if (typeof window !== "undefined" && window.ipc?.customerDisplay?.update) {
+            void window.ipc.customerDisplay.update({
+              status: "completed",
+              total: payload.total,
+              receivedValue: payload.receivedValue,
+              change: payload.change,
+              paymentMethod: payload.paymentMethod,
+            });
+          }
+
+          // Disparar abertura automática de gaveta se for venda a dinheiro
+          if (payload.paymentMethod === "CASH" || (payload as any).paymentMethod === "MULTIPLE") {
+            try {
+              if (typeof window !== "undefined" && window.ipc?.printer?.openCashDrawer) {
+                void window.ipc.printer.openCashDrawer({
+                  options: { transport: "spooler" },
+                  auditEntry: {
+                    sessionId: cashSessionId,
+                    userId: user?.id,
+                    storeId: currentStore?.id,
+                    type: "SALE",
+                    reason: `Venda ${invoiceId}`,
+                    invoiceId: invoiceId,
+                  },
                 });
-              } catch (syncErr) {
-                console.warn("⚠️ [Checkout] Erro ao forçar sincronização:", syncErr);
               }
+            } catch (drawerErr) {
+              console.warn("⚠️ Aviso: Falha ao acionar abertura automática de gaveta:", drawerErr);
             }
           }
         }
       } else {
         // Remove payment-specific fields for proforma
         const { cashSessionId, change, receivedValue, ...proformaData } =
-          pendingPayload;
+          payload;
 
         const proformaPayload = {
           ...proformaData,
@@ -459,99 +356,28 @@ export function useCartCheckout({
             .split("T")[0],
         };
         const response = await createProforma(proformaPayload as any);
-        const proformaId = response?.data?.id || response?.localId;
-        const proformaNumber = response?.data?.proformaNumber || response?.data?.number || response?.data?.invoiceNumber || "PENDENTE OFFLINE";
-
-        console.log("📋 [Checkout] Proforma creation response:", JSON.stringify(response, null, 2));
-        console.log("📋 [Checkout] Extracted proformaNumber:", proformaNumber);
-        console.log("📋 [Checkout] Response.data:", JSON.stringify(response?.data, null, 2));
-
-        console.log("Proforma creation response:");
-        console.log(response);
+        const proformaId = response?.data?.id;
 
         if (proformaId) {
-          // Enrich payload with response data and full item details
-          const enrichedPayload = {
-            ...pendingPayload,
-            invoiceNumber: proformaNumber,
-            invoiceDate: new Date().toISOString().split('T')[0],
-            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            items: (cartItems || []).map((item) => ({
-              name: item.name,
-              description: item.description,
-              quantity: item.qty,
-              price: item.price,
-              tax: item.tax?.rate || 0,
-            })),
-            company: {
-              name: currentStore?.name || "A Minha Empresa",
-              address: currentStore?.address || "Endereço da Empresa",
-              email: currentStore?.email || "geral@empresa.com",
-              phone: currentStore?.phone || "900000000",
-              taxNumber: "000000000",
-            },
-          };
-
-          openModal("document-success", {
+          setPrintDocument({
             id: proformaId,
             type: "proforma",
-            format: "thermal",
-            payload: enrichedPayload,
           });
-
-          // 🔄 Force synchronization after successful proforma creation
-          if (typeof window !== "undefined" && window.ipc?.sync?.triggerSync) {
-            const storeId = currentStore?.id || user?.store?.id || "";
-            const token = (user as any)?.token || localStorage.getItem("session-accessToken");
-            if (token && storeId && user?.id) {
-              try {
-                console.log("🔄 [Checkout] Triggering sync after proforma creation...");
-                window.ipc.sync.triggerSync({
-                  token,
-                  storeId,
-                  userId: user.id,
-                });
-              } catch (syncErr) {
-                console.warn("⚠️ [Checkout] Erro ao forçar sincronização:", syncErr);
-              }
-            }
-          }
-        }
-      }
-
-      // NOVIDADE: Reduzir o stock localmente no SQLite para atualizar a UI do POS imediatamente
-      if (typeof window !== "undefined" && window.ipc?.sync?.reduceLocalStock) {
-        try {
-          const stockItems = cartItems.map(item => ({ id: item.id, quantity: item.qty }));
-          await window.ipc.sync.reduceLocalStock(stockItems);
-          console.log("✅ Stock local descontado com sucesso.");
-
-          // Disparar evento para atualizar a UI em tempo real
-          window.dispatchEvent(new CustomEvent("local-stock-updated"));
-
-          // Invalidate React Query caches to trigger real-time UI refresh
-          queryClient.invalidateQueries({
-            predicate: (query) => {
-              const key = query.queryKey[0];
-              return typeof key === "string" && (
-                key.startsWith("items-for-pos") ||
-                key.includes("items") ||
-                key.includes("products")
-              );
-            }
-          });
-        } catch (stockErr) {
-          console.error("❌ Erro ao descontar stock local:", stockErr);
         }
       }
 
       setCashGiven("");
       setSelectedClient(null);
       setNewCustomerPhone("");
+      setNewCustomerName("");
+      setNewCustomerTaxNumber("");
+      setNewCustomerAddress("");
+      setNewCustomerVerification("idle");
       reset({
         issueDate: new Date().toLocaleDateString("en-CA"),
         items: [],
         client: undefined,
+        clientId: "",
         storeId: currentStore?.id || user?.store?.id || "",
         total: 0,
         subtotal: 0,
@@ -560,21 +386,59 @@ export function useCartCheckout({
         receivedValue: 0,
         change: 0,
         paymentMethod: "CARD",
-        cashSessionId: cashSessionId || "", // Preserve cashSessionId
+        cashSessionId,
       });
-      setIsPreviewOpen(false);
-      setPendingPayload(null);
       onSuccess?.();
+
+      // Invalidate items queries so stock quantities update without page refresh
+      try {
+        queryClient.invalidateQueries({
+          predicate: (query) =>
+            typeof query.queryKey[0] === "string" &&
+            (query.queryKey[0] as string).startsWith("items-for-pos"),
+        });
+        queryClient.invalidateQueries({ queryKey: ["items-paginated"] });
+        queryClient.invalidateQueries({ queryKey: ["stocks"] });
+      } catch (invalidationErr) {
+        console.warn("⚠️ Aviso na invalidação de cache:", invalidationErr);
+      }
     } catch (error: any) {
-      console.error("Payment error:", error);
-      const backendMessage =
-        typeof error === "string"
-          ? error
-          : error?.response?.data?.message || error?.message || null;
-      ErrorMessage(
-        backendMessage || `Erro ao processar ${type === "invoice" ? "o pagamento" : "a proforma"}.`,
-      );
+      console.error("❌ Erro ao submeter venda:", error);
+      const serverMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message;
+
+      if (serverMessage && !serverMessage.includes("Network Error")) {
+        ErrorMessage(serverMessage);
+      } else {
+        ErrorMessage(
+          `Erro ao processar ${type === "invoice" ? "o pagamento" : "a proforma"}.`,
+        );
+      }
     }
+  };
+
+  const handlePrint = async () => {
+    if (!printDocument || isPrinting) return;
+
+    setIsPrinting(true);
+    try {
+      await printPosDocument({
+        ...printDocument,
+        thermal: useThermalPrinter,
+      });
+      setPrintDocument(null);
+    } catch (error) {
+      console.error("Erro ao imprimir o documento:", error);
+      ErrorMessage("Não foi possível imprimir o documento. Tente novamente.");
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  const dismissPrint = () => {
+    if (!isPrinting) setPrintDocument(null);
   };
 
   return {
@@ -589,17 +453,21 @@ export function useCartCheckout({
     setIsCustomerExpanded,
     newCustomerPhone,
     setNewCustomerPhone,
-    newCustomerNif,
-    setNewCustomerNif,
+    newCustomerName,
+    setNewCustomerName,
+    newCustomerTaxNumber,
+    setNewCustomerTaxNumber,
+    newCustomerAddress,
+    setNewCustomerAddress,
+    setNewCustomerVerification,
     selectedClient,
     handleClientChange,
     handleQuickCash,
-    handlePreview,
-    handleFinalSubmit,
-    handleCancel,
-    isPreviewOpen,
-    setIsPreviewOpen,
-    pendingPayload,
+    handleCheckout,
+    printDocument,
+    handlePrint,
+    dismissPrint,
+    isPrinting,
     isPending,
   };
 }

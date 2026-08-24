@@ -24,7 +24,7 @@ export function DashboardSkeleton() {
                                 <Skeleton className="h-6 w-48" />
                                 <Skeleton className="h-4 w-64" />
                             </div>
-                            <Skeleton className="h-10 w-32 rounded-test-lg" />
+                            <Skeleton className="h-10 w-32 rounded-lg" />
                         </div>
                     </CardHeader>
                     <CardContent className="pt-6">
@@ -35,7 +35,7 @@ export function DashboardSkeleton() {
                                     <div key={i} className="w-full h-px bg-muted/30" />
                                 ))}
                             </div>
-                            <Skeleton className="h-full w-full bg-gradient-to-t from-primary/5 to-transparent rounded-test-lg" />
+                            <Skeleton className="h-full w-full bg-gradient-to-t from-primary/5 to-transparent rounded-lg" />
                         </div>
                     </CardContent>
                 </Card>
@@ -48,10 +48,10 @@ export function DashboardSkeleton() {
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col justify-center items-center py-6">
                         <div className="relative h-[220px] w-[220px]">
-                            <div className="absolute inset-0 rounded-test-full border-[12px] border-muted/20" />
-                            <div className="absolute inset-4 rounded-test-full border-[1px] border-dashed border-primary/20" />
+                            <div className="absolute inset-0 rounded-full border-[12px] border-muted/20" />
+                            <div className="absolute inset-4 rounded-full border-[1px] border-dashed border-primary/20" />
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <Skeleton className="h-10 w-20 rounded-test-lg" />
+                                <Skeleton className="h-10 w-20 rounded-lg" />
                                 <Skeleton className="h-3 w-16 mt-2" />
                             </div>
                         </div>
@@ -72,13 +72,13 @@ export function DashboardSkeleton() {
                                 <Skeleton className="h-6 w-40" />
                                 <Skeleton className="h-4 w-60" />
                             </div>
-                            <Skeleton className="h-8 w-24 rounded-test-md" />
+                            <Skeleton className="h-8 w-24 rounded-md" />
                         </div>
                         <Card className="border-none shadow-sm overflow-hidden">
                             <div className="h-[350px] w-full p-4 space-y-4">
                                 {[...Array(6)].map((_, j) => (
                                     <div key={j} className="flex gap-4 items-center">
-                                        <Skeleton className="h-10 w-10 rounded-test-lg" />
+                                        <Skeleton className="h-10 w-10 rounded-lg" />
                                         <div className="flex-1 space-y-2">
                                             <Skeleton className="h-4 w-full" />
                                             <Skeleton className="h-3 w-2/3" />

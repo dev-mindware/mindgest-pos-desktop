@@ -18,7 +18,7 @@ export default function ItemsPage() {
   const { items, isLoading } = useGetItems({ limit: 100 });
 
   return (
-    <RouteProtector allowed={["ADMIN", "OWNER", "MANAGER"]}>
+    <RouteProtector allowed={["OWNER", "MANAGER", "CASHIER"]}>
       <PageWrapper subRoute="Itens" routeLabel="Gestão">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">

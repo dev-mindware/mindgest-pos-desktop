@@ -1,6 +1,8 @@
 module.exports = {
   // Specify an alternate main src directory, defaults to 'main'
   mainSrcDir: 'main',
+  // Aguarda até 30s para o Next.js inicializar no port 8888 antes de tentar abrir o Electron
+  startupDelay: 30000,
   // Specify an alternate webpack configuration
   webpack: (config, env) => {
     // Mantém as configurações originais e garante formato de array

@@ -5,7 +5,7 @@ export function IconWarning({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "flex items-center self-center justify-center px-4 w-14 h-14 rounded-test-full bg-red-100 text-red-600 shadow-sm",
+        "flex items-center self-center justify-center px-4 w-14 h-14 rounded-full bg-red-100 text-red-600 shadow-sm",
         className
       )}
     >

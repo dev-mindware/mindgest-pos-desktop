@@ -20,3 +20,4 @@ export * from "./invoice-filters-skeleton";
 export * from "./items-filters-skeleton";
 export * from "./clients-filters-skeleton";
 export * from "./stock-summary-skeleton";
+export * from "./supplier-details-skeleton";

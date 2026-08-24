@@ -7,6 +7,7 @@ import { useInView } from "react-intersection-observer";
 import { EmptyState } from "@/components/common";
 import { cn } from "@/lib";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface NotificationListProps {
   notifications: NotificationType[];
@@ -41,27 +42,32 @@ export function NotificationList({
     (n) => !n.isRead
   );
 
+  const pathname = usePathname();
+  const isPos = pathname?.startsWith("/pos");
+
   return (
     <div className="w-full">
       {isDropdown && (
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h3 className="font-semibold text-foreground">Notificações</h3>
-          <Link href="/notifications" className="text-primary text-sm">
+          <Link href={isPos ? "/pos/notifications" : "/notifications"} className="text-primary text-sm">
             Ver todas
           </Link>
         </div>
       )}
 
-      <ScrollArea className={cn("h-72", className, {
-        "h-max": notifications.length === 0
-      })}>
+      <ScrollArea
+        className={cn(
+          notifications.length === 0 ? "h-max" : className || "h-72",
+        )}
+      >
         {notifications.length === 0 ? (
           <div className="p-4">
             <EmptyState
               icon="BellOff"
               title="Sem notificações"
               className="border-none"
-              description="Você não possui novas notificações no momento."
+              description="Não existem novas notificações neste momento."
             />
           </div>
         ) : (
@@ -80,7 +86,7 @@ export function NotificationList({
                 {isFetchingNextPage ? (
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 ) : (
-                  <span className="text-xs text-muted-foreground">Carregando mais...</span>
+                  <span className="text-xs text-muted-foreground">A carregar mais...</span>
                 )}
               </div>
             )}

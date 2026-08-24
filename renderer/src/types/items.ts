@@ -10,11 +10,17 @@ export enum Status {
 export type ItemsFilters = {
   sortBy: string | null;
   categoryId: string | null;
+  supplierId: string | null;
   status: ItemStatus | null;
   sortOrder: string | null;
   search?: string | null;
   minPrice: string | null;
   maxPrice: string | null;
+  minStock: string | null;
+  maxStock: string | null;
+  createdAfter?: string | null;
+  createdBefore?: string | null;
+  type?: ItemType | null;
 };
 
 export type ItemData = {
@@ -43,8 +49,9 @@ export type ItemData = {
   companyId: string;
   storeId: string;
   categoryId: string;
-  taxId?: string | null;
-  exemptionCode?: string;
+  taxId: string;
+  supplierName: string | null;
+  supplierId?: string;
 };
 
 export type CreateItemData = {
@@ -67,8 +74,7 @@ export type CreateItemData = {
   hasExpiry?: boolean;
   expiryDate?: string;
   daysToExpiry?: string;
-  taxId?: string | null;
-  exemptionCode?: string;
+  taxId: string;
 };
 
 import { Tax } from "./tax";
@@ -79,7 +85,7 @@ export type ItemResponse = ItemData & {
   status: ItemStatus;
   createdAt: string;
   updatedAt: string;
-  tax?: Tax | null;
+  tax: Tax;
 };
 
 export type ViewMode = "card" | "table";

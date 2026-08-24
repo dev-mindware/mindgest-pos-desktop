@@ -44,26 +44,46 @@ export const ItemSchema = z.object({
     .nullable(),
 
   isFromAPI: z.boolean().optional(),
-  taxId: z.string().trim().optional(),
-  exemptionCode: z.string().trim().optional(),
+  taxId: z.string().trim().optional().or(z.literal("")),
   apiId: z.string().trim().optional(),
+}).superRefine((data, ctx) => {
+  if (!data.isFromAPI && !data.apiId && !data.taxId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["taxId"],
+      message: "Seleccione um imposto",
+    });
+  }
 });
 
 export const taxNumberSchema = z
   .string()
   .trim()
-  .nonempty("Campo obrigatorio")
+  .toUpperCase()
+  .nonempty("Campo obrigatório")
   .refine(
     (value) => /^\d{9}[A-Z]{2}\d{3}$/.test(value) || /^\d{10}$/.test(value),
-    "NIF inválido — use formato de pessoa singular ou coletiva",
+    "NIF inválido. Introduza o NIF de uma pessoa singular ou colectiva.",
   );
 
+export const optionalTaxNumberSchema = z.union([
+  taxNumberSchema,
+  z.literal(""),
+]).optional();
+
 export const phoneNumberSchema = z
-  .string()
+  .string({ invalid_type_error: "Insira um número de telefone válido" })
   .trim()
-  .max(9, "O número deve ter 9 dígitos")
   .refine(
-    (value: string) => /^(92|99|91|95|93|94|97)\d{7}$/.test(value ?? ""),
+    (value) => !value || /^\d*$/.test(value),
+    "O número de telefone deve conter apenas dígitos",
+  )
+  .refine(
+    (value) => !value || value.length === 9,
+    "O número deve ter 9 dígitos",
+  )
+  .refine(
+    (value) => !value || /^(92|99|91|95|93|94|97)\d{7}$/.test(value),
     "Insira número de telemovél válido",
   );
 
@@ -71,11 +91,7 @@ export const passwordSchema = z
   .string()
   .trim()
   .nonempty("Campo obrigatório")
-  .min(8, "A senha deve ter no mínimo 8 caracteres")
-  .regex(/[A-Z]/, "Deve conter pelo menos uma letra maiúscula (A-Z)")
-  .regex(/[a-z]/, "Deve conter pelo menos uma letra minúscula (a-z)")
-  .regex(/[0-9]/, "Deve conter pelo menos um número (0-9)")
-  .regex(/[^a-zA-Z0-9]/, "Deve conter pelo menos um caractere especial");
+  .min(8, "A palavra-passe deve ter, no mínimo, 8 caracteres");
 
 export const ibanSchema = z
   .string()

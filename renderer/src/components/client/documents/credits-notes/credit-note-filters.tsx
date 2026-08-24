@@ -5,9 +5,8 @@ import { Icon, SearchHandlerWrapper } from "@/components/common";
 import { FilterPopover } from "@/components/shared";
 import { useURLSearchParams } from "@/hooks/common";
 import { useCreditNotesFilters } from "@/hooks/credit-notes";
-import { cn } from "@/lib";
 
-export function CreditNotesFiltersTSX({ hasData }: { hasData: boolean }) {
+export function CreditNotesFiltersTSX() {
   const { filters, setFilters, clearAllFilters } = useCreditNotesFilters();
   const { search, setSearch } = useURLSearchParams("search-credit-note");
 
@@ -18,10 +17,10 @@ export function CreditNotesFiltersTSX({ hasData }: { hasData: boolean }) {
     !!filters.creditNoteNumber ||
     !!filters.endDate ||
     !!filters.startDate;
-    search.length > 0
+  search.length > 0
 
   return (
-    <div className={cn("w-full flex flex-col gap-4 pointer-events-none", !hasData && "cursor-not-allowed")}>
+    <div className="w-full flex flex-col gap-4">
       <SearchHandlerWrapper
         search={search}
         setSearch={setSearch}
@@ -38,11 +37,13 @@ export function CreditNotesFiltersTSX({ hasData }: { hasData: boolean }) {
           value={filters.startDate ? new Date(filters.startDate) : undefined}
           onChange={(date) => setFilters({ startDate: date?.toISOString() })}
           placeholder="Data de fim"
+          className="w-full sm:w-max"
         />
         <DatePicker
           value={filters.endDate ? new Date(filters.endDate) : undefined}
           onChange={(date) => setFilters({ endDate: date?.toISOString() })}
           placeholder="Data de inicio"
+          className="w-full sm:w-max"
         />
 
         <FilterPopover
@@ -50,9 +51,10 @@ export function CreditNotesFiltersTSX({ hasData }: { hasData: boolean }) {
           label="Motivo"
           value={filters.reason}
           options={[
-            { label: "Anulação", value: "ANNULATION" },
-            { label: "Correção", value: "CORRECTION" },
+            { label: "Rectificação", value: "CORRECTION" },
+            { label: "Devolução", value: "RETURN" },
             { label: "Desconto", value: "DISCOUNT" },
+            { label: "Anulação", value: "ANNULMENT" },
           ]}
           onChange={(reason) => setFilters({ reason })}
         />

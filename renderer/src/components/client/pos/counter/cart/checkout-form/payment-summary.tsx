@@ -19,7 +19,7 @@ export function PaymentSummary({
     paymentMethod
 }: PaymentSummaryProps) {
     return (
-        <>
+        <div data-tour="pos-payment-summary">
             <h3 className="font-bold mb-3">Resumo de Pagamento</h3>
 
             <div className="space-y-2 mb-4">
@@ -30,7 +30,7 @@ export function PaymentSummary({
                     </span>
                 </div>
 
-                {taxAmount >= 0 && (
+                {taxAmount > 0 && (
                     <div className="flex justify-between text-sm text-muted-foreground">
                         <span>Impostos</span>
                         <span className="font-medium text-foreground">
@@ -60,6 +60,6 @@ export function PaymentSummary({
                 <span>Total</span>
                 <span>{formatCurrency(total)}</span>
             </div>
-        </>
+        </div>
     );
 }

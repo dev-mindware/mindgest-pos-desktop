@@ -3,15 +3,16 @@ import { ErrorMessage } from "@/utils/messages";
 import { useMemo, useCallback, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Input, RHFSelect, Textarea } from "@/components";
+import { Button, Input, NifVerificationField, RHFSelect, Textarea } from "@/components";
 import { ProformaFormData, ProformaSchema } from "@/schemas";
-import { useCreateProforma, useEditProforma, useInvoiceTotals } from "@/hooks";
+import { useCreateProforma, useEditProforma, useInvoiceTotals, useNifFormVerification } from "@/hooks";
 import { useClientSelection } from "@/hooks/invoice/use-invoice-client";
 import { AsyncCreatableSelectField } from "@/components/common/input-fetch/async-select";
 import { currentStoreStore, useAuthStore, useModal } from "@/stores";
 import { InvoiceItems } from "../document-forms/items";
 
 import { paymentMethods } from "@/constants";
+import { isSelectableClient } from "@/utils";
 type Props = {
   action?: "create" | "edit";
   initialData?: any;
@@ -38,6 +39,19 @@ export function ProformaForm({
 
   const defaultValues = useMemo(() => {
     if (isEdit && initialData) {
+      const subtotal = Number(initialData.subtotal || 0) || initialData.items?.reduce((acc: number, item: any) => {
+        const price = Number(item.price || item.unitPrice || 0);
+        const qty = Number(item.quantity || 1);
+        return acc + price * qty;
+      }, 0) || 0;
+
+      const discountAmount = Number(initialData.discountAmount || 0);
+      const discountPercent = subtotal > 0 ? Math.round((discountAmount / subtotal) * 100 * 100) / 100 : 0;
+
+      const taxableBase = subtotal - discountAmount;
+      const retentionAmount = Number(initialData.retentionAmount || 0);
+      const retentionPercent = taxableBase > 0 ? Math.round((retentionAmount / taxableBase) * 100 * 10) / 10 : 0;
+
       return {
         issueDate:
           initialData.issueDate || new Date().toISOString().split("T")[0],
@@ -53,15 +67,18 @@ export function ProformaForm({
         },
         items:
           initialData.items?.map((item: any) => ({
-            apiId: item.item?.id || item.id,
+            apiId: item.item?.id || item.itemsId || item.id,
             description: item.item?.name || item.description || item.name,
             unitPrice: Number(item.price || item.unitPrice || 0),
             quantity: Number(item.quantity || 1),
             type: item.item?.type || item.type || "PRODUCT",
+            tax: Number(item.tax || item.taxRate || item.item?.tax?.rate || 0),
+            taxId: item.taxId || item.item?.tax?.id || item.item?.taxId || item.tax?.id || "",
             isFromAPI: true,
           })) || [],
-        globalRetention: Number(initialData.retentionAmount || 0),
-        globalDiscount: Number(initialData.discountAmount || 0),
+        globalRetention: retentionPercent,
+        globalDiscount: discountPercent,
+        currencyCode: (initialData.currencyCode as any) || "AOA",
         storeId: initialData.storeId || "",
       };
     }
@@ -79,6 +96,7 @@ export function ProformaForm({
       globalRetention: 0,
       globalDiscount: 0,
       notes: "",
+      currencyCode: "AOA" as const,
       paymentMethod: "CASH",
       storeId: "",
     };
@@ -86,7 +104,7 @@ export function ProformaForm({
 
   const form = useForm<ProformaFormData>({
     resolver: zodResolver(ProformaSchema),
-    mode: "onSubmit",
+    mode: "onChange",
     defaultValues,
   });
 
@@ -98,12 +116,22 @@ export function ProformaForm({
     formState: { errors, isSubmitting },
     reset,
     setValue,
+    setError,
+    clearErrors,
   } = form;
 
   const { handleClientChange, selectedClient, setSelectedClient } =
     useClientSelection(setValue);
   const { openModal } = useModal();
   const { currentStore } = currentStoreStore();
+  const clientTaxNumber = watch("client.taxNumber") || "";
+  const { handleStatusChange, handleVerified } = useNifFormVerification({
+    setValue,
+    setError,
+    clearErrors,
+    taxNumberField: "client.taxNumber",
+    nameField: "client.name",
+  });
 
   useEffect(() => {
     if (isEdit && initialData) {
@@ -191,6 +219,8 @@ export function ProformaForm({
             return {
               id: item.apiId,
               quantity: item.quantity,
+              price: item.unitPrice,
+              ...(item.taxId ? { taxId: item.taxId } : {}),
             };
           }
           return {
@@ -198,7 +228,7 @@ export function ProformaForm({
             price: item.unitPrice,
             quantity: item.quantity,
             type: item.type,
-            taxId: item.taxId,
+            ...(item.taxId ? { taxId: item.taxId } : {}),
           };
         });
 
@@ -215,9 +245,11 @@ export function ProformaForm({
           notes: data.notes || undefined,
           proformaExpiresAt: data.proformaExpiresAt,
           paymentMethod: data.paymentMethod,
-          ...(user?.role === "OWNER" &&
-            !isEdit &&
-            currentStore?.id && { storeId: currentStore?.id }),
+          ...(!isEdit ? {
+            currencyCode: data.currencyCode,
+            ...(user?.role === "OWNER" &&
+              currentStore?.id && { storeId: currentStore?.id }),
+          } : {}),
         };
 
 
@@ -271,7 +303,7 @@ export function ProformaForm({
   return (
     <form
       onSubmit={handleSubmit(onSubmit, (errors) => console.log("Erro de Validação na Proforma:", errors))}
-      className="space-y-8 p-8 mt-4 border rounded-test-lg"
+      className="space-y-8 p-8 mt-4 border rounded-lg"
     >
       <div className="grid gap-6 md:grid-cols-3">
         <Input
@@ -296,26 +328,39 @@ export function ProformaForm({
           "grid gap-6 md:grid-cols-2": !isEdit,
         })}
       > */}
-        <AsyncCreatableSelectField
-          endpoint="/clients"
-          label="Cliente"
-          placeholder="Digite o nome do cliente..."
-          value={selectedClient}
-          onChange={handleClientChange}
-          displayFields={["name", "email"]}
-          minChars={2}
-          formatCreateLabel={(inputValue: string) => `➕ Criar "${inputValue}"`}
-          error={errors.client?.name?.message}
-        />
+        <div data-tour={isEdit ? "proforma-edit-client" : undefined}>
+          <AsyncCreatableSelectField
+            endpoint="/clients"
+            optionFilter={isSelectableClient}
+            label="Cliente"
+            placeholder="Digite o nome do cliente..."
+            value={selectedClient}
+            onChange={handleClientChange}
+            displayFields={["name", "email"]}
+            minChars={2}
+            formatCreateLabel={(inputValue: string) => `➕ Criar "${inputValue}"`}
+            error={errors.client?.name?.message}
+          />
+        </div>
         <input type="hidden" {...register("clientId")} />
         <input type="hidden" {...register("client.name")} />
       </div>
 
       {clientState.hasClient && (
         <div className="grid gap-6 md:grid-cols-3">
-          <Input
+          <NifVerificationField
             label="NIF"
-            {...register("client.taxNumber")}
+            value={clientTaxNumber}
+            onChange={(value) =>
+              setValue("client.taxNumber", value, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              })
+            }
+            onVerified={handleVerified}
+            onStatusChange={handleStatusChange}
+            verificationEnabled={clientState.isNewClient}
             error={errors.client?.taxNumber?.message}
             disabled={!clientState.isNewClient}
             placeholder="NIF"
@@ -337,26 +382,18 @@ export function ProformaForm({
         </div>
       )}
 
-      <InvoiceItems
-        totals={totals}
-        fieldArray={fieldArray}
-        globalRetention={globalRetention ?? 0}
-        setGlobalRetention={setGlobalRetention}
-        globalDiscount={globalDiscount ?? 0}
-        setGlobalDiscount={setGlobalDiscount}
-      />
-
-
-      <div className="space-y-2">
-        <RHFSelect
-          label="Método de pagamento"
-          name="paymentMethod"
-          control={control}
-          options={paymentMethods}
+      <div data-tour={isEdit ? "proforma-edit-items" : undefined}>
+        <InvoiceItems
+          totals={totals}
+          fieldArray={fieldArray}
+          globalRetention={globalRetention ?? 0}
+          setGlobalRetention={setGlobalRetention}
+          globalDiscount={globalDiscount ?? 0}
+          setGlobalDiscount={setGlobalDiscount}
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2" data-tour={isEdit ? "proforma-edit-notes" : undefined}>
         <Textarea
           {...register("notes")}
           placeholder="Adicione observações sobre esta proforma (opcional)"
@@ -389,17 +426,19 @@ export function ProformaForm({
           </Button>
         )}
 
-        <Button
-          type="submit"
-          disabled={isSubmitting || isLoading}
-          className="min-w-[150px]"
-        >
-          {isLoading || isSubmitting
-            ? "Processando..."
-            : isEdit
-              ? "Guardar Alterações"
-              : "Criar Proforma"}
-        </Button>
+        <span data-tour={isEdit ? "proforma-edit-submit" : undefined}>
+          <Button
+            type="submit"
+            disabled={isSubmitting || isLoading}
+            className="min-w-[150px]"
+          >
+            {isLoading || isSubmitting
+              ? "A processar..."
+              : isEdit
+                ? "Guardar alterações"
+                : "Criar Proforma"}
+          </Button>
+        </span>
       </div>
     </form>
   );

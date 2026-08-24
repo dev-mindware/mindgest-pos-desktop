@@ -34,24 +34,25 @@ export function GenerateReceiptModal() {
     defaultValues: {
       issueDate: new Date().toISOString().split("T")[0],
       paymentMethod: "CASH",
+      total: String(currentInvoice?.total || "0"),
     },
   });
 
   useEffect(() => {
     if (!currentInvoice) return;
 
-    setValue("originalInvoiceId", currentInvoice.id, { shouldValidate: true });
-    setValue("discountAmount", currentInvoice.discountAmount ?? "0");
-    setValue("taxAmount", currentInvoice.taxAmount ?? "0");
-    setValue("retentionAmount", currentInvoice.receivedValue ?? "0");
-    setValue("total", currentInvoice.total ?? "0");
+    setValue("originalInvoiceId", String(currentInvoice.id), { shouldValidate: true });
+    setValue("discountAmount", String(currentInvoice.discountAmount ?? "0"));
+    setValue("taxAmount", String(currentInvoice.taxAmount ?? "0"));
+    setValue("retentionAmount", String(currentInvoice.receivedValue ?? "0"));
+    setValue("total", String(currentInvoice.total ?? "0"));
   }, [currentInvoice, setValue]);
 
 
   async function onSubmit(data: ReceiptFormData) {
     try {
       if (!currentInvoice) {
-        ErrorMessage("Factura não selecionada");
+        ErrorMessage("Nenhuma factura seleccionada.");
         return;
       }
 
@@ -105,22 +106,11 @@ export function GenerateReceiptModal() {
             readOnly
             label="Total"
             startIcon="DollarSign"
-            {...register("total")}
+            value={formatCurrency(currentInvoice?.total || 0)}
             error={errors.total?.message}
-            value={formatCurrency(parseFloat(currentInvoice?.total as string))}
           />
+          <input type="hidden" {...register("total")} />
         </div>
-
-        <RHFSelect
-          name="paymentMethod"
-          label="Método de Pagamento"
-          options={[
-            { label: "Dinheiro", value: "CASH" },
-            { label: "Cartão", value: "CARD" },
-            { label: "Transferência", value: "TRANSFER" },
-          ]}
-          control={control}
-        />
 
         <Textarea
           label="Observações (Opcional)"

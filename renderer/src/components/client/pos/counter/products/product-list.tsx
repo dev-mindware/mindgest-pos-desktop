@@ -4,6 +4,7 @@ import { Product } from "@/types";
 import { ProductCard } from "./product-card";
 import { EmptyState } from "@/components/common/empty-state";
 import { useModal } from "@/stores";
+import { currentProductStore } from "@/stores";
 
 interface ProductSectionProps {
     products: Product[];
@@ -21,6 +22,7 @@ export function ProductList({
     onUpdateQuantity,
 }: ProductSectionProps) {
     const { open } = useModal();
+    const { currentProduct } = currentProductStore();
 
     if (products.length === 0) {
         return (
@@ -34,7 +36,10 @@ export function ProductList({
 
     return (
         <>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 sm:gap-6">
+            <div
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 min-[1900px]:grid-cols-5 gap-3.5 sm:gap-4.5"
+                data-tour="pos-products"
+            >
                 {products.map((product) => (
                     <ProductCard
                         key={product.id}

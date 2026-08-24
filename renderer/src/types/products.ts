@@ -19,7 +19,7 @@ export interface Product {
     max: number;
   };
 
-  // Estoque
+  // Stock
   reserved: number;
   minstock?: number;
   location?: string;

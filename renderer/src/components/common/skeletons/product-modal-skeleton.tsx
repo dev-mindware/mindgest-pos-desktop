@@ -3,21 +3,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function ProductModalSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-flow-col sm:auto-cols-fr">
-      {/* Barcode Section Skeleton */}
-      <div className="space-y-6">
-        <div className="rounded-test-lg bg-sidebar p-6">
-          <Skeleton className="h-6 w-32 mb-4" />
-          <div className="flex justify-center mb-4">
-            <div className="flex space-x-1">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="w-4 h-16 bg-muted-foreground/20" />
-              ))}
-            </div>
-          </div>
-          <Skeleton className="h-4 w-32 mb-2" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      </div>
 
       <div className="">
         <div className="space-y-4 sm:w-[35rem]">

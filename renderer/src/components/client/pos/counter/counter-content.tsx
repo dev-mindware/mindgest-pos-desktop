@@ -3,160 +3,80 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { CategorySelector, ProductList } from "./products";
 import { CartList } from "./cart";
-import { BarcodeProductScanner } from "./modals";
-import { currentStoreStore } from "@/stores";
+import {
+  BarcodeProductScanner,
+} from "./modals";
+import { ShortcutsHelpModal } from "./modals/shortcuts-help-modal";
+import { currentStoreStore, useAuthStore, useModal } from "@/stores";
 import { useGetCategories, useGetItems, useGetCurrentSession } from "@/hooks";
 import { useQueryState } from "nuqs";
 import {
   PosCategorySkeleton,
   PosProductSectionSkeleton,
   PosCartSkeleton,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-  Button,
-  Icon,
+  Tabs, TabsContent, TabsList, TabsTrigger,
+  ScrollArea,
+  Button
 } from "@/components";
-import {
-  useCounterState,
-  useRecommendations,
-  useMindPricingConfig,
-} from "@/hooks";
-import { Sparkles } from "lucide-react";
-import { CartType, Product } from "@/types";
+import { Product, CartType, CartItem as TypeCartItem } from "@/types";
+import { useCounterState, useIsMobile } from "@/hooks";
+import { useGetProductCountsByCategory } from "@/hooks/stock/use-items";
+import { useCounterHotkeys } from "@/hooks/pos/use-counter-hotkeys";
+import { SucessMessage, ErrorMessage, WarningMessage } from "@/utils/messages";
+import { Keyboard, KeyRound, Tv } from "lucide-react";
+import { MobilePosLayout } from "../mobile";
+import { ManagerAuthModal, MODAL_MANAGER_AUTH_ID } from "../manager-auth-modal";
 
 export function CounterContent() {
-  const [search, setSearch] = useQueryState("search", { defaultValue: "" });
-  const [debouncedSearch, setDebouncedSearch] = useState<string>(search || "");
+  const [search] = useQueryState("search", { defaultValue: "" });
   const { categories, isLoading: isLoadingCategories } = useGetCategories();
-  const [activeCart, setActiveCart] = useState<CartType>("invoice");
+  const {
+    data: productCountsByCategory = {},
+    isLoading: isLoadingProductCounts,
+  } = useGetProductCountsByCategory();
 
-  // Resizable cart width state
-  const [cartWidth, setCartWidth] = useState<number>(400);
-  const [isResizing, setIsResizing] = useState<boolean>(false);
+  const availableCategories = useMemo(
+    () =>
+      categories
+        .map((category) => ({
+          ...category,
+          itemsCount: productCountsByCategory[category.id] ?? 0,
+        }))
+        .filter((category) => category.itemsCount > 0)
+        .sort((a, b) => b.itemsCount - a.itemsCount),
+    [categories, productCountsByCategory],
+  );
 
-  const startResizing = useCallback((mouseDownEvent: React.MouseEvent) => {
-    mouseDownEvent.preventDefault();
-    setIsResizing(true);
-  }, []);
-
-  const stopResizing = useCallback(() => {
-    setIsResizing(false);
-  }, []);
-
-  const resize = useCallback((mouseMoveEvent: MouseEvent) => {
-    if (isResizing) {
-      const newWidth = window.innerWidth - mouseMoveEvent.clientX;
-      if (newWidth >= 320 && newWidth <= 600) {
-        setCartWidth(newWidth);
-      }
-    }
-  }, [isResizing]);
-
-  useEffect(() => {
-    if (isResizing) {
-      window.addEventListener("mousemove", resize);
-      window.addEventListener("mouseup", stopResizing);
-    } else {
-      window.removeEventListener("mousemove", resize);
-      window.removeEventListener("mouseup", stopResizing);
-    }
-    return () => {
-      window.removeEventListener("mousemove", resize);
-      window.removeEventListener("mouseup", stopResizing);
-    };
-  }, [isResizing, resize, stopResizing]);
-  const { currentStore } = currentStoreStore();
-  const { data: currentSession } = useGetCurrentSession(currentStore?.id);
-
-  // Default to the first category if available
   const [selectedCategory, setSelectedCategory] = useState<string>("");
 
   useEffect(() => {
-    if (categories.length > 0 && !selectedCategory) {
-      setSelectedCategory(categories[0].id);
+    if (availableCategories.length === 0) {
+      setSelectedCategory("");
+      return;
     }
-  }, [categories, selectedCategory]);
+
+    const selectedCategoryIsAvailable = availableCategories.some(
+      (category) => category.id === selectedCategory,
+    );
+
+    if (!selectedCategoryIsAvailable) {
+      setSelectedCategory(availableCategories[0].id);
+    }
+  }, [availableCategories, selectedCategory]);
 
   const { items: apiProducts, isLoading: isLoadingProducts } = useGetItems({
-    search: debouncedSearch || undefined,
+    search: search || undefined,
     categoryId: selectedCategory || undefined,
     type: "PRODUCT",
     limit: 100,
   });
 
-  // Debounce the search query to reduce requests and improve UX
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search || ""), 300);
-    return () => clearTimeout(t);
-  }, [search]);
+  const { currentStore } = currentStoreStore();
+  const { data: currentSession } = useGetCurrentSession(currentStore?.id);
 
-  // Client-side refined filtering + relevance scoring to improve precision
-  const filteredProducts = useMemo(() => {
-    const s = (debouncedSearch || "").trim();
-    if (!s) return (apiProducts || []) as any[];
+  const [activeCart, setActiveCart] = useState<CartType>("invoice");
+  const { openModal } = useModal();
 
-    const normalize = (str: string) =>
-      str
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
-
-    const query = normalize(s);
-    const tokens = query.split(/\s+/).filter(Boolean);
-    const isNumeric = /^\d+$/.test(query.replace(/\s+/g, ""));
-
-    return (apiProducts || [])
-      .map((p: any) => {
-        const name = normalize(p.name || "");
-        const desc = normalize(p.description || "");
-        const sku = String(p.sku || "").toLowerCase();
-        const barcode = String(p.barcode || "").toLowerCase();
-
-        let score = 0;
-
-        // Numeric searches prefer barcode/sku exact or contains
-        if (isNumeric) {
-          if (barcode === query) score += 200;
-          else if (sku === query) score += 190;
-          else if (barcode.includes(query)) score += 120;
-          else if (sku.includes(query)) score += 110;
-        }
-
-        // Exact name
-        if (name === query) score += 150;
-        // Starts with
-        if (name.startsWith(query)) score += 120;
-        // All tokens included
-        if (tokens.every((t) => name.includes(t))) score += 80;
-        // Partial matches
-        if (name.includes(query)) score += 60;
-        if (desc.includes(query)) score += 30;
-
-        // SKU/barcode non-numeric fuzzy
-        if (!isNumeric) {
-          if (sku && sku.includes(query)) score += 40;
-          if (barcode && barcode.includes(query)) score += 50;
-        }
-
-        // Boost items with stock quantity
-        const qty = Number(p.quantity || p.reserved || 0);
-        if (qty > 0) score += 5;
-
-        return { item: p, score };
-      })
-      .filter((x: any) => x.score > 0)
-      .sort((a: any, b: any) => b.score - a.score)
-      .map((x: any) => x.item);
-  }, [apiProducts, debouncedSearch]);
-
-  // Use custom hook for cart state management
   const {
     scannedProduct,
     onConfirmScan,
@@ -166,245 +86,301 @@ export function CounterContent() {
     handleUpdateQuantity,
     handleClearCart,
     getCartItemsArray,
+    findProductByBarcode,
+    handleManualScan,
   } = useCounterState({ apiProducts, activeCart });
+
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const { user } = useAuthStore();
+
+  const executeOpenDrawer = useCallback(async (reason: string) => {
+    try {
+      if (typeof window !== "undefined" && window.ipc?.printer?.openCashDrawer) {
+        const res = await window.ipc.printer.openCashDrawer({
+          options: { transport: "spooler" },
+          auditEntry: {
+            sessionId: currentSession?.id,
+            userId: user?.id,
+            storeId: currentStore?.id,
+            type: "MANUAL",
+            reason: `Abertura manual (${reason})`,
+          },
+        });
+        if (res?.success) {
+          SucessMessage("Gaveta de dinheiro acionada!");
+        } else {
+          ErrorMessage(res?.message || "Não foi possível abrir a gaveta.");
+        }
+      }
+    } catch (err: any) {
+      ErrorMessage("Erro ao comunicar com a impressora/gaveta.");
+    }
+  }, [currentSession?.id, user?.id, currentStore?.id]);
+
+  const handleOpenDrawer = useCallback(async () => {
+    const isManagerOrOwner =
+      user?.role === "OWNER" ||
+      user?.role === "MANAGER" ||
+      user?.role === "ADMIN";
+
+    if (isManagerOrOwner) {
+      await executeOpenDrawer(`Autorizado por ${user?.role}`);
+    } else {
+      openModal(MODAL_MANAGER_AUTH_ID);
+    }
+  }, [user?.role, executeOpenDrawer, openModal]);
+
+  const activeCartItems = useMemo(() => getCartItemsArray(activeCart), [activeCart, getCartItemsArray]);
+
+  const handleHotkeysDelete = useCallback(() => {
+    if (activeCartItems.length > 0) {
+      const lastItem = activeCartItems[activeCartItems.length - 1];
+      handleRemoveFromCart(lastItem.id);
+    }
+  }, [activeCartItems, handleRemoveFromCart]);
+
+  const handleHotkeysInc = useCallback(() => {
+    if (activeCartItems.length > 0) {
+      const lastItem = activeCartItems[activeCartItems.length - 1];
+      handleUpdateQuantity(lastItem.id, lastItem.qty + 1);
+    }
+  }, [activeCartItems, handleUpdateQuantity]);
+
+  const handleHotkeysDec = useCallback(() => {
+    if (activeCartItems.length > 0) {
+      const lastItem = activeCartItems[activeCartItems.length - 1];
+      if (lastItem.qty > 1) {
+        handleUpdateQuantity(lastItem.id, lastItem.qty - 1);
+      } else {
+        handleRemoveFromCart(lastItem.id);
+      }
+    }
+  }, [activeCartItems, handleUpdateQuantity, handleRemoveFromCart]);
+
+  const handleFocusSearch = useCallback(() => {
+    const searchInput = document.querySelector('input[placeholder*="buscar"], input[placeholder*="Buscar"], input[type="search"]') as HTMLInputElement;
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.select();
+    }
+  }, []);
+
+  // Sincronização em tempo real com o Ecrã de Cliente (Debounce 100ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (typeof window !== "undefined" && window.ipc?.customerDisplay?.update) {
+        if (activeCartItems.length === 0) {
+          void window.ipc.customerDisplay.clear(currentStore?.name);
+        } else {
+          const subtotal = activeCartItems.reduce((acc, item) => acc + (item.price || 0) * (item.qty || 1), 0);
+          void window.ipc.customerDisplay.update({
+            status: "scanning",
+            items: activeCartItems.map((item) => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              qty: item.qty,
+              total: (item.price || 0) * (item.qty || 1),
+              image: item.image,
+            })),
+            subtotal,
+            tax: 0,
+            discount: 0,
+            total: subtotal,
+            storeName: currentStore?.name || "Mindgest POS",
+          });
+        }
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [activeCartItems, currentStore?.name]);
+
+  // Alerta de monitor secundário desconectado
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.ipc?.customerDisplay?.onHardwareChange) {
+      const unsub = window.ipc.customerDisplay.onHardwareChange(({ event }) => {
+        if (event === "removed") {
+          WarningMessage("Monitor secundário de cliente desconectado.");
+        } else {
+          SucessMessage("Novo monitor detectado no sistema!");
+        }
+      });
+      return () => unsub?.();
+    }
+  }, []);
+
+  useCounterHotkeys({
+    onOpenHelp: () => setIsHelpOpen(true),
+    onFocusSearch: handleFocusSearch,
+    onClearCart: () => handleClearCart(activeCart),
+    onDeleteItem: handleHotkeysDelete,
+    onIncreaseQty: handleHotkeysInc,
+    onDecreaseQty: handleHotkeysDec,
+    onEscape: () => setIsHelpOpen(false),
+  });
+
+  const handleToggleCustomerDisplay = useCallback(async () => {
+    if (typeof window !== "undefined" && window.ipc?.customerDisplay?.toggle) {
+      const isOpen = await window.ipc.customerDisplay.toggle();
+      if (isOpen) {
+        SucessMessage("Ecrã de cliente aberto no monitor secundário!");
+      } else {
+        SucessMessage("Ecrã de cliente fechado.");
+      }
+    }
+  }, []);
 
   const handleCategorySelect = useCallback((categoryId: string) => {
     setSelectedCategory(categoryId);
   }, []);
 
-  const currentCategoryName = useMemo(
-    () => categories.find((c) => c.id === selectedCategory)?.name,
-    [categories, selectedCategory],
-  );
+  const currentCategoryName = useMemo(() =>
+    availableCategories.find((c) => c.id === selectedCategory)?.name
+    , [availableCategories, selectedCategory]);
 
-  const products: Product[] = useMemo(
-    () =>
-      (apiProducts as any[]).map((p) => ({
-        id: p.id,
-        name: p.name,
-        price: p.price || 0,
-        image: p.image,
-        category: p.category?.name || "",
-        quantity: p.quantity || p.reserved || 0,
-        reserved: p.reserved || 0,
-        description: p.description,
-        barcode: p.barcode,
-        sku: p.sku,
-        tax:
-          p.tax ||
-          (typeof p.taxPercent === "number" || typeof p.taxPercent === "string"
-            ? { id: "", name: "", rate: Number(p.taxPercent) }
-            : undefined),
-      })),
-    [apiProducts],
-  );
+  const products: Product[] = useMemo(() =>
+    (apiProducts as any[]).map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price || 0,
+      image: p.image,
+      category: p.category?.name || "",
+      quantity: p.quantity || p.reserved || 0,
+      reserved: p.reserved || 0,
+      description: p.description,
+      barcode: p.barcode,
+      sku: p.sku,
+      tax: p.tax,
+    })), [apiProducts]);
 
-  const displayedProducts: Product[] = useMemo(() => {
-    if (filteredProducts && filteredProducts.length > 0) {
-      return filteredProducts.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        price: p.price || 0,
-        image: p.image,
-        category: p.category?.name || "",
-        quantity: p.quantity || p.reserved || 0,
-        reserved: p.reserved || 0,
-        description: p.description,
-        barcode: p.barcode,
-        sku: p.sku,
-        tax:
-          p.tax ||
-          (typeof p.taxPercent === "number" || typeof p.taxPercent === "string"
-            ? { id: "", name: "", rate: Number(p.taxPercent) }
-            : undefined),
-      }));
-    }
+  const cartItemsMap = useMemo(() =>
+    getCartItemsArray(activeCart).reduce((acc, item) => {
+      acc[item.id] = item;
+      return acc;
+    }, {} as Record<string, any>)
+    , [activeCart, getCartItemsArray]);
 
-    return products;
-  }, [filteredProducts, products]);
+  const isMobile = useIsMobile();
 
-  const cartItemsMap = useMemo(
-    () =>
-      getCartItemsArray(activeCart).reduce(
-        (acc, item) => {
-          acc[item.id] = item;
-          return acc;
-        },
-        {} as Record<string, any>,
-      ),
-    [activeCart, getCartItemsArray],
-  );
+  const handleUpdateQtyInvoice = useCallback((item: any, delta: number) =>
+    handleUpdateQuantity(item.id, item.qty + delta)
+    , [handleUpdateQuantity]);
 
-  const handleUpdateQtyInvoice = useCallback(
-    (item: any, delta: number) =>
-      handleUpdateQuantity(item.id, item.qty + delta),
-    [handleUpdateQuantity],
-  );
+  const handleUpdateQtyProforma = useCallback((item: any, delta: number) =>
+    handleUpdateQuantity(item.id, item.qty + delta)
+    , [handleUpdateQuantity]);
 
-  const handleUpdateQtyProforma = useCallback(
-    (item: any, delta: number) =>
-      handleUpdateQuantity(item.id, item.qty + delta),
-    [handleUpdateQuantity],
-  );
+  const handleClearCartInvoice = useCallback(() => handleClearCart("invoice"), [handleClearCart]);
+  const handleClearCartProforma = useCallback(() => handleClearCart("proforma"), [handleClearCart]);
 
-  const handleClearCartInvoice = useCallback(
-    () => handleClearCart("invoice"),
-    [handleClearCart],
-  );
-  const handleClearCartProforma = useCallback(
-    () => handleClearCart("proforma"),
-    [handleClearCart],
-  );
-
-  // Mind AI Recommendations based on active cart
-  const { isRecommendationsEnabled } = useMindPricingConfig();
-  const currentCartArray = getCartItemsArray(activeCart);
-  const { recommendations, loading: loadingRecs } = useRecommendations(
-    isRecommendationsEnabled ? currentCartArray : [],
-  );
-  const recommendedProducts = useMemo(() => {
-    return recommendations
-      .map((id) => products.find((p) => p.id === id))
-      .filter(Boolean) as Product[];
-  }, [recommendations, products]);
+  if (isMobile) {
+    return (
+      <MobilePosLayout
+        products={products}
+        categories={availableCategories}
+        cartItems={getCartItemsArray(activeCart)}
+        onAddToCart={handleAddToCart}
+        onUpdateQty={(item: TypeCartItem, delta: number) => handleUpdateQuantity(item.id, item.qty + delta)}
+        onRemove={handleRemoveFromCart}
+        onProcessTransaction={() => {
+            // Logic to open checkout drawer/modal for mobile
+        }}
+        onScan={handleManualScan}
+        onResolveScan={findProductByBarcode}
+        activeCategory={selectedCategory}
+        onCategoryChange={handleCategorySelect}
+        isLoading={
+          isLoadingCategories || isLoadingProductCounts || isLoadingProducts
+        }
+        cashSessionId={currentSession?.id || ""}
+      />
+    );
+  }
 
   return (
-    <div className="flex w-full h-full overflow-hidden min-h-0 select-none" style={{ cursor: isResizing ? 'col-resize' : 'default' }}>
-      {/* Left Section - Product List and Categories */}
-      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden p-4 gap-4 select-text">
-        <BarcodeProductScanner
-          scannedProduct={scannedProduct}
-          onConfirm={onConfirmScan}
-        />
-        <div className="sticky top-0 z-20 bg-background dark:bg-[#121212]">
-          {isLoadingCategories ? (
-            <PosCategorySkeleton />
-          ) : (
-            <CategorySelector
-              categories={categories}
-              activeCategory={selectedCategory}
-              onSelectCategory={handleCategorySelect}
-            />
-          )}
-        </div>
+    <div className="flex h-full overflow-hidden">
+      <ShortcutsHelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+      <ManagerAuthModal onAuthenticated={() => executeOpenDrawer("Autorizado por Gerente")} />
+      <BarcodeProductScanner
+        scannedProduct={scannedProduct}
+        onConfirm={onConfirmScan}
+      />
+      <div className="flex-1 flex flex-col min-w-0 gap-4 p-4">
+        {isLoadingCategories || isLoadingProductCounts ? (
+          <PosCategorySkeleton />
+        ) : (
+          <CategorySelector
+            categories={availableCategories}
+            activeCategory={selectedCategory}
+            onSelectCategory={handleCategorySelect}
+          />
+        )}
 
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">
             {currentCategoryName || "Todos"}
           </h2>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleCustomerDisplay}
+              className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              title="Abrir/Fechar Ecrã de Cliente no 2º Monitor"
+            >
+              <Tv className="w-3.5 h-3.5 text-indigo-500" />
+              <span className="hidden sm:inline">Ecrã Cliente</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenDrawer}
+              className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              title="Abrir Gaveta de Dinheiro (F9 - Requer Gerente para caixas)"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden sm:inline">Gaveta</span>
+              <kbd className="px-1 text-[10px] font-mono bg-muted border border-border">F9</kbd>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsHelpOpen(true)}
+              className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              title="Mapa de Atalhos (F1)"
+            >
+              <Keyboard className="w-3.5 h-3.5 text-primary" />
+              <span className="hidden sm:inline">Atalhos</span>
+              <kbd className="px-1 text-[10px] font-mono bg-muted border border-border">F1</kbd>
+            </Button>
+          </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide pb-2">
+        <ScrollArea className="flex-1 pb-4">
           {isLoadingProducts ? (
             <PosProductSectionSkeleton />
           ) : (
             <ProductList
-              products={displayedProducts}
+              products={products}
               cartItems={cartItemsMap}
               onAddToCart={handleAddToCart}
               onRemoveFromCart={handleRemoveFromCart}
               onUpdateQuantity={handleUpdateQuantity}
             />
           )}
-        </div>
-      </div>
-
-      {/* Resize Handle */}
-      <div
-        className={`w-1 cursor-col-resize h-full shrink-0 relative z-30 flex items-center justify-center group transition-colors ${
-          isResizing ? "bg-primary/50" : "hover:bg-primary/30"
-        }`}
-        onMouseDown={startResizing}
-      >
-        <div className={`w-[1px] h-full transition-colors ${
-          isResizing ? "bg-primary" : "bg-border dark:bg-white/10 group-hover:bg-primary/50"
-        }`} />
+        </ScrollArea>
       </div>
 
       {/* Right Content - Cart & Payment */}
-      <div 
-        style={{ width: `${cartWidth}px` }} 
-        className="shrink-0 h-full flex flex-col bg-sidebar/30 select-text"
-      >
-        <Tabs
-          value={activeCart}
-          onValueChange={(v) => setActiveCart(v as CartType)}
-          className="flex-1 flex flex-col min-h-0 overflow-hidden"
-        >
-          <div className="flex items-center justify-between p-4 pb-0 gap-2">
-            <TabsList className="grid w-full grid-cols-2 m-0" data-tour="pos-document-tabs">
-              <TabsTrigger value="invoice" className="cursor-pointer">
-                Faturação
-              </TabsTrigger>
-              <TabsTrigger value="proforma" className="cursor-pointer" data-tour="pos-document-tab-proforma">
-                Proforma
-              </TabsTrigger>
-            </TabsList>
+      <div className="w-[320px] sm:w-[350px] md:w-[370px] lg:w-[390px] xl:w-[420px] shrink-0 flex flex-col border-l border-border/50 bg-sidebar/30 h-full overflow-y-auto custom-scrollbar">
+        <Tabs value={activeCart} onValueChange={(v) => setActiveCart(v as CartType)} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-auto grid-cols-2 m-4 mb-2 shrink-0" data-tour="pos-document-tabs">
+            <TabsTrigger value="invoice">Facturação</TabsTrigger>
+            <TabsTrigger value="proforma" data-tour="pos-document-tab-proforma">Proforma</TabsTrigger>
+          </TabsList>
 
-            {/* Mind AI Recommendations Tooltip */}
-            {currentCartArray.length > 0 && (
-              <div className="shrink-0 flex items-center">
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-9 w-9 border-primary/30 text-primary relative"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        {!loadingRecs && recommendedProducts.length > 0 && (
-                          <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                          </span>
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="left"
-                      className="w-[300px] p-4 border bg-background text-foreground shadow-lg"
-                    >
-                      <div className="font-semibold text-sm mb-3 flex items-center gap-2 text-primary">
-                        <Sparkles className="w-4 h-4" /> Mind AI Sugere:
-                      </div>
-                      {loadingRecs ? (
-                        <div className="text-sm text-muted-foreground animate-pulse text-center p-4">
-                          A analisar o cesto...
-                        </div>
-                      ) : recommendedProducts.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-2">
-                          {recommendedProducts.slice(0, 2).map((p) => (
-                            <button
-                              key={p.id}
-                              onClick={() => handleAddToCart(p)}
-                              className="flex flex-col items-center p-2 rounded border hover:bg-muted hover:border-primary transition-colors text-xs text-center wrap-break-word"
-                            >
-                              <span className="font-medium truncate w-full">
-                                {p.name}
-                              </span>
-                              <span className="text-muted-foreground mt-1 text-xs">
-                                +{(p.price || 0).toFixed(2)}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-muted-foreground text-center p-2">
-                          Sem sugestões de momento.
-                        </div>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            )}
-          </div>
-
-          <TabsContent
-            value="invoice"
-            className="flex-1 mt-0 min-h-0 data-[state=active]:block overflow-y-auto"
-          >
+          <TabsContent value="invoice" className="flex-1 mt-0 flex flex-col min-h-0">
             {isLoadingCategories || !currentSession?.id ? (
               <PosCartSkeleton />
             ) : (
@@ -420,10 +396,7 @@ export function CounterContent() {
             )}
           </TabsContent>
 
-          <TabsContent
-            value="proforma"
-            className="flex-1 mt-0 min-h-0 data-[state=active]:block overflow-y-auto"
-          >
+          <TabsContent value="proforma" className="flex-1 mt-0 flex flex-col min-h-0">
             {isLoadingCategories || !currentSession?.id ? (
               <PosCartSkeleton />
             ) : (
@@ -443,4 +416,3 @@ export function CounterContent() {
     </div>
   );
 }
-

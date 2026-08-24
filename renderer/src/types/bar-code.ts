@@ -17,6 +17,12 @@ export type BarCode = {
   company: string;
   store: string;
   category: string;
+  tax?: {
+    id: string;
+    name: string;
+    rate: number;
+    type: string;
+  };
   createdAt: string;
   updatedAt: string;
   hasExpiry: boolean;

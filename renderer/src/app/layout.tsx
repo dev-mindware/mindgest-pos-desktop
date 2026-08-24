@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import { ReactQueryProvider } from "@/lib";
-import { Inter, Outfit, } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import { ThemeProvider } from "@/providers";
 import { CustomToaster } from "@/utils";
 import { AuthProvider, SyncProvider } from "@/contexts";
@@ -57,13 +58,15 @@ export default function RootLayout({
             <ReactQueryProvider>
               <AuthProvider>
                 <SyncProvider>
-                  <NuqsAdapter>
-                    {children}
-                    <AutoUpdateManager />
-                    <CustomToaster />
-                    <NotificationDetail />
-                    <TimeTravelLock />
-                  </NuqsAdapter>
+                  <Suspense fallback={null}>
+                    <NuqsAdapter>
+                      {children}
+                      <AutoUpdateManager />
+                      <CustomToaster />
+                      <NotificationDetail />
+                      <TimeTravelLock />
+                    </NuqsAdapter>
+                  </Suspense>
                 </SyncProvider>
               </AuthProvider>
             </ReactQueryProvider>

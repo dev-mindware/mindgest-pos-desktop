@@ -34,12 +34,12 @@ export function FilterPopover({
       </PopoverTrigger>
       <PopoverContent className="w-56 space-y-2">
         <p className="p-1 text-sm font-medium">
-          Selecionar {label.toLowerCase()}
+          Seleccionar {label.toLowerCase()}
         </p>
         {options.map((opt) => (
           <div
             key={opt.value}
-            className="flex items-center gap-2 p-1 rounded-test hover:bg-muted"
+            className="flex items-center gap-2 p-1 rounded hover:bg-muted"
           >
             <Checkbox
               id={`${label}-${opt.value}`}

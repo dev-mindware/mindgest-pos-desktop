@@ -1,9 +1,8 @@
 import { prisma } from "./prisma";
 import axios from "axios";
 import { InvoiceClient, InvoiceItem, InvoiceReceiptCloudPayload } from "./types";
+import { CLOUD_API_URL } from "./config";
 
-// Configurações da API Cloud (Poderia vir de variáveis de ambiente)
-const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"; // VPS
 const CLOUD_API_KEY = process.env.NEXT_PUBLIC_API_KEY || "MG_REg4eFg5eDJQU0lmNWcKUQU0YN3BDZDNvU2dnSnQ5OXRiL3NtbEhqSzhpdXNDZ2V6T2NwbzlCYnJDRWBTkJna3Foa2lHOXcwQkFRRUZBQVNZkbQo2lmN4eFg_MG";
 
 function getCloudHeaders(token?: string) {
@@ -561,13 +560,17 @@ export const syncService = {
 
           if (!endpoint) continue;
 
-          console.log(`📡 [SyncWorker] A enviar ${doc.entityType} ${doc.entityId} -> ${endpoint}`);
+          console.log(`📡 [SyncWorker] A enviar ${doc.entityType} ${doc.entityId} -> ${endpoint} (Idempotency Key: ${doc.id})`);
           console.log(`📡 [SyncWorker] Payload final para envio (${doc.entityType} ${doc.entityId}):`, JSON.stringify(payload, null, 2));
           const response = await axios({
             method,
             url: `${CLOUD_API_URL}${endpoint}`,
             data: payload,
-            headers: getCloudHeaders(token)
+            headers: {
+              ...getCloudHeaders(token),
+              'x-idempotency-key': doc.id,
+              'X-Idempotency-Key': doc.id,
+            }
           });
 
           const responseData = response.data?.data || response.data;
@@ -630,5 +633,26 @@ export const syncService = {
       console.error("❌ [SyncWorker] Falha crítica no processamento do outbox:", error?.message || error);
       return { processed: 0, error: error?.message || String(error) };
     }
-  }
+  },
+
+  async cleanupOldInvoices(): Promise<void> {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const result = await prisma.syncOutbox.deleteMany({
+        where: {
+          status: "SYNCED",
+          createdAt: {
+            lt: thirtyDaysAgo,
+          },
+        },
+      });
+      if (result.count > 0) {
+        console.log(`🧹 [SyncService] Limpeza de outbox: ${result.count} registos sincronizados antigos removidos.`);
+      }
+    } catch (err) {
+      console.warn("⚠️ [SyncService] Falha na limpeza de outbox antigo:", err);
+    }
+  },
 };

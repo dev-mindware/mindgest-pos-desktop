@@ -9,6 +9,7 @@ import { RouteProtector } from "@/contexts";
 import { StoreProvider } from "@/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { KeyboardGuard } from "@/components/client/pos/common";
+import { NotificationDetail } from "@/components/shared/notifications";
 
 type Props = {
   children: React.ReactNode;
@@ -16,7 +17,7 @@ type Props = {
 
 export default function POSLayout({ children }: Props) {
   return (
-    <RouteProtector allowed={["CASHIER", "ADMIN", "OWNER", "MANAGER"]}>
+    <RouteProtector allowed={["CASHIER", "OWNER", "MANAGER"]}>
       <StoreProvider>
         <PosSessionGuard>
           <SidebarProvider defaultOpen={false}>
@@ -26,6 +27,7 @@ export default function POSLayout({ children }: Props) {
                 <SidebarInset>
                   <BreadcrumbProvider>{children}</BreadcrumbProvider>
                 </SidebarInset>
+                <NotificationDetail />
               </TooltipProvider>
             </KeyboardGuard>
           </SidebarProvider>

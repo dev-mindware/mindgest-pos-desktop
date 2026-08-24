@@ -10,6 +10,8 @@ export function useSuppliersFilters() {
     status: query.get("status") || null,
     sortBy: query.get("sortBy") || null,
     sortOrder: query.get("sortOrder") || null,
+    createdAfter: query.get("createdAfter") || null,
+    createdBefore: query.get("createdBefore") || null,
   };
 
   function setFilters(newFilters: Partial<suppliersFilters>) {
@@ -19,6 +21,8 @@ export function useSuppliersFilters() {
     if (updated.status) searchParams.set("status", updated.status);
     if (updated.sortBy) searchParams.set("sortBy", updated.sortBy);
     if (updated.sortOrder) searchParams.set("sortOrder", updated.sortOrder);
+    if (updated.createdAfter) searchParams.set("createdAfter", updated.createdAfter);
+    if (updated.createdBefore) searchParams.set("createdBefore", updated.createdBefore);
     searchParams.set("page", "1"); // reset page ao trocar filtro
 
     router.push(`?${searchParams.toString()}`);
@@ -32,5 +36,9 @@ export function useSuppliersFilters() {
 
   const page = Number(query.get("page")) || 1;
 
-  return { filters, setFilters, page, setPage };
+  function clearAllFilters() {
+    router.push('?page=1');
+  }
+
+  return { filters, setFilters, page, setPage, clearAllFilters };
 }

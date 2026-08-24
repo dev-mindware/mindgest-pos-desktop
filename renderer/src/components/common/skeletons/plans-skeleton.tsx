@@ -6,7 +6,7 @@ type SkeletonProps = {
 };
 
 function Skeleton({ className = "" }: SkeletonProps) {
-  return <div className={`animate-pulse bg-muted rounded-test ${className}`} />;
+  return <div className={`animate-pulse bg-muted rounded ${className}`} />;
 }
 
 type PlanCardSkeletonProps = {
@@ -43,7 +43,7 @@ function PlanCardSkeleton({
       <CardContent className="space-y-3">
         {features.map((_, index) => (
           <div key={index} className="flex items-center space-x-2">
-            <Skeleton className="h-4 w-4 rounded-test-full" />
+            <Skeleton className="h-4 w-4 rounded-full" />
             <Skeleton className="h-4 flex-1" />
           </div>
         ))}

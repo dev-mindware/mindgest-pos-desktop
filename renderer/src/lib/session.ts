@@ -1,66 +1,69 @@
-import { SignJWT, jwtVerify, JWTPayload } from "jose";
-import { User } from "@/types";
-import { SESSION_COOKIE_KEY } from "@/constants";
+import { Role } from "@/types";
+import {
+  ACCESS_TOKEN_KEY,
+  REFRESH_TOKEN_KEY,
+  ROLE_KEY,
+} from "@/constants/routes";
 
-const secretKey = process.env.SESSION_SECRET || "default_secret";
-export const encodedKey = new TextEncoder().encode(secretKey);
-
-export interface SessionPayload extends JWTPayload {
-  user: User;
+export interface SessionPayload {
   accessToken: string;
   refreshToken: string;
+  role?: Role;
+  user?: any;
 }
 
 export async function createSession(payload: SessionPayload) {
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-  const session = await new SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(expiresAt)
-    .sign(encodedKey);
-
   if (typeof window !== "undefined") {
-    localStorage.setItem(SESSION_COOKIE_KEY, session);
-    localStorage.setItem(
-      `${SESSION_COOKIE_KEY}_expires`,
-      expiresAt.toISOString(),
-    );
-    // For backward compatibility with existing code reading tokens directly
-    localStorage.setItem("session-accessToken", payload.accessToken);
-    localStorage.setItem("session-refreshToken", payload.refreshToken);
+    // Limpar cookies legados duplicados
+    document.cookie = "session-accessToken=; path=/; max-age=0";
+    document.cookie = "session-refreshToken=; path=/; max-age=0";
+    document.cookie = "session-role=; path=/; max-age=0";
+
+    if (payload.accessToken) {
+      localStorage.setItem("access_token", payload.accessToken);
+      localStorage.setItem("session-accessToken", payload.accessToken);
+      document.cookie = `access_token=${payload.accessToken}; path=/; max-age=604800; SameSite=Lax`;
+    }
+    if (payload.refreshToken) {
+      localStorage.setItem("refresh_token", payload.refreshToken);
+      localStorage.setItem("session-refreshToken", payload.refreshToken);
+      document.cookie = `refresh_token=${payload.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
+    }
+    if (payload.role) {
+      localStorage.setItem("user_role", payload.role);
+      localStorage.setItem("session-role", payload.role);
+      document.cookie = `user_role=${payload.role}; path=/; max-age=604800; SameSite=Lax`;
+    }
+    if (payload.user) {
+      localStorage.setItem("user", JSON.stringify(payload.user));
+    }
   }
 }
 
 export async function destroySession() {
   if (typeof window !== "undefined") {
-    localStorage.removeItem(SESSION_COOKIE_KEY);
-    localStorage.removeItem(`${SESSION_COOKIE_KEY}_expires`);
+    localStorage.removeItem("access_token");
     localStorage.removeItem("session-accessToken");
+    localStorage.removeItem("refresh_token");
     localStorage.removeItem("session-refreshToken");
+    localStorage.removeItem("user_role");
+    localStorage.removeItem("session-role");
+    localStorage.removeItem("user");
+
+    document.cookie = "access_token=; path=/; max-age=0";
+    document.cookie = "refresh_token=; path=/; max-age=0";
+    document.cookie = "user_role=; path=/; max-age=0";
+    document.cookie = "session-accessToken=; path=/; max-age=0";
+    document.cookie = "session-refreshToken=; path=/; max-age=0";
+    document.cookie = "session-role=; path=/; max-age=0";
   }
 }
 
-export async function decrypt(session: string): Promise<SessionPayload | null> {
-  try {
-    const { payload } = await jwtVerify(session, encodedKey, {
-      algorithms: ["HS256"],
-    });
-    return payload as SessionPayload;
-  } catch (error: any) {
-    if (error?.code === "ERR_JWT_EXPIRED") {
-      console.warn("Sessão expirada localmente (JWTExpired). Limpando dados de sessão local...");
-      destroySession();
-    } else {
-      console.error("Falha ao decifrar sessão:", error);
-    }
-    return null;
+export async function refreshAccessToken(newAccessToken: string) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
+    localStorage.setItem("session-accessToken", newAccessToken);
+    document.cookie = `${ACCESS_TOKEN_KEY}=${newAccessToken}; path=/; max-age=604800; SameSite=Lax`;
+    document.cookie = "session-accessToken=; path=/; max-age=0";
   }
-}
-
-export async function getSession(): Promise<SessionPayload | null> {
-  if (typeof window === "undefined") return null;
-  const session = localStorage.getItem(SESSION_COOKIE_KEY);
-  if (!session) return null;
-  return decrypt(session);
 }

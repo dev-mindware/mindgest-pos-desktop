@@ -28,7 +28,7 @@ export function useUpdateCashier() {
       data: Partial<CashierData>;
     }) => cashierService.updateCashier(id, data as any),
     onSuccess: () => {
-      SucessMessage("Caixa atualizado com sucesso!");
+      SucessMessage("Caixa actualizado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["cashiers"] });
     },
   });

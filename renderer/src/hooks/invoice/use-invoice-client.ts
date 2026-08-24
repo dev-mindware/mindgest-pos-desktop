@@ -15,9 +15,9 @@ export function useClientSelection(setValue: UseFormSetValue<any>) {
         setValue(
           "client",
           { name: "", taxNumber: "", address: "", phone: "" },
-          { shouldValidate: true, shouldDirty: true },
+          { shouldValidate: false, shouldDirty: true },
         );
-        setValue("clientId", "", { shouldValidate: true, shouldDirty: true });
+        setValue("clientId", "", { shouldValidate: false, shouldDirty: true });
         return;
       }
 
@@ -30,14 +30,13 @@ export function useClientSelection(setValue: UseFormSetValue<any>) {
             address: "",
             phone: "",
           },
-          { shouldValidate: true, shouldDirty: true },
+          { shouldValidate: false, shouldDirty: true },
         );
-        setValue("clientId", "", { shouldValidate: true, shouldDirty: true });
+        setValue("clientId", "", { shouldValidate: false, shouldDirty: true });
       } else if (option.data) {
         setValue(
           "client",
           {
-            id: option.data.id,
             name: option.data.name,
             taxNumber: option.data.taxNumber || "",
             address: option.data.address || "",

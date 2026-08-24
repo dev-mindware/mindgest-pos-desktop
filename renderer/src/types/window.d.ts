@@ -24,6 +24,10 @@ export interface IpcBridge {
     getHardwareId: () => Promise<string>;
     saveOfflineLicense: (licenseJwt: string, storeId: string) => Promise<boolean>;
     checkClock: () => Promise<{ valid: boolean; reason?: string }>;
+    getFiscalStatus: () => Promise<any>;
+    saveSavedCredentials: (credentials: { email: string; password: string }) => Promise<boolean>;
+    getSavedCredentials: () => Promise<{ email: string; password: string } | null>;
+    clearSavedCredentials: () => Promise<boolean>;
   };
   sync: {
     products: (token: string, storeId: string) => Promise<{ success: boolean; count: number }>;
@@ -66,6 +70,71 @@ export interface IpcBridge {
     checkForUpdates: () => Promise<any>;
     downloadUpdate: () => Promise<any>;
     installUpdate: () => Promise<any>;
+  };
+  notification: {
+    show: (params: { title: string; body: string; silent?: boolean }) => Promise<boolean>;
+  };
+  printer: {
+    openCashDrawer: (params?: { options?: any; auditEntry?: any }) => Promise<{ success: boolean; message: string }>;
+    testConnection: (params?: { options?: any }) => Promise<{ success: boolean; message: string }>;
+    getSystemPrinters: () => Promise<Array<{ name: string; isDefault?: boolean; description?: string }>>;
+  };
+  customerDisplay: {
+    toggle: () => Promise<boolean>;
+    open: () => Promise<boolean>;
+    close: () => Promise<boolean>;
+    isOpen: () => Promise<boolean>;
+    requestState: () => Promise<any>;
+    update: (partialState: any) => Promise<boolean>;
+    clear: (storeName?: string) => Promise<boolean>;
+    onUpdate: (callback: (state: any) => void) => () => void;
+    onHardwareChange: (callback: (data: { event: 'added' | 'removed' }) => void) => () => void;
+  };
+  lan: {
+    getLocalIp: () => Promise<string>;
+    getConfig: () => Promise<{
+      enabled: boolean;
+      terminalMode: 'MASTER' | 'SLAVE';
+      masterIp: string | null;
+      lanSecret: string | null;
+      port: number;
+      localIp: string;
+    }>;
+    setConfig: (config: {
+      terminalMode: 'MASTER' | 'SLAVE';
+      masterIp?: string | null;
+      lanSecret?: string | null;
+    }) => Promise<boolean>;
+    rotateSecret: () => Promise<string>;
+    getConnectedTerminals: () => Promise<Array<{
+      id: string;
+      name: string;
+      ip: string;
+      lastSeen: string;
+      status: 'ACTIVE' | 'IDLE' | 'DISCONNECTED';
+      latencyMs?: number;
+      totalSales?: number;
+      appVersion?: string;
+    }>>;
+    revokeTerminal: (params: { terminalId: string }) => Promise<boolean>;
+    testConnection: (params: { targetIp: string; lanSecret?: string }) => Promise<{
+      success: boolean;
+      latencyMs?: number;
+      serverTime?: string;
+      message?: string;
+      connectedCount?: number;
+    }>;
+    sendHeartbeat: (params: { masterIp: string; lanSecret?: string; terminalName?: string }) => Promise<any>;
+    checkSystemCapability: () => Promise<{
+      totalMemoryGB: number;
+      freeMemoryGB: number;
+      cpuCores: number;
+      arch: string;
+      platform: string;
+      isMasterEligible: boolean;
+      isOptimalMaster: boolean;
+      recommendation: string;
+    }>;
   };
 }
 

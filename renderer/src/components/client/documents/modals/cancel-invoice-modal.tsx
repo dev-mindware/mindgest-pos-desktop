@@ -14,9 +14,9 @@ export function CancelInvoiceModal() {
 
   async function handleCancelInvoice(e: FormEvent) {
     e.preventDefault();
-
+    
     if (!currentInvoice?.id) {
-      ErrorMessage("Factura não selecionada");
+      ErrorMessage("Nenhuma factura seleccionada.");
       return;
     }
 
@@ -26,7 +26,7 @@ export function CancelInvoiceModal() {
     } catch (error: any) {
       if (error?.response) {
         ErrorMessage(
-          error?.response?.data?.message || "Erro ao cancelar factura"
+          error?.response?.data?.message || "Não foi possível cancelar a factura."
         );
       } else {
         ErrorMessage("Ocorreu um erro desconhecido");
@@ -44,21 +44,23 @@ export function CancelInvoiceModal() {
     <GlobalModal
       canClose
       id="cancel-invoice"
-      title="Cancelar Factura"
+      title="Cancelar factura"
       className="!max-h-[85vh] !w-max"
     >
       <form onSubmit={handleCancelInvoice} className="space-y-6">
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Tem certeza que deseja cancelar a factura{" "}
+            Tem a certeza de que pretende cancelar a factura{" "}
             <strong>#{currentInvoice?.number}</strong>?
           </p>
 
-          <div className="p-4 border rounded-test-lg bg-muted/50">
+          <div className="p-4 border rounded-lg bg-muted/50">
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Cliente:</span>
-                <span className="font-medium">{currentInvoice?.clientId}</span>
+                <span className="font-medium">
+                  {currentInvoice?.client?.name ?? currentInvoice?.clientId}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Valor:</span>
@@ -78,7 +80,7 @@ export function CancelInvoiceModal() {
             isLoading={isPending}
             className="w-max bg-destructive hover:bg-destructive/90"
           >
-            Cancelar Factura
+            Cancelar factura
           </ButtonSubmit>
         </div>
       </form>

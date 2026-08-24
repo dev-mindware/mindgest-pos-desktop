@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { PlanType } from "@/types/subscription";
+import { PlanType, PLAN_HIERARCHY } from "@/types/subscription";
 import { useAuthStore } from "@/stores/auth/auth-store";
 import { useFeatureGate } from "@/contexts/feature-gate-context";
 import {
@@ -15,12 +15,6 @@ type FeatureGateProps = {
   minPlan: PlanType;
   children: ReactNode;
   fallback?: "hidden" | "disabled";
-};
-
-const PLAN_HIERARCHY: Record<PlanType, number> = {
-  Base: 0,
-  Smart: 1,
-  Pro: 2,
 };
 
 export function FeatureGate({
@@ -49,7 +43,6 @@ export function FeatureGate({
     return null;
   }
 
-  // fallback === 'disabled'
   return (
     <TooltipProvider>
       <Tooltip>
@@ -60,9 +53,8 @@ export function FeatureGate({
               e.stopPropagation();
               openUpgradeModal();
             }}
-            className="cursor-not-allowed opacity-60 inline-flex" // Inline-flex to wrap children without breaking layout much
+            className="cursor-not-allowed opacity-60 inline-flex"
           >
-            {/* We disable pointer events on children to ensure the parent div handles the click */}
             <div className="pointer-events-none">{children}</div>
           </div>
         </TooltipTrigger>

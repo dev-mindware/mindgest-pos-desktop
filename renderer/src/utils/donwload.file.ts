@@ -3,11 +3,12 @@ import type { AxiosResponse } from "axios";
 export function triggerBrowserDownload(
   response: AxiosResponse<Blob>,
   filename: string,
+  mimeType?: string,
 ) {
-  // Ensure we have a Blob with the correct type
-  const blob = new Blob([response.data], {
-    type: "application/pdf",
-  });
+  const responseMimeType = response.headers["content-type"];
+  const blobType =
+    mimeType || responseMimeType || response.data.type || "application/octet-stream";
+  const blob = new Blob([response.data], { type: blobType });
 
   const url = window.URL.createObjectURL(blob);
 
@@ -20,10 +21,11 @@ export function triggerBrowserDownload(
 
   document.body.removeChild(link);
 
-  // Revoke after a short delay to ensure the browser has started the download
+  // Mobile Safari may open blob URLs before resolving the download. Keep it alive
+  // long enough for the browser to hand the file to its viewer/share sheet.
   setTimeout(() => {
     window.URL.revokeObjectURL(url);
-  }, 100);
+  }, 60_000);
 }
 
 export function triggerBrowserPreview(response: AxiosResponse<Blob>) {

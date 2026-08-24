@@ -1,78 +1,89 @@
 "use client";
-import { useEffect, useRef } from "react";
+
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useAuthStore } from "@/stores";
 import { api } from "@/services/api";
 import { User } from "@/types";
-import { getSession } from "@/lib/session";
+import { destroySession } from "@/lib/session";
+
+async function fetchCurrentUser(): Promise<User> {
+  const { data } = await api.get<any>("/auth/profile");
+  const userData = data?.data || data?.user || data;
+  return userData;
+}
 
 interface UseFetchUserOptions {
   enabled?: boolean;
 }
 
 export function useFetchUser({ enabled = true }: UseFetchUserOptions = {}) {
-  const { setUser, user, setIsAuthenticating } = useAuthStore();
-  const hasFetched = useRef(false);
+  const { setUser, setIsAuthenticating } = useAuthStore();
+  const hasToken = typeof window !== "undefined" && Boolean(localStorage.getItem("session-accessToken"));
+
+  const query = useQuery({
+    queryKey: ["user"],
+    queryFn: fetchCurrentUser,
+    enabled: enabled && hasToken,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !hasToken) {
       setIsAuthenticating(false);
       return;
     }
 
-    if (user !== null) {
+    if (query.isSuccess && query.data) {
+      setUser(query.data);
       setIsAuthenticating(false);
-      return;
     }
 
-    if (hasFetched.current) {
-      return;
-    }
-
-    let isMounted = true;
-    hasFetched.current = true;
-    // Ensure we start in a loading state if we are going to fetch
-    setIsAuthenticating(true);
-
-    const fetchUser = async () => {
-      try {
-        const response = await api.get<User>("/auth/profile");
-
-        if (!isMounted) return;
-
-        setUser(response.data);
-      } catch (error: any) {
-        if (!isMounted) return;
-
-        const isNetworkError = !error.response;
-        
-        if (isNetworkError) {
-          console.warn("🌐 [Offline] Erro de rede ao buscar perfil. Tentando recuperar sessão local...");
-          const session = await getSession();
-          
-          if (session?.user) {
-            setUser(session.user);
-            return;
+    if (query.isError) {
+      setIsAuthenticating(false);
+      const isUnauthorized = (query.error as any)?.response?.status === 401;
+      if (isUnauthorized) {
+        (async () => {
+          await destroySession();
+          setUser(null);
+          if (
+            typeof window !== "undefined" &&
+            window.location.pathname !== "/auth/login"
+          ) {
+            window.location.replace("/auth/login");
           }
-        }
-
-        if (error.response?.status !== 401 && !isNetworkError) {
-          console.error("Erro ao buscar usuário:", error);
-        }
-        
-        setUser(null);
-      } finally {
-        if (isMounted) {
-          setIsAuthenticating(false);
-        }
+        })();
       }
-    };
+    }
+  }, [
+    enabled,
+    hasToken,
+    query.isSuccess,
+    query.isError,
+    query.data,
+    query.error,
+    setUser,
+    setIsAuthenticating,
+  ]);
 
-    fetchUser();
+  // Listener para evento de sessão expirada (vindo do interceptor axios)
+  useEffect(() => {
+    function handleSessionExpired() {
+      setUser(null);
+      setIsAuthenticating(false);
+      if (
+        typeof window !== "undefined" &&
+        window.location.pathname !== "/auth/login"
+      ) {
+        window.location.replace("/auth/login");
+      }
+    }
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    window.addEventListener("session:expired", handleSessionExpired);
+    return () =>
+      window.removeEventListener("session:expired", handleSessionExpired);
+  }, [setUser, setIsAuthenticating]);
 
-  return { user };
+  return query;
 }

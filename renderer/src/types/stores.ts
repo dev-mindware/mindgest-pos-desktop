@@ -8,10 +8,10 @@ export type storesFilters = {
 
 export type StoreData = {
   name: string;
-  code?: string;
-  email?: string;
-  phone?: string;
-  address: string;
+  code: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
   companyId?: string;
 };
 
@@ -23,3 +23,6 @@ export type StoreResponse = StoreData & {
 };
 
 export type StoreList = StoreData[];
+
+export type CreateStorePayload = StoreData;
+export type UpdateStorePayload = Partial<StoreData>;

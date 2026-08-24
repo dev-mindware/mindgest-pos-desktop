@@ -48,7 +48,7 @@ export function NotificationDetail() {
               setCurrentNotification(null);
               closeModal("notify-detail");
             }}
-            className="bg-primary/10 text-primary-600 hover:bg-primary/20"
+            className="bg-primary/10 text-primary hover:bg-primary/20"
           >
             Fechar
           </Button>

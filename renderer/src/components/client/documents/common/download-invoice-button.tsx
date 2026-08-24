@@ -43,7 +43,7 @@ export function DownloadDocumentButton({
         onClick={() => handleDownload("pdf")}
         disabled={isPending}
       >
-        {isPending ? "Baixando..." : "Baixar documento"}
+        {isPending ? "A descarregar..." : "Descarregar documento"}
       </Button>
     );
   }
@@ -53,7 +53,7 @@ export function DownloadDocumentButton({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button disabled={isPending}>
-          {isPending ? "Baixando..." : "Baixar documento"}
+          {isPending ? "A descarregar..." : "Descarregar documento"}
         </Button>
       </DropdownMenuTrigger>
 

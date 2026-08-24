@@ -16,29 +16,6 @@ interface CategorySectionProps {
 export const CategorySelector = React.memo<CategorySectionProps>(
   ({ categories, activeCategory, onSelectCategory }) => {
     const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-    const [canScrollLeft, setCanScrollLeft] = React.useState(false);
-    const [canScrollRight, setCanScrollRight] = React.useState(true);
-
-    const updateScrollButtons = () => {
-      if (scrollContainerRef.current) {
-        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-        setCanScrollLeft(scrollLeft > 0);
-        setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
-      }
-    };
-
-    React.useEffect(() => {
-      updateScrollButtons();
-      const container = scrollContainerRef.current;
-      if (container) {
-        container.addEventListener("scroll", updateScrollButtons);
-        window.addEventListener("resize", updateScrollButtons);
-        return () => {
-          container.removeEventListener("scroll", updateScrollButtons);
-          window.removeEventListener("resize", updateScrollButtons);
-        };
-      }
-    }, []);
 
     const scroll = (direction: "left" | "right") => {
       if (scrollContainerRef.current) {
@@ -61,12 +38,12 @@ export const CategorySelector = React.memo<CategorySectionProps>(
     }
 
     return (
-      <div className="w-full mb-6 relative group">
+      <div className="w-full mb-6 relative group" data-tour="pos-categories">
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8 shrink-0 rounded-test-full hidden md:flex"
+            className="h-8 w-8 shrink-0 rounded-full hidden md:flex"
             onClick={() => scroll("left")}
           >
             <Icon name="ChevronLeft" className="h-4 w-4" />
@@ -74,14 +51,14 @@ export const CategorySelector = React.memo<CategorySectionProps>(
 
           <div
             ref={scrollContainerRef}
-            className="flex-1 min-w-0 overflow-x-auto scrollbar-hide pb-4 -mb-4 flex space-x-4 p-1 scroll-smooth"
+            className="flex-1 overflow-x-auto scrollbar-hide pb-4 -mb-4 flex space-x-4 p-1 scroll-smooth"
           >
             {categories.map((category) => (
               <button
                 key={category.id}
                 onClick={() => onSelectCategory(category.id)}
                 className={cn(
-                  "group flex flex-col items-start gap-3 p-4 rounded-test-xl border transition-all duration-300 min-w-[160px] shrink-0 text-left relative overflow-hidden",
+                  "group flex flex-col items-start gap-3 p-4 rounded-xl border transition-all duration-300 min-w-[160px] shrink-0 text-left relative overflow-hidden",
                   activeCategory === category.id
                     ? "bg-primary/5 border-primary shadow-sm"
                     : "bg-card hover:bg-muted/50 border-border hover:border-primary/50 text-muted-foreground hover:text-foreground",
@@ -94,14 +71,14 @@ export const CategorySelector = React.memo<CategorySectionProps>(
                 <div className="flex items-center justify-between w-full relative z-10">
                   <div
                     className={cn(
-                      "p-2.5 rounded-test-lg transition-colors duration-300",
+                      "p-2.5 rounded-lg transition-colors duration-300",
                       activeCategory === category.id
                         ? "bg-primary text-primary-foreground shadow-md"
                         : "bg-muted hover:bg-primary/10 hover:text-primary",
                     )}
                   >
                     <Icon
-                      name="LayoutGrid"
+                      name={activeCategory === category.id ? "LayoutGrid" : "LayoutGrid"}
                       size={20}
                     />
                   </div>
@@ -138,7 +115,7 @@ export const CategorySelector = React.memo<CategorySectionProps>(
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8 shrink-0 rounded-test-full hidden md:flex"
+            className="h-8 w-8 shrink-0 rounded-full hidden md:flex"
             onClick={() => scroll("right")}
           >
             <Icon name="ChevronRight" className="h-4 w-4" />

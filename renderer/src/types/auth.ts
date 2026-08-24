@@ -1,4 +1,5 @@
 import { Company, Store } from "./company";
+import type { Subscription } from "./subscription";
 
 export interface LoginResponse {
   message: string;
@@ -14,14 +15,14 @@ export type User = {
   name: string;
   role: Role;
   phone: string,
+  barcode?: string | null;
   company: Company;
   store?: Store;
-  storeId?: string;
+  subscription?: Subscription;
 }
 
 export interface Tokens {
   accessToken: string;
   refreshToken: string;
   expiresIn: string;
-  offlineLicense?: string;
 }

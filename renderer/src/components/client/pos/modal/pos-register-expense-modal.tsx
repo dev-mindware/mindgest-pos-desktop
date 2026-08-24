@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -9,12 +9,13 @@ import {
     Input,
     Button,
     Textarea,
+    InputCurrency,
 } from "@/components";
 import { useModal, currentStoreStore } from "@/stores";
 import { cashSessionsService } from "@/services/cash-sessions-service";
 import { SucessMessage } from "@/utils/messages";
 import { CashSession } from "@/types/cash-session";
-import { useQueryClient } from "@tanstack/react-query";
+import { ErrorMessage, getApiErrorMessage } from "@/utils";
 
 export const MODAL_POS_REGISTER_EXPENSE_ID = "pos-register-expense-modal";
 
@@ -33,10 +34,10 @@ export function PosRegisterExpenseModal({ currentSession }: PosRegisterExpenseMo
     const { closeModal } = useModal();
     const { currentStore } = currentStoreStore();
     const [isLoading, setIsLoading] = useState(false);
-    const queryClient = useQueryClient();
 
     const {
         register,
+        control,
         handleSubmit,
         reset,
         formState: { errors },
@@ -56,13 +57,12 @@ export function PosRegisterExpenseModal({ currentSession }: PosRegisterExpenseMo
                 amount: data.amount,
                 cashSessionId: currentSession.id,
             });
-            queryClient.invalidateQueries({ queryKey: ["current-cash-session"] });
-            queryClient.invalidateQueries({ queryKey: ["cash-sessions"] });
             SucessMessage("Despesa registada com sucesso!");
             closeModal(MODAL_POS_REGISTER_EXPENSE_ID);
             reset();
         } catch (err: any) {
             console.error(err);
+            ErrorMessage(getApiErrorMessage(err, "Não foi possível registar a despesa."));
         } finally {
             setIsLoading(false);
         }
@@ -72,7 +72,7 @@ export function PosRegisterExpenseModal({ currentSession }: PosRegisterExpenseMo
         <GlobalModal
             id={MODAL_POS_REGISTER_EXPENSE_ID}
             title="Registar Despesa"
-            description="Informe a descrição e o valor da despesa realizada."
+            description="Introduza a descrição e o valor da despesa."
             className="!w-max"
         >
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -83,14 +83,19 @@ export function PosRegisterExpenseModal({ currentSession }: PosRegisterExpenseMo
                     {...register("description")}
                 />
 
-                <Input
-                    label="Valor"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    startIcon="CircleDollarSign"
-                    error={errors.amount?.message}
-                    {...register("amount")}
+                <Controller
+                    name="amount"
+                    control={control}
+                    render={({ field }) => (
+                        <InputCurrency
+                            ref={field.ref}
+                            label="Valor"
+                            placeholder="0,00"
+                            value={field.value}
+                            onValueChange={(val) => field.onChange(val)}
+                            error={errors.amount?.message}
+                        />
+                    )}
                 />
 
                 <div className="flex justify-end gap-2 pt-2">

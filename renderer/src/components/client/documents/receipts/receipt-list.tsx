@@ -8,9 +8,9 @@ import {
   ListSkeleton,
   EmptyState,
   ButtonOnlyAction,
+  ReceiptPreviewDrawer,
   InvoiceFiltersSkeleton,
 } from "@/components";
-import { ReceiptPreviewDrawer } from "@/components/common/dynamic-drawer/receipt-preview-drawer";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { useDebounce } from "use-debounce";
 import { paymentMethodMap } from "@/constants";
@@ -80,11 +80,18 @@ export function ReceiptList({ storeId }: { storeId?: string }) {
     },
     {
       key: "action",
-      header: "Ação",
+      header: "Acção",
       render: (_, item) => (
         <ButtonOnlyAction
           data={item}
-          actions={[{ label: "Ver Recibo", onClick: handleViewReceipt }]}
+          actions={[
+            {
+              label: "Ver Recibo",
+              onClick: handlerDetailsReceipt,
+              icon: "Eye",
+              variant: "default",
+            },
+          ]}
         />
       ),
     },
@@ -107,7 +114,7 @@ export function ReceiptList({ storeId }: { storeId?: string }) {
 
   return (
     <div className="justify-start mt-6 space-y-8">
-      <InvoiceFiltersTSX type="receipt" hasData={receipts.length > 0} />
+      <InvoiceFiltersTSX type="receipt" />
       {receipts.length > 0 ? (
         <>
           <GenericTable<ReceiptResponse>

@@ -12,7 +12,7 @@ export function DeleteProformaModal() {
 
   async function handlerDeleteProforma() {
     if (!currentProforma?.id) {
-      ErrorMessage("Proforma não selecionada");
+      ErrorMessage("Proforma não seleccionada");
       return;
     }
 
@@ -22,7 +22,7 @@ export function DeleteProformaModal() {
     } catch (error: any) {
       if (error?.response) {
         ErrorMessage(
-          error?.response?.data?.message || "Erro ao deletar proforma"
+          error?.response?.data?.message || "Não foi possível apagar a proforma."
         );
       } else {
         ErrorMessage("Ocorreu um erro desconhecido");
@@ -42,7 +42,7 @@ export function DeleteProformaModal() {
       className="!w-max"
       id="delete-proforma"
       title="Tem certeza que deseja apagar a proforma?"
-      description="Lembre-se que esta ação não pode ser desfeita."
+      description="Esta acção não pode ser anulada."
     >
       <div className="flex justify-end gap-4">
         <Button

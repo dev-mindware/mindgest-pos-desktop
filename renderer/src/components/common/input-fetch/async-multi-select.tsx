@@ -17,6 +17,7 @@ interface MultiSelectProps {
   error?: string;
   inputId?: string;
   isLoading?: boolean;
+  isDisabled?: boolean;
 }
 
 export function MultiSelect({
@@ -24,12 +25,13 @@ export function MultiSelect({
   options,
   value,
   onChange,
-  placeholder = "Selecionar...",
+  placeholder = "Seleccionar...",
   isMulti = true,
   className,
   error,
   inputId,
   isLoading,
+  isDisabled,
 }: MultiSelectProps) {
   return (
     <div className={className}>
@@ -43,6 +45,7 @@ export function MultiSelect({
         onChange={(val) => onChange((val as SelectOption[]) ?? [])}
         placeholder={placeholder}
         isLoading={isLoading}
+        isDisabled={isDisabled}
         isClearable
         classNamePrefix="react-select"
         styles={selectStyles(error)}

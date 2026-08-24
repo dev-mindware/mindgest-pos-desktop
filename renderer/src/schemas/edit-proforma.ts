@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalTaxNumberSchema } from "./helps";
 
 export const SimpleItemSchema = z.object({
   name: z.string().trim().min(1, "Nome do item é obrigatório"),
@@ -11,7 +12,7 @@ export const ClientSchema = z.object({
   name: z.string().trim().min(1, "Nome do cliente é obrigatório"),
   phone: z.string().trim().min(1),
   address: z.string().trim().min(1),
-  taxNumber: z.string().trim().optional(),
+  taxNumber: optionalTaxNumberSchema,
 });
 
 export const EditProformaSchema = z

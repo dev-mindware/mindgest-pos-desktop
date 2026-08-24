@@ -10,7 +10,7 @@ export const loginSchema = z.object({
   password: z
     .string()
     .trim()
-    .min(1, "Senha é obrigatória")
+    .min(1, "A palavra-passe é obrigatória")
     .refine((val) => !/\s/.test(val), "Não pode conter espaços")
 });
 

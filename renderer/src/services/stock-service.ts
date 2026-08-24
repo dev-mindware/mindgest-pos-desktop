@@ -25,9 +25,6 @@ export const stockService = {
   adjustStock: async (id: string, data: StockAdjustData) => {
     return api.patch(`/stocks/${id}/adjust`, data);
   },
-  reserveStock: async (id: string, data: StockReserveData) => {
-    return api.patch(`/stocks/${id}/reserve`, data);
-  },
   unreserveStock: async (id: string, data: StockUnreserveData) => {
     return api.patch(`/stocks/${id}/unreserve`, data);
   },

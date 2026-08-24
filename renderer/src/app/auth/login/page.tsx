@@ -1,5 +1,5 @@
 import { LoginForm, HeroImageSide } from "@/components";
-import loginImage from "@/assets/login.jpg";
+import loginImage from "@/assets/login.png";
 
 export default function LoginPage() {
   return (

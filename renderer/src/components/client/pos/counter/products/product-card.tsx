@@ -64,13 +64,9 @@ export const ProductCard = React.memo<ProductCardProps>(
     };
 
     return (
-      <Card 
-        className="overflow-hidden flex flex-col py-0 relative group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20 bg-card/50 backdrop-blur-sm cursor-pointer"
-        onClick={() => {
-          if (quantity === 0 && product.quantity > 0) {
-            onAdd(product);
-          }
-        }}
+      <Card
+        className="overflow-hidden flex flex-col py-0 relative group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20 bg-card/50 backdrop-blur-sm"
+        data-tour="pos-product-card"
       >
         <CardContent className="p-3 sm:p-4 flex-1 flex flex-col gap-3">
           {/* Top Content: Image & Title */}
@@ -96,7 +92,7 @@ export const ProductCard = React.memo<ProductCardProps>(
                     {product.quantity > 0 ? (
                       <Badge
                         variant="secondary"
-                        className="text-[10px] items-center gap-1.5 px-2 py-0.5 border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/15 transition-colors font-medium shadow-sm rounded-full"
+                        className="text-[10px] items-center gap-1.5 px-2 py-0.5 border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/15 transition-colors font-medium shadow-sm"
                       >
                         <span className="relative flex h-1.5 w-1.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -107,7 +103,7 @@ export const ProductCard = React.memo<ProductCardProps>(
                     ) : (
                       <Badge
                         variant="destructive"
-                        className="text-[10px] items-center gap-1.5 px-2 py-0.5 border border-red-500/20 bg-red-500/10 text-red-600 hover:bg-red-500/15 transition-colors cursor-not-allowed font-medium shadow-sm rounded-full"
+                        className="text-[10px] items-center gap-1.5 px-2 py-0.5 border border-red-500/20 bg-red-500/10 text-red-600 hover:bg-red-500/15 transition-colors cursor-not-allowed font-medium shadow-sm"
                       >
                         <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
                         Indisponível
@@ -115,12 +111,19 @@ export const ProductCard = React.memo<ProductCardProps>(
                     )}
 
                     {/* Tax Rate Badge */}
-                    {product.tax?.rate && (
+                    {product.tax?.rate != null ? (
                       <Badge
                         variant="outline"
-                        className="text-[10px] px-2 py-0.5 border border-blue-500/30 bg-blue-500/10 text-blue-600 hover:bg-blue-500/15 transition-colors font-medium shadow-sm rounded-full"
+                        className="text-[10px] px-2 py-0.5 border border-blue-500/30 bg-blue-500/10 text-blue-600 hover:bg-blue-500/15 transition-colors font-medium shadow-sm"
                       >
                         IVA {product.tax.rate}%
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] px-2 py-0.5 border border-gray-500/30 bg-gray-500/10 text-gray-600 hover:bg-gray-500/15 transition-colors font-medium shadow-sm"
+                      >
+                        Sem IVA
                       </Badge>
                     )}
                   </div>
@@ -129,12 +132,12 @@ export const ProductCard = React.memo<ProductCardProps>(
               <TooltipContent
                 side="right"
                 align="start"
-                className="max-w-[220px] p-3 flex flex-col gap-1.5 shadow-xl border-border bg-background dark:bg-[#1F1F1F] dark:border-white/10 z-[100]"
+                className="max-w-[220px] p-3 flex flex-col gap-1.5 shadow-xl border-border/50 z-[100]"
               >
-                <h4 className="font-bold text-sm leading-tight text-foreground">
+                <h4 className="font-bold text-sm leading-tight text-white">
                   {product.name}
                 </h4>
-                <p className="text-xs text-muted-foreground leading-relaxed italic border-t border-border/50 pt-1.5 mt-0.5">
+                <p className="text-xs text-white/80 leading-relaxed italic border-t border-white/10 pt-1.5 mt-0.5">
                   {product.description ||
                     "Nenhuma descrição disponível para este produto."}
                 </p>
@@ -161,13 +164,12 @@ export const ProductCard = React.memo<ProductCardProps>(
                       size="icon"
                       disabled={product.quantity <= 0}
                       className={cn(
-                        "rounded-test-full h-9 w-9 sm:h-10 sm:w-10 transition-all duration-300 shadow-sm",
+                        "rounded-full h-9 w-9 sm:h-10 sm:w-10 transition-all duration-300 shadow-sm",
                         product.quantity <= 0
                           ? "bg-destructive/10 text-destructive cursor-not-allowed border-destructive/20 hover:bg-destructive/20"
                           : "bg-primary text-white hover:bg-primary/90 hover:scale-105 shadow-primary/20",
                       )}
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onClick={() => {
                         if (product.quantity > 0) {
                           onAdd(product);
                         } else {
@@ -176,7 +178,6 @@ export const ProductCard = React.memo<ProductCardProps>(
                       }}
                       onDoubleClick={(e: React.MouseEvent) => {
                         e.preventDefault();
-                        e.stopPropagation();
                         if (product.quantity > 0) {
                           handleDoubleClick();
                         }
@@ -190,19 +191,12 @@ export const ProductCard = React.memo<ProductCardProps>(
                       )}
                     </Button>
                   ) : (
-                    <div 
-                      className="flex items-center gap-1 bg-muted/50 rounded-test-full p-0.5 sm:p-1 border border-border/60 shadow-sm" 
-                      data-tour="pos-product-quantity"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5 sm:p-1 border border-border/60 shadow-sm" data-tour="pos-product-quantity">
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-7 w-7 sm:h-8 sm:w-8 rounded-test-full hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemove(product.id);
-                        }}
+                        className="h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
+                        onClick={() => onRemove(product.id)}
                         data-tour="pos-product-decrease"
                       >
                         <Icon
@@ -215,7 +209,6 @@ export const ProductCard = React.memo<ProductCardProps>(
                         className="text-xs sm:text-sm font-bold min-w-[1.25rem] sm:min-w-[1.5rem] text-center cursor-pointer select-none tabular-nums hover:text-primary transition-colors px-0.5 sm:px-1"
                         onDoubleClick={(e: React.MouseEvent) => {
                           e.preventDefault();
-                          e.stopPropagation();
                           handleDoubleClick();
                         }}
                         title="Duplo clique para editar"
@@ -228,18 +221,14 @@ export const ProductCard = React.memo<ProductCardProps>(
                         variant="ghost"
                         disabled={product.quantity <= quantity}
                         className={cn(
-                          "h-7 w-7 sm:h-8 sm:w-8 rounded-test-full transition-colors",
+                          "h-7 w-7 sm:h-8 sm:w-8 rounded-full transition-colors",
                           product.quantity <= quantity
                             ? "text-muted-foreground/30 cursor-not-allowed"
                             : "text-primary hover:bg-primary/10",
                         )}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAdd(product);
-                        }}
+                        onClick={() => onAdd(product)}
                         onDoubleClick={(e: React.MouseEvent) => {
                           e.preventDefault();
-                          e.stopPropagation();
                           handleDoubleClick();
                         }}
                         data-tour="pos-product-add"
@@ -261,7 +250,7 @@ export const ProductCard = React.memo<ProductCardProps>(
                   }
                 }}
               >
-                <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-col gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     Quantidade
                   </span>
@@ -277,10 +266,7 @@ export const ProductCard = React.memo<ProductCardProps>(
                     <Button
                       size="icon"
                       className="h-8 w-8 shrink-0 bg-primary hover:bg-primary/90"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleConfirmQty();
-                      }}
+                      onClick={handleConfirmQty}
                     >
                       <Icon name="Check" className="h-4 w-4" />
                     </Button>

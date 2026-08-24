@@ -1,15 +1,22 @@
 import { z } from "zod";
-import { clientSchema } from "./add-client";
+import { optionalTaxNumberSchema, phoneNumberSchema } from "./helps";
+
+const posClientSchema = z.object({
+  name: z.string().trim().optional().or(z.literal("")),
+  taxNumber: optionalTaxNumberSchema,
+  phone: phoneNumberSchema.optional().or(z.literal("")),
+  email: z
+    .string()
+    .trim()
+    .email("Email inválido")
+    .optional()
+    .or(z.literal("")),
+  address: z.string().trim().optional().or(z.literal("")),
+});
 
 export const PosSalesSchema = z.object({
-  client: z.object({
-    id: z.string().optional(),
-    name: z.string().optional(),
-    taxNumber: z.string().optional().nullable(),
-    phone: z.string().optional().nullable(),
-    email: z.string().optional().nullable(),
-    address: z.string().optional().nullable(),
-  }).optional().nullable(),
+  client: posClientSchema.optional(),
+  clientId: z.string().trim().optional(),
   issueDate: z.string().trim().min(1, "A data de emissão é obrigatória"),
   items: z
     .array(
@@ -18,7 +25,7 @@ export const PosSalesSchema = z.object({
         quantity: z.number(),
       }),
     )
-    .min(1, "A venda deve conter pelo menos 1 item"),
+    .min(1, "A proforma deve conter pelo menos 1 item"),
   discountAmount: z.number().optional(),
   taxAmount: z.number().optional(),
   subtotal: z.number().optional(),

@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 interface Option {
   label: string;
   value: string;
+  description?: string;
 }
 
 interface Pagination {
@@ -34,6 +35,11 @@ interface PaginatedSelectProps {
   className?: string;
   label?: string;
   error?: string;
+  disabled?: boolean;
+  fullWidth?: boolean;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
 }
 
 export function PaginatedSelect({
@@ -43,10 +49,15 @@ export function PaginatedSelect({
   isLoading,
   pagination,
   onPageChange,
-  placeholder = "Selecionar...",
+  placeholder = "Seleccionar...",
   className,
   label,
   error,
+  disabled,
+  fullWidth,
+  searchValue = "",
+  onSearchChange,
+  searchPlaceholder = "Pesquisar...",
 }: PaginatedSelectProps) {
   const handlePrevious = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -64,18 +75,36 @@ export function PaginatedSelect({
     }
   };
 
+  const selectedLabel = options.find((o) => o.value === value)?.label;
+
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={cn("flex flex-col gap-1.5", fullWidth ? "w-full" : "w-full sm:w-auto")}>
       {label && <Label className="text-sm font-medium">{label}</Label>}
-      <Select value={value || ""} onValueChange={onChange}>
-        <SelectTrigger className={cn("w-[200px]", className)}>
+      <Select value={value || ""} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className={cn(fullWidth ? "w-full" : "w-full sm:w-[200px]", className)}>
           {isLoading && !value ? (
             <Skeleton className="h-4 w-24" />
+          ) : selectedLabel ? (
+            <span className="truncate block max-w-full" title={selectedLabel}>
+              {selectedLabel}
+            </span>
           ) : (
             <SelectValue placeholder={placeholder} />
           )}
         </SelectTrigger>
         <SelectContent>
+          {onSearchChange && (
+            <div className="p-2" onKeyDown={(event) => event.stopPropagation()}>
+              <input
+                value={searchValue}
+                onChange={(event) => onSearchChange(event.target.value)}
+                onPointerDown={(event) => event.stopPropagation()}
+                placeholder={searchPlaceholder}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                disabled={disabled}
+              />
+            </div>
+          )}
           {isLoading ? (
             <div className="p-2 space-y-2">
               <Skeleton className="h-8 w-full" />
@@ -87,7 +116,14 @@ export function PaginatedSelect({
               {options.length > 0 ? (
                 options.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                    <span className="flex min-w-0 flex-col gap-0.5 py-0.5">
+                      <span className="truncate">{option.label}</span>
+                      {option.description && (
+                        <span className="line-clamp-2 text-xs font-normal text-muted-foreground">
+                          {option.description}
+                        </span>
+                      )}
+                    </span>
                   </SelectItem>
                 ))
               ) : (

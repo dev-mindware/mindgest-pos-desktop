@@ -11,9 +11,9 @@ export function normalizePlan(plan: string | undefined | null): PlanType | null 
 
   const normalized = plan.toUpperCase().replace("-", "_");
 
-  if (normalized.includes("Smart")) return "Smart";
-  if (normalized.includes("Pro")) return "Pro";
-  if (normalized.includes("Base")) return "Base";
+  if (normalized.includes("SMART")) return "Smart";
+  if (normalized.includes("PRO")) return "Pro";
+  if (normalized.includes("BASE")) return "Base";
 
   return null;
 }

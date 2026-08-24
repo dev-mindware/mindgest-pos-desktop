@@ -1,9 +1,14 @@
-import { PageWrapper, MovementsContent } from "@/components"
+"use client";
+import { PageWrapper, MovementsContent } from "@/components";
 
-export default function page() {
+export default function Page() {
   return (
-    <PageWrapper routeLabel="Movimentos de Caixa" subRoute="Movimentos de Caixa">
+    <PageWrapper
+      routeLabel="Movimentos de Caixa"
+      subRoute="Movimentos de Caixa"
+      onboardingTourId="pos-movements"
+    >
       <MovementsContent />
     </PageWrapper>
-  )
+  );
 }

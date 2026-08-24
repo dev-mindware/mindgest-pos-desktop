@@ -5,13 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function PosCartSkeleton() {
     return (
-        <div className="flex flex-col bg-sidebar rounded-test-md shadow-sm p-6 m-4 border border-border/50 h-full">
+        <div className="flex flex-col bg-sidebar rounded-md shadow-sm p-6 m-4 border border-border/50 h-full">
             <Skeleton className="h-7 w-32 mb-6" />
 
             <div className="flex-1 space-y-4 mb-8">
                 {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="flex gap-3 items-center">
-                        <Skeleton className="h-10 w-10 rounded-test-lg shrink-0" />
+                        <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
                         <div className="flex-1 space-y-2">
                             <Skeleton className="h-4 w-full" />
                             <Skeleton className="h-3 w-16" />
@@ -36,7 +36,7 @@ export function PosCartSkeleton() {
                         <Skeleton className="h-6 w-24" />
                     </div>
                 </div>
-                <Skeleton className="h-10 w-full rounded-test-md mt-4" />
+                <Skeleton className="h-10 w-full rounded-md mt-4" />
             </div>
         </div>
     );

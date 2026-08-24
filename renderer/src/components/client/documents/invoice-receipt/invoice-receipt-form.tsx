@@ -6,17 +6,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Button,
   Input,
-  InvoiceFormSkeleton,
+  Icon,
   RHFSelect,
   Textarea,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  NifVerificationField,
 } from "@/components";
 import { InvoiceReceiptFormData, InvoiceReceiptSchema } from "@/schemas";
-import { useCreateInvoiceReceipt, useInvoiceTotals } from "@/hooks";
+import { useCreateInvoiceReceipt, useInvoiceTotals, useNifFormVerification } from "@/hooks";
 import { AsyncCreatableSelectField } from "@/components/common/input-fetch/async-select";
 import { useClientSelection } from "@/hooks/invoice";
 import { currentStoreStore, useAuthStore, useModal } from "@/stores";
 import { paymentMethods } from "@/constants";
 import { InvoiceItems } from "../document-forms/items";
+import { isSelectableClient } from "@/utils";
 
 export function InvoiceReceiptForm() {
   const { user } = useAuthStore();
@@ -25,7 +30,7 @@ export function InvoiceReceiptForm() {
 
   const form = useForm<InvoiceReceiptFormData>({
     resolver: zodResolver(InvoiceReceiptSchema),
-    mode: "onSubmit",
+    mode: "onChange",
     defaultValues: {
       issueDate: new Date().toISOString().split("T")[0],
       dueDate: "",
@@ -40,6 +45,7 @@ export function InvoiceReceiptForm() {
       globalRetention: 0,
       globalDiscount: 0,
       notes: "",
+      currencyCode: "AOA" as const,
       paymentMethod: "CASH",
       storeId: "",
     },
@@ -53,12 +59,22 @@ export function InvoiceReceiptForm() {
     formState: { errors, isSubmitting },
     reset,
     setValue,
+    setError,
+    clearErrors,
   } = form;
 
   const { handleClientChange, selectedClient, setSelectedClient } =
     useClientSelection(setValue);
   const { openModal } = useModal();
   const { currentStore } = currentStoreStore();
+  const clientTaxNumber = watch("client.taxNumber") || "";
+  const { handleStatusChange, handleVerified } = useNifFormVerification({
+    setValue,
+    setError,
+    clearErrors,
+    taxNumberField: "client.taxNumber",
+    nameField: "client.name",
+  });
 
   const fieldArray = useFieldArray<InvoiceReceiptFormData, "items">({
     control,
@@ -115,24 +131,33 @@ export function InvoiceReceiptForm() {
     async (data: InvoiceReceiptFormData) => {
       try {
         if (!data.items || data.items.length === 0) {
-          ErrorMessage("Adicione pelo menos um item à factura recibo");
+          ErrorMessage("Adicione pelo menos um item à factura-recibo.");
           return;
         }
 
+        const isManagerOrOwner = user?.role === "OWNER" || user?.role === "MANAGER";
+
         const clientPayload = data.clientId
           ? { id: data.clientId }
-          : {
-            name: data.client.name,
-            phone: data.client.phone || undefined,
-            address: data.client.address || undefined,
-            taxNumber: data.client.taxNumber || undefined,
-          };
+          : (isManagerOrOwner && (!data.client.name)
+            ? {
+              name: "Consumidor Final",
+              taxNumber: "999999999",
+              address: currentStore?.address || "Loja",
+            }
+            : {
+              name: data.client.name as string,
+              phone: data.client.phone || undefined,
+              address: data.client.address || undefined,
+              taxNumber: data.client.taxNumber || undefined,
+            });
 
         const itemsPayload = data.items.map((item) => {
           if (item.isFromAPI && item.apiId) {
             return {
               id: item.apiId,
               quantity: item.quantity,
+              price: item.unitPrice,
             };
           }
           return {
@@ -154,9 +179,10 @@ export function InvoiceReceiptForm() {
           retentionAmount: totals.retentionAmount,
           discountAmount: totals.discountAmount,
           subtotal: totals.subtotal,
+          currencyCode: data.currencyCode,
           notes: data.notes || undefined,
-          paymentMethod: data.paymentMethod,
-          ...(user?.role === "OWNER" &&
+          paymentMethod: data.paymentMethod, // This remains but selector was removed by user, default is 'CASH'
+          ...(isManagerOrOwner &&
             currentStore?.id && { storeId: currentStore?.id }),
         };
 
@@ -176,7 +202,7 @@ export function InvoiceReceiptForm() {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
-          "Ocorreu um erro ao criar a factura recibo. Tente novamente.";
+          "Não foi possível criar a factura-recibo. Tente novamente.";
 
         ErrorMessage(errorMessage);
       }
@@ -191,8 +217,8 @@ export function InvoiceReceiptForm() {
 
   return (
     <form
-      onSubmit={handleSubmit(onSubmit, (errors) => console.log("Erro de Validação na Factura Recibo:", errors))}
-      className="p-8 mt-4 space-y-8 border rounded-test-lg"
+      onSubmit={handleSubmit(onSubmit, (errors) => console.log("Erro de validação na factura-recibo:", errors))}
+      className="p-8 mt-4 space-y-8 border rounded-lg"
     >
       <div className="grid gap-6 md:grid-cols-2">
         <Input
@@ -202,10 +228,41 @@ export function InvoiceReceiptForm() {
           error={errors.issueDate?.message}
           disabled
         />
+        <RHFSelect
+          label="Moeda"
+          name="currencyCode"
+          control={control}
+          placeholder="Seleccione a moeda"
+          options={[
+            { value: "AOA", label: "AOA" },
+            { value: "USD", label: "USD" },
+            { value: "EUR", label: "EUR" },
+          ]}
+        />
 
         <AsyncCreatableSelectField
           endpoint="/clients"
-          label="Cliente"
+          optionFilter={isSelectableClient}
+          label={
+            <span className="inline-flex items-center gap-1.5">
+              Cliente (opcional)
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Informação sobre o cliente da factura-recibo"
+                    className="inline-flex text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Icon name="CircleHelp" className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-64">
+                  Se não seleccionar um cliente, a factura-recibo será emitida
+                  para Consumidor Final.
+                </TooltipContent>
+              </Tooltip>
+            </span>
+          }
           placeholder="Digite o nome do cliente..."
           value={selectedClient}
           onChange={handleClientChange}
@@ -220,9 +277,19 @@ export function InvoiceReceiptForm() {
 
       {clientState.hasClient && (
         <div className="grid gap-6 md:grid-cols-3">
-          <Input
+          <NifVerificationField
             label="NIF"
-            {...register("client.taxNumber")}
+            value={clientTaxNumber}
+            onChange={(value) =>
+              setValue("client.taxNumber", value, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              })
+            }
+            onVerified={handleVerified}
+            onStatusChange={handleStatusChange}
+            verificationEnabled={clientState.isNewClient}
             error={errors.client?.taxNumber?.message}
             disabled={!clientState.isNewClient}
             placeholder="000000000"
@@ -253,17 +320,9 @@ export function InvoiceReceiptForm() {
         setGlobalDiscount={setGlobalDiscount}
       />
 
-
-      <RHFSelect
-        label="Método de pagamento"
-        name="paymentMethod"
-        control={control}
-        options={paymentMethods}
-      />
-
       <Textarea
         {...register("notes")}
-        placeholder="Adicione observações sobre esta factura recibo (opcional)"
+        placeholder="Adicione observações sobre esta factura-recibo (opcional)"
         label="Observações"
         error={errors.notes?.message}
         rows={4}
@@ -283,7 +342,7 @@ export function InvoiceReceiptForm() {
           disabled={isSubmitting || isPending}
           className="min-w-[150px]"
         >
-          {isPending || isSubmitting ? "Processando..." : "Criar Factura Recibo"}
+          {isPending || isSubmitting ? "A processar..." : "Criar factura-recibo"}
         </Button>
       </div>
     </form>

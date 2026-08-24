@@ -1,11 +1,67 @@
-"use client";
-
 import { useFetch } from "../common/use-fetch";
 import { usePagination } from "../common/use-pagination";
 import { ItemResponse } from "@/types/items";
-import { useMindPricingConfig } from "../pos";
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/services/api";
 import { currentStoreStore } from "@/stores";
+
+interface ItemsPageResponse {
+  data?: ItemResponse[];
+  items?: ItemResponse[];
+  totalPages?: number;
+  total_pages?: number;
+}
+
+function getItemsPage(response: ItemsPageResponse | ItemResponse[]) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (Array.isArray(response.items)) return response.items;
+  return [];
+}
+
+export function useGetProductCountsByCategory() {
+  const { currentStore } = currentStoreStore();
+
+  return useQuery({
+    queryKey: ["items", "pos-product-counts", currentStore?.id],
+    enabled: !!currentStore?.id,
+    queryFn: async () => {
+      const limit = 100;
+      const params = {
+        page: 1,
+        limit,
+        type: "PRODUCT",
+        storeId: currentStore?.id,
+      };
+      const firstResponse = await api.get<ItemsPageResponse | ItemResponse[]>(
+        "/items",
+        { params },
+      );
+      const firstPage = firstResponse.data;
+      const totalPages = Array.isArray(firstPage)
+        ? 1
+        : (firstPage.totalPages ?? firstPage.total_pages ?? 1);
+      const remainingPages = await Promise.all(
+        Array.from({ length: Math.max(totalPages - 1, 0) }, (_, index) =>
+          api.get<ItemsPageResponse | ItemResponse[]>("/items", {
+            params: { ...params, page: index + 2 },
+          }),
+        ),
+      );
+      const products = [
+        ...getItemsPage(firstPage),
+        ...remainingPages.flatMap((response) => getItemsPage(response.data)),
+      ];
+
+      return products.reduce<Record<string, number>>((counts, product) => {
+        if (product.categoryId) {
+          counts[product.categoryId] = (counts[product.categoryId] ?? 0) + 1;
+        }
+        return counts;
+      }, {});
+    },
+  });
+}
 
 export function useGetItems(params?: {
   search?: string;
@@ -27,70 +83,8 @@ export function useGetItems(params?: {
     `/items?${queryParams.toString()}`,
   );
 
-  const { isMindPricingEnabled, triggerPricingRecalculation } =
-    useMindPricingConfig();
-  const [items, setItems] = useState<any[]>([]);
-  const { currentStore } = currentStoreStore();
-
-  async function loadItems() {
-    let localItems: any[] = [];
-
-    if (typeof window !== "undefined" && window.ipc?.sync?.searchItems) {
-      try {
-        localItems = await window.ipc.sync.searchItems({
-          search: params?.search,
-          categoryId: params?.categoryId,
-          storeId: currentStore?.id,
-        });
-
-        if (localItems) {
-          console.log(`🔁 [POS] Carregando itens locais: ${localItems.length} items encontrados`);
-          setItems(localItems);
-          if (localItems.length > 0 || params?.categoryId || params?.search) {
-            return;
-          }
-        }
-      } catch (e) {
-        console.error("Erro na busca local:", e);
-      }
-    }
-
-    if (data?.data || data?.items) {
-      const fetchedItems = data?.data || data?.items || [];
-      console.log(`🌐 [POS] Carregando itens da Cloud: ${fetchedItems.length} items encontrados`);
-      setItems(fetchedItems);
-    } else if (!isLoading) {
-      setItems([]);
-    }
-  }
-
-  useEffect(() => {
-    loadItems();
-
-    const handleStockUpdate = () => {
-      console.log("🔄 [POS] Evento 'local-stock-updated' recebido. Recarregando itens...");
-      loadItems();
-    };
-
-    const handleLocalDataUpdated = () => {
-      console.log("🔄 [Sync] Evento 'local-data-updated' recebido. Recarregando itens locais...");
-      loadItems();
-    };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("local-stock-updated", handleStockUpdate);
-      window.addEventListener("local-data-updated", handleLocalDataUpdated);
-    }
-
-    return () => {
-      if (typeof window !== "undefined") {
-        window.removeEventListener("local-stock-updated", handleStockUpdate);
-        window.removeEventListener("local-data-updated", handleLocalDataUpdated);
-      }
-    };
-  }, [data, isLoading, params?.search, params?.categoryId, currentStore?.id]);
-
-  return { items, error, isLoading, refetch: loadItems };
+  const items = data?.data || [];
+  return { items, error, isLoading, refetch };
 }
 
 export function useGetItemsPaginated(

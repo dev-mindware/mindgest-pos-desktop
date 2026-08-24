@@ -33,25 +33,43 @@ export const authService = {
         }
       }
 
-      const res = await publicApi.post<LoginResponse>("/auth/login", credentials);
-      const { user, tokens, message } = res.data;
+      const res = await publicApi.post<any>("/auth/login", credentials);
+      const resData = res.data?.data || res.data;
+      const user = resData?.user || res.data?.user;
+      const tokens = resData?.tokens || res.data?.tokens || {
+        accessToken: resData?.accessToken || res.data?.accessToken,
+        refreshToken: resData?.refreshToken || res.data?.refreshToken,
+        offlineLicense: resData?.offlineLicense || res.data?.offlineLicense,
+      };
+      const message = resData?.message || res.data?.message;
 
       if (!user) {
         throw new Error("Usuário não autorizado");
       }
 
+      // Validação de Perfil: Usuários ADMIN não têm acesso ao POS Desktop
+      if (user.role === "ADMIN") {
+        throw new Error("Utilizadores Administradores não têm acesso ao POS Desktop.");
+      }
+
+      // Validação de Plano: Plano Base não tem acesso ao POS
+      const userPlan = user.company?.subscription?.plan?.name;
+      if (userPlan && userPlan.toUpperCase().includes("BASE")) {
+        throw new Error("O plano Base não inclui acesso ao Ponto de Venda (POS). Atualize para o plano Smart ou Pro para aceder.");
+      }
+
       // 2. GUARDA A LICENÇA OFFLINE NO SQLITE LOCAL (POS DESKTOP)
-      // O storeId pode vir na raiz do user ou dentro de company.stores[0]
       const storeId = user.storeId || user.company?.stores?.[0]?.id;
       
-      if (typeof window !== 'undefined' && (window as any).ipc && tokens.offlineLicense && storeId) {
+      if (typeof window !== 'undefined' && (window as any).ipc && tokens?.offlineLicense && storeId) {
         await (window as any).ipc.security.saveOfflineLicense(tokens.offlineLicense, storeId);
       }
 
       await createSession({
         user,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
+        accessToken: tokens?.accessToken || "",
+        refreshToken: tokens?.refreshToken || "",
+        role: user.role,
       });
 
       const redirectPath = getRouteByRole(user.role);
@@ -79,10 +97,13 @@ export const authService = {
     }
   },
 
-  forgotPassword: async (email: string): Promise<{ message: string }> => {
-    const response = await api.post<{ message: string }>(
-      "/auth/forgot-password",
-      { email },
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<{ message: string }> => {
+    const response = await api.patch<{ message: string }>(
+      "/auth/change-password",
+      data,
     );
     return response.data;
   },

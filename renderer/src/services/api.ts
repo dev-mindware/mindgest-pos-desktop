@@ -79,12 +79,13 @@ localApi.interceptors.request.use(async (config) => {
 });
 
 import { currentStoreStore } from "@/stores";
+import { destroySession } from "@/lib/session";
 
 api.interceptors.request.use(async (config) => {
   // Use localStorage directly instead of Next.js server actions
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("session-accessToken")
+      ? localStorage.getItem("session-accessToken") || localStorage.getItem("access_token")
       : null;
 
   if (token) {
@@ -167,7 +168,16 @@ api.interceptors.response.use(
   async (err) => {
     const original = err.config;
 
-    if (original.url.includes("/auth/") || original._retry) {
+    if (!original || !original.url) {
+      return Promise.reject(err);
+    }
+
+    const isNonRefreshableAuthRoute =
+      original.url.includes("/auth/login") ||
+      original.url.includes("/auth/refresh") ||
+      original.url.includes("/auth/register");
+
+    if (isNonRefreshableAuthRoute || original._retry) {
       return Promise.reject(err);
     }
 
@@ -189,26 +199,55 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshToken = localStorage.getItem("session-refreshToken");
-        if (!refreshToken) throw new Error("No refresh token");
+        let refreshToken =
+          localStorage.getItem("session-refreshToken") ||
+          localStorage.getItem("refresh_token");
+        if (!refreshToken || refreshToken === "undefined" || refreshToken === "null") {
+          const match = document.cookie.match(/(?:session-refreshToken|refresh_token)=([^;]+)/);
+          refreshToken = match ? match[1] : null;
+        }
+
+        if (!refreshToken || refreshToken === "undefined" || refreshToken === "null") {
+          throw new Error("Nenhum refresh token válido disponível.");
+        }
 
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"}/auth/refresh`, // VPS
           {
             method: "POST",
-            body: JSON.stringify({ refreshToken }),
-            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              refreshToken,
+              refresh_token: refreshToken 
+            }),
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key":
+                process.env.NEXT_PUBLIC_API_KEY ||
+                "MG_REg4eFg5eDJQU0lmNWcKUQU0YN3BDZDNvU2dnSnQ5OXRiL3NtbEhqSzhpdXNDZ2V6T2NwbzlCYnJDRWBTkJna3Foa2lHOXcwQkFRRUZBQVNZkbQo2lmN4eFg_MG",
+            },
           },
         );
 
         if (!response.ok) throw new Error("Falha ao renovar o token");
 
         const data = await response.json();
-        const newToken = data.accessToken;
-        const newRefreshToken = data.refreshToken;
+        const resData = data?.data || data;
+        const newToken = resData?.accessToken || resData?.tokens?.accessToken || data?.accessToken;
+        const nextRefreshToken = resData?.refreshToken || resData?.tokens?.refreshToken || data?.refreshToken || refreshToken;
 
-        localStorage.setItem("session-accessToken", newToken);
-        localStorage.setItem("session-refreshToken", newRefreshToken);
+        if (newToken) {
+          localStorage.setItem("access_token", newToken);
+          localStorage.setItem("session-accessToken", newToken);
+          document.cookie = `access_token=${newToken}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = "session-accessToken=; path=/; max-age=0";
+        }
+
+        if (nextRefreshToken && nextRefreshToken !== "undefined" && nextRefreshToken !== "null") {
+          localStorage.setItem("refresh_token", nextRefreshToken);
+          localStorage.setItem("session-refreshToken", nextRefreshToken);
+          document.cookie = `refresh_token=${nextRefreshToken}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = "session-refreshToken=; path=/; max-age=0";
+        }
 
         processQueue(null, newToken);
         original.headers.Authorization = `Bearer ${newToken}`;
@@ -216,9 +255,10 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         console.error("Erro ao renovar token:", refreshError);
-        localStorage.removeItem("session-accessToken");
-        localStorage.removeItem("session-refreshToken");
-        window.location.replace("/auth/login");
+        await destroySession();
+        if (typeof window !== "undefined" && window.location.pathname !== "/auth/login") {
+          window.location.replace("/auth/login");
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

@@ -23,117 +23,12 @@ export function VirtualKeyboard() {
 
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
-    const [isResizing, setIsResizing] = useState(false);
-    const [keyboardWidth, setKeyboardWidth] = useState(layout === "numeric" ? 360 : 760);
     const [mounted, setMounted] = useState(false);
 
     const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
-    const resizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
     const keyboardRef = useRef<Keyboard | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const mainContainerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const clampWidth = () => {
-            const maxWidth = Math.max(window.innerWidth - 40, 320);
-            setKeyboardWidth((current) => Math.min(Math.max(current, 320), maxWidth));
-        };
-
-        clampWidth();
-        window.addEventListener("resize", clampWidth);
-        return () => window.removeEventListener("resize", clampWidth);
-    }, []);
-
-    const clamp = (value: number, min: number, max: number) =>
-        Math.min(Math.max(value, min), max);
-
-    const getBounds = () => {
-        const width = mainContainerRef.current?.getBoundingClientRect().width ?? keyboardWidth;
-        const height = mainContainerRef.current?.getBoundingClientRect().height ?? 0;
-        const maxX = Math.max(0, (window.innerWidth - width) / 2);
-        const minX = -maxX;
-        const minY = Math.min(0, height + 10 - window.innerHeight);
-        const maxY = 10;
-
-        return {
-            minX,
-            maxX,
-            minY,
-            maxY,
-        };
-    };
-
-    const onPointerDown = (e: React.PointerEvent) => {
-        setIsDragging(true);
-        dragRef.current = {
-            startX: e.clientX,
-            startY: e.clientY,
-            startPosX: position.x,
-            startPosY: position.y,
-        };
-        (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    };
-
-    const onPointerMove = (e: React.PointerEvent) => {
-        if (!isDragging || !dragRef.current || !mainContainerRef.current) return;
-
-        const dx = e.clientX - dragRef.current.startX;
-        const dy = e.clientY - dragRef.current.startY;
-
-        const nextX = dragRef.current.startPosX + dx;
-        const nextY = dragRef.current.startPosY + dy;
-        const bounds = getBounds();
-
-        const clampedX = clamp(nextX, bounds.minX, bounds.maxX);
-        const clampedY = clamp(nextY, bounds.minY, bounds.maxY);
-
-        mainContainerRef.current.style.transform = `translate(calc(-50% + ${clampedX}px), ${clampedY}px)`;
-    };
-
-    const onPointerUp = (e: React.PointerEvent) => {
-        if (!isDragging || !dragRef.current || !mainContainerRef.current) return;
-
-        const dx = e.clientX - dragRef.current.startX;
-        const dy = e.clientY - dragRef.current.startY;
-
-        const nextX = dragRef.current.startPosX + dx;
-        const nextY = dragRef.current.startPosY + dy;
-        const bounds = getBounds();
-
-        setPosition({
-            x: clamp(nextX, bounds.minX, bounds.maxX),
-            y: clamp(nextY, bounds.minY, bounds.maxY),
-        });
-
-        setIsDragging(false);
-        dragRef.current = null;
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    };
-
-    const onResizePointerDown = (e: React.PointerEvent) => {
-        e.stopPropagation();
-        e.preventDefault();
-        setIsResizing(true);
-        resizeRef.current = {
-            startX: e.clientX,
-            startWidth: keyboardWidth,
-        };
-        (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    };
-
-    const onResizePointerMove = (e: React.PointerEvent) => {
-        if (!isResizing || !resizeRef.current) return;
-        const delta = e.clientX - resizeRef.current.startX;
-        const maxWidth = Math.max(window.innerWidth - 40, 520);
-        setKeyboardWidth(clamp(resizeRef.current.startWidth + delta, 520, maxWidth));
-    };
-
-    const onResizePointerUp = (e: React.PointerEvent) => {
-        if (!isResizing || !resizeRef.current) return;
-        setIsResizing(false);
-        resizeRef.current = null;
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    };
 
     useEffect(() => {
         setMounted(true);
@@ -252,13 +147,51 @@ export function VirtualKeyboard() {
 
     if (!mounted || !isVisible) return null;
 
+    // Draggable Logic
+    const onPointerDown = (e: React.PointerEvent) => {
+        setIsDragging(true);
+        dragRef.current = {
+            startX: e.clientX,
+            startY: e.clientY,
+            startPosX: position.x,
+            startPosY: position.y,
+        };
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    };
+
+    const onPointerMove = (e: React.PointerEvent) => {
+        if (!isDragging || !dragRef.current || !mainContainerRef.current) return;
+
+        const dx = e.clientX - dragRef.current.startX;
+        const dy = e.clientY - dragRef.current.startY;
+
+        const nextX = dragRef.current.startPosX + dx;
+        const nextY = dragRef.current.startPosY + dy;
+
+        mainContainerRef.current.style.transform = `translate(calc(-50% + ${nextX}px), ${nextY}px)`;
+    };
+
+    const onPointerUp = (e: React.PointerEvent) => {
+        if (!isDragging || !dragRef.current) return;
+
+        const dx = e.clientX - dragRef.current.startX;
+        const dy = e.clientY - dragRef.current.startY;
+
+        setPosition({
+            x: dragRef.current.startPosX + dx,
+            y: dragRef.current.startPosY + dy,
+        });
+
+        setIsDragging(false);
+        dragRef.current = null;
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    };
+
     const keyboardContent = (
         <div
             ref={mainContainerRef}
             className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[999999] animate-in slide-in-from-bottom duration-200"
             style={{
-                width: keyboardWidth,
-                maxWidth: "95vw",
                 transform: `translate(calc(-50% + ${position.x}px), ${position.y}px)`,
                 touchAction: "none",
                 willChange: "transform"
@@ -272,7 +205,10 @@ export function VirtualKeyboard() {
         >
             <div
                 id="virtual-keyboard"
-                className="bg-card border border-primary/20 rounded-test-md p-4 overflow-hidden shadow-2xl pointer-events-auto w-full"
+                className={cn(
+                    "bg-card border border-primary/20 rounded-md p-4 overflow-hidden shadow-2xl pointer-events-auto",
+                    layout === "numeric" ? "w-[440px]" : "w-[960px] max-w-[95vw]"
+                )}
             >
                 {/* Drag Handle */}
                 <div
@@ -281,7 +217,7 @@ export function VirtualKeyboard() {
                     onPointerUp={onPointerUp}
                     className="flex justify-center mb-4 relative cursor-grab active:cursor-grabbing group p-2 -mt-2"
                 >
-                    <div className="w-24 h-2 bg-muted-foreground/30 rounded-test-full group-hover:bg-muted-foreground/50 transition-colors" />
+                    <div className="w-24 h-2 bg-muted-foreground/30 rounded-full group-hover:bg-muted-foreground/50 transition-colors" />
                     <button
                         onClick={closeKeyboard}
                         className="absolute right-0 top-0 p-1 text-muted-foreground hover:text-foreground transition-colors"
@@ -293,15 +229,7 @@ export function VirtualKeyboard() {
                 {/* Simple Keyboard Container */}
                 <div
                     ref={containerRef}
-                    className="simple-keyboard-theme w-full"
-                />
-
-                <div
-                    onPointerDown={onResizePointerDown}
-                    onPointerMove={onResizePointerMove}
-                    onPointerUp={onResizePointerUp}
-                    className="absolute right-2 bottom-2 h-4 w-4 cursor-se-resize rounded-sm bg-primary/50 hover:bg-muted/60"
-                    title="Redimensionar teclado"
+                    className="simple-keyboard-theme"
                 />
             </div>
         </div>

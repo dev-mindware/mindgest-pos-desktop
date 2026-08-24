@@ -22,7 +22,6 @@ type SimpleItem = {
 };
 
 export interface ProformData {
-  store: { id: string };
   client: Client;
   items: SimpleItem[];
   issueDate: string;

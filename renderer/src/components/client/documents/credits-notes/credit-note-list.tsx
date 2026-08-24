@@ -7,10 +7,11 @@ import {
   ListSkeleton,
   EmptyState,
   ButtonOnlyAction,
+  CreditNotesFiltersTSX,
+  CreditNotePreviewDrawer,
   InvoiceFiltersSkeleton,
+  Icon,
 } from "@/components";
-import { CreditNotePreviewDrawer } from "@/components/common/dynamic-drawer/credit-note-drawer";
-import { CreditNotesFiltersTSX } from "./credit-note-filters";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { usePagination, useURLSearchParams } from "@/hooks/common";
 import { DocumentStatusBadge } from "../common";
@@ -69,11 +70,18 @@ export function CreditNotesList({ storeId }: { storeId?: string }) {
     },
     {
       key: "action",
-      header: "Ação",
+      header: "Acção",
       render: (_, item) => (
         <ButtonOnlyAction
           data={item}
-          actions={[{ label: "Ver Nota", onClick: handlerDetailsCreditNote }]}
+          actions={[
+            {
+              label: "Ver Nota",
+              onClick: handlerDetailsCreditNote,
+              icon: "Eye",
+              variant: "default",
+            },
+          ]}
         />
       ),
     },
@@ -98,8 +106,20 @@ export function CreditNotesList({ storeId }: { storeId?: string }) {
   }
 
   return (
-    <div className="mt-6 space-y-8">
-      <CreditNotesFiltersTSX hasData={creditNotes.length > 0} />
+    <div className="mt-6 space-y-6">
+      <div className="flex items-start gap-3.5 p-4 rounded-xl bg-primary/5 border border-primary/20 text-foreground text-sm leading-relaxed shadow-xs">
+        <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5">
+          <Icon name="Info" className="w-4 h-4" />
+        </div>
+        <div className="space-y-1">
+          <h4 className="font-semibold text-primary">Como emitir uma Nota de Crédito?</h4>
+          <p className="text-muted-foreground text-xs md:text-sm">
+            Para emitir uma Nota de Crédito referente a uma venda existente, aceda à aba <strong className="text-foreground font-semibold">Factura</strong> ou <strong className="text-foreground font-semibold">Factura Recibo</strong>, clique nos <strong className="text-foreground font-semibold">3 pontos (...)</strong> da factura pretendida na tabela e escolha a opção <strong className="text-primary font-semibold">"Emitir Nota de Crédito"</strong>.
+          </p>
+        </div>
+      </div>
+
+      <CreditNotesFiltersTSX />
       {creditNotes.length > 0 ? (
         <>
           <GenericTable<CreditNotesResponse>

@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
 import { ClientAnalyticsResponse } from "@/types";
+import { excludeFinalConsumer } from "@/utils";
 
 export function useClientAnalytics() {
   const [reportType, setReportType] = useState("top");
@@ -28,7 +29,22 @@ export function useClientAnalytics() {
             endDate: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
           },
         });
-        return response.data;
+        const report = response.data as ClientAnalyticsResponse;
+        const clients = excludeFinalConsumer(report.clients);
+        const excludedClients = report.clients.length - clients.length;
+
+        return {
+          ...report,
+          clients,
+          count: Math.max(0, report.count - excludedClients),
+          summary: {
+            ...report.summary,
+            totalClients: Math.max(
+              0,
+              report.summary.totalClients - excludedClients,
+            ),
+          },
+        };
       },
       gcTime: 300_000,
       retry: 1,

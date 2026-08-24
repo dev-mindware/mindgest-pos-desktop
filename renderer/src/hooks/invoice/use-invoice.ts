@@ -5,9 +5,6 @@ import { CreditNoteFormData } from "@/schemas";
 import { ReceiptData } from "@/types/receipt";
 import { DownloadType, InvoicePayload } from "@/types";
 import { triggerBrowserDownload } from "@/utils/donwload.file";
-import { useNetworkStatus } from "../common/use-network-status";
-import { useOfflineStore } from "@/stores/offline/offline-store";
-import { useAuth } from "../auth/use-auth";
 
 type DownloadInvoiceProps = {
   id: string;
@@ -34,7 +31,7 @@ export function useCancelInvoice() {
   return useMutation({
     mutationFn: (id: string) => invoiceService.cancelInvoice(id),
     onSuccess: () => {
-      SucessMessage("Factura cancelada com sucesso!");
+      SucessMessage("Factura cancelada com sucesso.");
       queryClient.invalidateQueries({ queryKey: ["invoice-normal"] });
     },
   });
@@ -42,32 +39,11 @@ export function useCancelInvoice() {
 
 export function useCreateInvoice() {
   const queryClient = useQueryClient();
-  const { isOnline } = useNetworkStatus();
-  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (data: InvoicePayload) => {
-      if (!isOnline) {
-        if (window.ipc?.sync?.createInvoice) {
-          const response = await window.ipc.sync.createInvoice({
-            invoiceData: data,
-            storeId: user?.storeId || "unknown",
-            userId: user?.id || "unknown"
-          });
-          return response;
-        }
-        throw new Error("Sistema offline não inicializado.");
-      }
-
-      console.log("Creating invoice with data:");
-      console.log(data);
-      return invoiceService.createInvoice(data);
-    },
+    mutationFn: (data: InvoicePayload) => invoiceService.createInvoice(data),
     onSuccess: (response) => {
-      const isOffline = (response as any)?.offline;
-      SucessMessage(
-        isOffline ? "Factura salva localmente!" : "Factura criada com sucesso!",
-      );
+      SucessMessage("Factura criada com sucesso.");
       queryClient.invalidateQueries({ queryKey: ["invoice-normal"] });
       return response.data;
     },
@@ -95,13 +71,15 @@ export function useAnnulationNote() {
       id,
       reason,
       notes,
+      managerBarcode,
     }: {
       id: string;
       reason: string;
       notes: string;
-    }) => invoiceService.annulationNote(id, reason, notes),
+      managerBarcode?: string;
+    }) => invoiceService.annulationNote(id, reason, notes, managerBarcode),
     onSuccess: () => {
-      SucessMessage("Nota de crédito anulada com sucesso!");
+      SucessMessage("Documento anulado com sucesso.");
       queryClient.invalidateQueries({ queryKey: ["invoice-normal"] });
     },
   });

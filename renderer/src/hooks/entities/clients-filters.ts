@@ -12,7 +12,7 @@ export function useClientsFilters() {
     sortOrder: query.get("sortOrder") || null,
     createdAfter: query.get("createdAfter") || null,
     createdBefore: query.get("createdBefore") || null,
-    search: query.get("search") || null,
+    search: query.get("search-client") || null,
   };
 
   function setFilters(newFilters: Partial<clientsFilters>) {
@@ -46,10 +46,12 @@ export function useClientsFilters() {
     searchParams.delete("sortOrder");
     searchParams.delete("createdAfter");
     searchParams.delete("createdBefore");
+    searchParams.delete("search-client");
     searchParams.delete("search");
     searchParams.delete("page");
 
-    router.push(`?${searchParams.toString()}`, { scroll: false });
+    const qs = searchParams.toString();
+    router.push(qs ? `?${qs}` : "?", { scroll: false });
   }
 
   const page = Number(query.get("page")) || 1;

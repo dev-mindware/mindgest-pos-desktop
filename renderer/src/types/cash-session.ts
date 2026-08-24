@@ -15,14 +15,12 @@ export interface CashSession {
   fundType: string;
   workTime: string;
   authorizedById: string;
-  // Relationships
-  user?: {
-    name: string;
-    email: string;
-  };
+  authorizedByName: string;
+  remainingTime: string;
   store?: {
     name: string;
   };
+  cashierName: string;
 }
 
 export interface CashSessionFilters {
@@ -50,4 +48,13 @@ export interface CashSessionRequestFilters {
   storeId?: string;
   status?: "PENDING" | "APPROVED" | "REJECTED" | null;
   userId?: string;
+}
+
+export interface AuthorizeOpeningPayload {
+  initialCapital: string;
+  workTime: string;
+  storeId: string;
+  fundType: "COIN" | string;
+  cashierIds: string[];
+  managerBarcode: string;
 }

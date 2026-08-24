@@ -8,10 +8,10 @@ export const addProductSchema = z.object({
 
   selectedMeasurement: z.string().trim().optional(),
 
-  stock: z.number().min(0, "Estoque inicial deve ser maior ou igual a 0"),
+  stock: z.number().min(0, "O stock inicial deve ser maior ou igual a 0"),
   minStock: z
     .number()
-    .min(0, "Estoque mínimo deve ser maior ou igual a 0")
+    .min(0, "O stock mínimo deve ser maior ou igual a 0")
     .nullable()
     .optional(),
   tax: z

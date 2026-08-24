@@ -30,7 +30,7 @@ export function ButtonActionLink({
 }: Props) {
   const searchParams = useSearchParams();
   const invoice = searchParams.get("invoice");
-  // clients/documents/new
+    // clients/documents/new
 
   const getDetailsPath = () => {
     if (!invoice) return `${route}/${id}`;
@@ -47,7 +47,7 @@ export function ButtonActionLink({
         <Button
           variant="ghost"
           size="icon"
-          className="w-8 h-8 rounded-test-full hover:bg-gray-100"
+          className="w-8 h-8 rounded-full hover:bg-gray-100"
         >
           <Icon name="Ellipsis" className="w-4 h-4" />
           <span className="sr-only">Abrir menu</span>
@@ -58,7 +58,7 @@ export function ButtonActionLink({
         <DropdownMenuGroup>
           {primaryAction && (
             <DropdownMenuItem
-              className="rounded-test-md cursor-pointer"
+              className="rounded-md cursor-pointer"
               onClick={handlerPrimaryAction}
             >
               <Icon name="CheckCheck" className="w-4 h-4 text-gray-500" />
@@ -67,7 +67,7 @@ export function ButtonActionLink({
           )}
           {handlerSecondaryAction && (
             <DropdownMenuItem
-              className="rounded-test-md cursor-pointer"
+              className="rounded-md cursor-pointer"
               onClick={handlerSecondaryAction}
             >
               <Icon name="Ban" className="w-4 h-4 text-gray-500" />
@@ -75,7 +75,7 @@ export function ButtonActionLink({
             </DropdownMenuItem>
           )}
           <Link href={getDetailsPath()}>
-            <DropdownMenuItem className="rounded-test-md cursor-pointer">
+            <DropdownMenuItem className="rounded-md cursor-pointer">
               <Icon name="Eye" className="w-4 h-4 text-gray-500" />
               <span>Ver detalhes</span>
             </DropdownMenuItem>

@@ -7,9 +7,9 @@ import {
   GenericTable,
   ListSkeleton,
   ButtonOnlyAction,
+  ProformaPreviewDrawer,
   InvoiceFiltersSkeleton,
 } from "@/components";
-import { ProformaPreviewDrawer } from "@/components/common/dynamic-drawer/proforma-preview-drawer";
 import { InvoiceResponse } from "@/types";
 import { formatCurrency, formatDateTime } from "@/utils";
 import { useDebounce } from "use-debounce";
@@ -23,7 +23,7 @@ export function ProformaList({ storeId }: { storeId?: string }) {
   const { search } = useURLSearchParams("search_proforma");
   const [debounceSearch] = useDebounce(search, 200);
   const { filters, page, setPage } = useInvoiceFilters("proforma");
-  const { handlerDeleteProforma, handlerDetailsProforma, handlerConvertProforma } =
+  const { handlerDetailsProforma, handlerConvertProforma } =
     useProformaActions();
   const {
     data: proformas,
@@ -68,30 +68,31 @@ export function ProformaList({ storeId }: { storeId?: string }) {
     },
     {
       key: "action",
-      header: "Ação",
+      header: "Acção",
       render: (_, item) => (
         <ButtonOnlyAction
           data={item}
           actions={[
-            { label: "Ver Proforma", onClick: handlerDetailsProforma },
             {
-              label: "Converter em Factura",
+              label: "Ver Proforma",
+              onClick: handlerDetailsProforma,
+              icon: "Eye",
+              variant: "default",
+            },
+            {
+              label: "Converter em factura",
               onClick: handlerConvertProforma,
+              icon: "FileCheck",
+              variant: "default",
             },
             {
               label: "Editar",
-              onClick: () => {
+              onClick: (item) => {
                 router.push(`/documents/${item.id}/edit`);
               },
+              icon: "Pencil",
+              variant: "default",
             },
-            ...(item.status !== "CANCELLED"
-              ? [
-                {
-                  label: "Deletar",
-                  onClick: handlerDeleteProforma,
-                },
-              ]
-              : []),
           ]}
         />
       ),
@@ -115,7 +116,7 @@ export function ProformaList({ storeId }: { storeId?: string }) {
 
   return (
     <div className="justify-start mt-6 space-y-8">
-      <InvoiceFiltersTSX type="proforma" hasData={proformas.length > 0} />
+      <InvoiceFiltersTSX type="proforma" />
       {proformas.length > 0 ? (
         <>
           <GenericTable<InvoiceResponse>
@@ -141,7 +142,6 @@ export function ProformaList({ storeId }: { storeId?: string }) {
       )}
 
       <ProformaPreviewDrawer />
-      <DeleteProformaModal />
       <ConvertProformaModal />
       <DocumentSuccessModal />
     </div>

@@ -1,15 +1,24 @@
-"use client"
+"use client";
+
+import { useEffect } from "react";
 import { DinamicBreadcrumb } from "@/components/custom";
-import { NotificationDropdown } from "@/components/shared/notifications";
-import { Separator, SidebarTrigger } from "@/components/ui";
+import { NotificationDropdown, TutorialsModal } from "@/components/shared";
+import {
+  Separator,
+  SidebarTrigger,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui";
 import { useQueryState } from "nuqs";
 import { Icon, Input, Avatar, AvatarFallback, AvatarImage } from "@/components";
 import { useAuth } from "@/hooks/auth";
 import { useNetworkStatus } from "@/hooks/common/use-network-status";
-import { useOfflineSync } from "@/hooks/offline/use-offline-sync";
-import { useEffect } from "react";
-import { useOfflineStore } from "@/stores/offline/offline-store";
-import { MindAssistantChat } from "@/components/mind-ai/mind-assistant-chat";
+import { useOfflineStore } from "@/stores/offline";
+import { OnboardingTourButton } from "@/components/common/onboarding-tour-button";
+import type { OnboardingTourId } from "@/constants/onboarding-tours";
 
 type Props = {
   routePath?: string;
@@ -18,6 +27,7 @@ type Props = {
   showSeparator?: boolean;
   children: React.ReactNode;
   variant?: "default" | "counter";
+  onboardingTourId?: OnboardingTourId;
 };
 
 export function PageWrapper({
@@ -27,22 +37,22 @@ export function PageWrapper({
   showSeparator = true,
   children,
   variant = "default",
+  onboardingTourId,
 }: Props) {
   const { user } = useAuth();
   const { isOnline } = useNetworkStatus();
-  const { isSyncing, pendingCount } = useOfflineSync();
-  const [search, setSearch] = useQueryState("search", {
-    defaultValue: "",
-    shallow: true,
-  });
-
-  const { initialize } = useOfflineStore();
+  const { queue, initialize } = useOfflineStore();
 
   useEffect(() => {
     if (user?.id) {
       initialize(user.id);
     }
   }, [initialize, user?.id]);
+
+  const [search, setSearch] = useQueryState("search", {
+    defaultValue: "",
+    shallow: true,
+  });
 
   return (
     <div className="bg-background h-screen flex flex-col overflow-hidden w-full">
@@ -66,37 +76,134 @@ export function PageWrapper({
 
         {/* Counter Variant Header Content */}
         {variant === "counter" && (
-          <div className="flex items-center gap-4 w-full justify-center px-4">
-            <div className="relative w-96">
-              <Icon name="Search" className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 data-[orientation=vertical]:h-4"
+            />
+            <div className="relative w-64 md:w-80">
+              <Icon name="Search" className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Pesquisar no Menu..."
-                className="pl-8 bg-muted/50 border-0"
+                className="pl-8 bg-muted/50 border-0 h-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                data-tour="pos-product-search"
               />
             </div>
           </div>
         )}
 
-        <div className="flex items-center mr-4 space-x-2 md:space-x-4">
-          <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-muted/30 border">
-            <div className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mr-1">
+        {/* DESKTOP ACTIONS: Inline Row (Hidden on Mobile) */}
+        <div className="hidden md:flex items-center mr-4 space-x-3">
+          {/* Connectivity & Offline Sync Status Indicator */}
+          <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-muted/40 border border-border/60 shadow-sm shrink-0">
+            <div className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'}`} />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               {isOnline ? 'Online' : 'Offline'}
             </span>
-            {pendingCount > 0 && (
-              <div className="flex items-center gap-1 ml-1 border-l pl-2 border-muted-foreground/30">
-                <Icon name={isSyncing ? "RefreshCcw" : "CloudUpload"} className={`h-3 w-3 ${isSyncing ? 'animate-spin text-amber-500' : 'text-blue-500'}`} />
-                <span className="text-[10px] font-bold text-foreground">{pendingCount}</span>
-              </div>
+            {queue.length > 0 && (
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
+                <Icon name="RefreshCw" size={10} className="animate-spin" />
+                {queue.length} pendente{queue.length > 1 ? 's' : ''}
+              </span>
             )}
           </div>
 
-          <MindAssistantChat />
+          <TutorialsModal />
+          {onboardingTourId && <OnboardingTourButton tourId={onboardingTourId} />}
           <NotificationDropdown />
+
+          {variant === "counter" && (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.name} />
+                  <AvatarFallback className="text-xs font-bold text-primary bg-primary/10">
+                    {user?.name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col text-start overflow-hidden">
+                  <span
+                    className="text-xs font-semibold truncate max-w-[120px]"
+                    title={user?.name}
+                  >
+                    {user?.name}
+                  </span>
+                  <span
+                    className="text-[10px] text-muted-foreground truncate"
+                    title={user?.role}
+                  >
+                    {user?.role}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* MOBILE ACTIONS: Grouped Dropdown Menu (Hidden on Desktop) */}
+        <div className="flex md:hidden items-center mr-3 gap-2">
+          {/* Mobile Connectivity dot */}
+          <div className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-red-500'}`} title={isOnline ? 'Online' : 'Offline'} />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative rounded-xl border border-border/60 bg-card/80 hover:bg-accent"
+                aria-label="Menu de Ações Rápidas"
+              >
+                <Icon name="SlidersHorizontal" className="h-4 w-4 text-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-64 p-2 rounded-2xl shadow-xl border-border/80 bg-card/95 backdrop-blur-xl space-y-1 z-50"
+              sideOffset={8}
+            >
+              <div className="flex items-center justify-between px-2.5 py-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Estado
+                </span>
+                <span className="text-xs font-bold flex items-center gap-1.5">
+                  <div className={`h-2 w-2 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                  {isOnline ? 'Online' : 'Offline'}
+                  {queue.length > 0 && ` (${queue.length} pendentes)`}
+                </span>
+              </div>
+              <DropdownMenuSeparator className="my-1" />
+
+              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-muted/60 transition-colors">
+                <span className="text-xs font-medium text-foreground flex items-center gap-2">
+                  <Icon name="Bell" className="w-4 h-4 text-primary" /> Notificações
+                </span>
+                <NotificationDropdown />
+              </div>
+
+              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-muted/60 transition-colors">
+                <span className="text-xs font-medium text-foreground flex items-center gap-2">
+                  <Icon name="Video" className="w-4 h-4 text-primary" /> Tutoriais
+                </span>
+                <TutorialsModal />
+              </div>
+
+              {onboardingTourId && (
+                <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-muted/60 transition-colors">
+                  <span className="text-xs font-medium text-foreground flex items-center gap-2">
+                    <Icon name="CircleHelp" className="w-4 h-4 text-primary" /> Tour Guiado
+                  </span>
+                  <OnboardingTourButton tourId={onboardingTourId} />
+                </div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
+
+      {/* Main Page Layout Container */}
       {variant === "counter" ? (
         <div className="flex-1 overflow-hidden min-w-0 w-full">
           {children}

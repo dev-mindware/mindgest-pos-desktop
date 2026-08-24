@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation";
 export const PENDING_SUBSCRIPTION_MODAL_ID = "pending-subscription-modal";
 
 export function PendingSubscriptionModal() {
-  const { closeModal } = useModal();
   const router = useRouter();
+  const { closeModal } = useModal();
 
   const handleCheckStatus = () => {
     closeModal(PENDING_SUBSCRIPTION_MODAL_ID);
@@ -24,19 +24,21 @@ export function PendingSubscriptionModal() {
           <span>Subscrição Pendente</span>
         </div>
       }
-      description="Sua subscrição está em processo de verificação."
       canClose
+      description="A sua subscrição está em processo de verificação."
       className="sm:max-w-md"
     >
       <div className="space-y-4 pt-2">
-        <div className="p-4 rounded-test-lg bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/20 space-y-3">
+        <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/20 space-y-3">
           <div className="space-y-2 text-sm text-yellow-800 dark:text-yellow-200">
             <p>
-              Sua subscrição actual está aguardando confirmação de pagamento ou aprovação administrativa.
+              A sua subscrição actual está a aguardar a confirmação do pagamento ou
+              aprovação administrativa.
             </p>
             <p>
-              Enquanto isso, algumas funcionalidades do sistema podem estar limitadas.
-              Assim que o processo for concluído, você receberá uma notificação e o acesso total será liberado.
+              Enquanto isso, algumas funcionalidades do sistema podem estar
+              limitadas. Quando o processo estiver concluído, receberá uma
+              notificação e o acesso total será disponibilizado.
             </p>
           </div>
         </div>
@@ -53,7 +55,6 @@ export function PendingSubscriptionModal() {
             onClick={handleCheckStatus}
             className="gap-2 bg-yellow-600 hover:bg-yellow-700 text-white border-none"
           >
-            <Icon name="FileText" className="w-4 h-4" />
             Ver Estado
           </Button>
         </div>

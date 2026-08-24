@@ -13,7 +13,6 @@ export interface Company {
   createdAt?: string;
   updatedAt?: string;
   subscription: Subscription;
-  stores?: Store[];
 }
 
 export interface Store {
@@ -26,6 +25,7 @@ export type CompanyData = {
   name: string;
   password: string;
   phone: string;
+  affiliateCode?: string;
   company: Omit<
     Company,
     "id" | "isActive" | "createdAt" | "updatedAt" | "subscription"

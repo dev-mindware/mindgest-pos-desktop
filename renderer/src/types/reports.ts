@@ -15,6 +15,9 @@ export interface ClientAnalytics {
   clientId: string;
   clientName: string;
   clientEmail: string;
+  taxNumber?: string | null;
+  nif?: string | null;
+  clientTaxNumber?: string | null;
   totalPurchases: number;
   totalRevenue: number;
   totalInvoices: number;
@@ -68,4 +71,33 @@ export interface SalesReportData {
   endDate: string;
   data: SalesDataPoint[];
   summary: SalesSummary;
+}
+
+export type ReportExportType = "SALES" | "BILLING" | "STOCK";
+
+export interface ReportExportParams {
+  reportType: ReportExportType;
+  startDate: string;
+  endDate: string;
+}
+
+export interface PosManagementSummary {
+  dailyRevenue: number;
+  dailyExpenses: number;
+  pendingRequestsCount: number;
+  totalSessions: number;
+}
+
+export interface PosManagementDashboard {
+  summary: PosManagementSummary;
+  cashiers: Array<{
+    id: string;
+    name: string;
+    user: string;
+    status: string;
+    totalSold: number;
+    activityTime: string;
+    progress: number;
+  }>;
+  openingRequests: unknown[];
 }

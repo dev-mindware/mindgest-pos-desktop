@@ -38,12 +38,24 @@ contextBridge.exposeInMainWorld("ipc", {
       ipcRenderer.invoke("security:save-license", { licenseJwt, storeId }),
     checkClock: () => ipcRenderer.invoke("security:check-clock"),
     getFiscalStatus: () => ipcRenderer.invoke("security:get-fiscal-status"),
+    saveSavedCredentials: (credentials: { email: string; password: string }) =>
+      ipcRenderer.invoke("security:save-credentials", credentials),
+    getSavedCredentials: () =>
+      ipcRenderer.invoke("security:get-saved-credentials"),
+    clearSavedCredentials: () =>
+      ipcRenderer.invoke("security:clear-saved-credentials"),
   },
-  // LAN Configuration Bridge
+  // LAN Configuration & Multi-Terminal Telemetry Bridge
   lan: {
     getLocalIp: () => ipcRenderer.invoke("lan:get-local-ip"),
     getConfig: () => ipcRenderer.invoke("lan:get-config"),
     setConfig: (config: any) => ipcRenderer.invoke("lan:set-config", config),
+    rotateSecret: () => ipcRenderer.invoke("lan:rotate-secret"),
+    getConnectedTerminals: () => ipcRenderer.invoke("lan:get-connected-terminals"),
+    revokeTerminal: (params: { terminalId: string }) => ipcRenderer.invoke("lan:revoke-terminal", params),
+    testConnection: (params: { targetIp: string; lanSecret?: string }) => ipcRenderer.invoke("lan:test-connection", params),
+    sendHeartbeat: (params: { masterIp: string; lanSecret?: string; terminalName?: string }) => ipcRenderer.invoke("lan:send-heartbeat", params),
+    checkSystemCapability: () => ipcRenderer.invoke("lan:check-system-capability"),
   },
   // Sync Bridge (Cloud to Local)
   sync: {
@@ -117,5 +129,36 @@ contextBridge.exposeInMainWorld("ipc", {
     checkForUpdates: () => ipcRenderer.invoke("update:check-for-updates"),
     downloadUpdate: () => ipcRenderer.invoke("update:download-update"),
     installUpdate: () => ipcRenderer.invoke("update:install-update"),
+  },
+  notification: {
+    show: (params: { title: string; body: string; silent?: boolean }) =>
+      ipcRenderer.invoke("notification:show", params),
+  },
+  printer: {
+    openCashDrawer: (params?: { options?: any; auditEntry?: any }) =>
+      ipcRenderer.invoke("printer:open-cash-drawer", params || {}),
+    testConnection: (params?: { options?: any }) =>
+      ipcRenderer.invoke("printer:test-connection", params || {}),
+    getSystemPrinters: () =>
+      ipcRenderer.invoke("printer:get-system-printers"),
+  },
+  customerDisplay: {
+    toggle: () => ipcRenderer.invoke("customer-display:toggle"),
+    open: () => ipcRenderer.invoke("customer-display:open"),
+    close: () => ipcRenderer.invoke("customer-display:close"),
+    isOpen: () => ipcRenderer.invoke("customer-display:is-open"),
+    requestState: () => ipcRenderer.invoke("customer-display:request-state"),
+    update: (partialState: any) => ipcRenderer.invoke("customer-display:update", partialState),
+    clear: (storeName?: string) => ipcRenderer.invoke("customer-display:clear", storeName),
+    onUpdate: (callback: (state: any) => void) => {
+      const handler = (_event: any, state: any) => callback(state);
+      ipcRenderer.on("customer-display:on-update", handler);
+      return () => ipcRenderer.removeListener("customer-display:on-update", handler);
+    },
+    onHardwareChange: (callback: (data: { event: 'added' | 'removed' }) => void) => {
+      const handler = (_event: any, data: any) => callback(data);
+      ipcRenderer.on("customer-display:hardware-change", handler);
+      return () => ipcRenderer.removeListener("customer-display:hardware-change", handler);
+    },
   }
 });

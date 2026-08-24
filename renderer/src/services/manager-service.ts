@@ -11,4 +11,7 @@ export const managerService = {
   deleteManager: async (id: string) => {
     return api.delete<ManagerData>(`/users/${id}`);
   },
+  toggleStatusManager: async (id: string) => {
+    return api.patch<ManagerData>(`/users/${id}/toggle-status`);
+  },
 };

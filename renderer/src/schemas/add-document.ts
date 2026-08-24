@@ -1,35 +1,66 @@
 import { z } from "zod";
-import { ItemSchema, phoneNumberSchema, taxNumberSchema } from "./helps";
+import {
+  ItemSchema,
+  optionalTaxNumberSchema,
+  phoneNumberSchema,
+} from "./helps";
 
 export const CompanySchema = z.object({
   name: z
     .string()
     .trim()
     .min(3, "O nome da empresa precisa ter pelo menos 3 caracteres")
-    .optional(),
-  taxNumber: taxNumberSchema.optional(),
+    .optional()
+    .or(z.literal("")),
+  taxNumber: optionalTaxNumberSchema,
   address: z
     .string()
     .trim()
     .min(5, "O endereço deve ter pelo menos 5 caracteres")
-    .optional(),
-  contact: phoneNumberSchema.optional(),
+    .optional()
+    .or(z.literal("")),
+  contact: phoneNumberSchema.optional().or(z.literal("")),
 });
 
 export type CompanyFormData = z.infer<typeof CompanySchema>;
+
+const ClientReceiptSchema = z.object({
+  name: z.string().trim().optional().or(z.literal("")),
+  taxNumber: optionalTaxNumberSchema,
+  address: z
+    .string()
+    .trim()
+    .min(5, "O endereço deve ter pelo menos 5 caracteres")
+    .optional()
+    .or(z.literal("")),
+  phone: phoneNumberSchema.optional().or(z.literal("")),
+  email: z
+    .string()
+    .trim()
+    .email("O email informado não é válido")
+    .optional()
+    .or(z.literal("")),
+});
 
 const ClientSchema = z.object({
   name: z
     .string()
     .trim()
     .min(3, "O nome do cliente precisa ter pelo menos 3 caracteres"),
-  taxNumber: taxNumberSchema.optional(),
+  taxNumber: optionalTaxNumberSchema,
   address: z
     .string()
     .trim()
-    .min(5, "O endereço deve ter pelo menos 5 caracteres"),
-  phone: phoneNumberSchema.optional(),
-  email: z.string().trim().email("O email informado não é válido").optional(),
+    .min(5, "O endereço deve ter pelo menos 5 caracteres")
+    .optional()
+    .or(z.literal("")),
+  phone: phoneNumberSchema.optional().or(z.literal("")),
+  email: z
+    .string()
+    .trim()
+    .email("O email informado não é válido")
+    .optional()
+    .or(z.literal("")),
 });
 
 /**
@@ -61,11 +92,12 @@ const InvoiceBaseSchema = z.object({
   globalRetention: z.number().min(0),
 
   globalDiscount: z.number().min(0),
+  currencyCode: z.enum(["AOA", "USD", "EUR"]),
   notes: z.string().optional(),
 });
 
 /**
- * Invoice (Factura normal)
+ * Invoice (factura normal)
  */
 
 export const InvoiceSchema = InvoiceBaseSchema.extend({
@@ -85,6 +117,7 @@ export const InvoiceSchema = InvoiceBaseSchema.extend({
 export type InvoiceFormData = z.infer<typeof InvoiceSchema>;
 
 export const ProformaSchema = InvoiceBaseSchema.extend({
+  client: ClientReceiptSchema,
   proformaExpiresAt: z.string().trim().min(1, "Campo obrigatório"),
   paymentMethod: z
     .string()
@@ -104,6 +137,7 @@ export const ProformaSchema = InvoiceBaseSchema.extend({
 export type ProformaFormData = z.infer<typeof ProformaSchema>;
 
 export const InvoiceReceiptSchema = InvoiceBaseSchema.extend({
+  client: ClientReceiptSchema,
   paymentMethod: z
     .string()
     .trim()
@@ -124,7 +158,7 @@ export const InvoiceReceiptSchema = InvoiceBaseSchema.extend({
 export type InvoiceReceiptFormData = z.infer<typeof InvoiceReceiptSchema>;
 
 /**
- * Receipt (Recibo gerado de factura)
+ * Receipt (recibo gerado a partir de uma factura)
  */
 export const ReceiptSchema = z.object({
   issueDate: z.string().trim().min(1, "A data de emissão é obrigatória"),

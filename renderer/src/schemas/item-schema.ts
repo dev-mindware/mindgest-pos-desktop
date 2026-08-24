@@ -11,11 +11,23 @@ export const itemSchema = z
     quantity: z.number().nullable().optional(),
 
     minStock: z.number().nullable().optional(),
-    maxStock: z.number().nullable().optional(),
 
     unit: z.string().trim().optional(),
-    weight: z.number().nullable().optional(),
-    dimensions: z.string().trim().optional(),
+    weight: z.number({ invalid_type_error: "O peso deve ser um número válido" }).positive("O peso deve ser positivo").optional(),
+    dimensions: z
+      .string()
+      .trim()
+      .optional()
+      .refine(
+        (val) => {
+          if (!val) return true;
+          const regex = /^\d+([.,]\d+)?\s*[xX]\s*\d+([.,]\d+)?(\s*[xX]\s*\d+([.,]\d+)?)?$/;
+          return regex.test(val);
+        },
+        {
+          message: "Formato inválido. Use: 10x20 ou 10x20x30",
+        }
+      ),
     image: z.string().trim().url("URL inválida").optional(),
 
     type: z.enum(["SERVICE", "PRODUCT"], {
@@ -25,31 +37,14 @@ export const itemSchema = z
     companyId: z.string().trim().optional(),
     storeId: z.string().trim().optional(),
     categoryId: z.string().trim().min(1, "Campo obrigatório"),
+    supplierId: z.string().trim().nullable().optional(),
 
     hasExpiry: z.boolean().optional(),
     expiryDate: z.string().trim().optional(),
     daysToExpiry: z.coerce.string().optional(),
-    taxId: z.string().trim().optional().nullable(),
-    exemptionCode: z.string().trim().optional(),
+    taxId: z.string().trim().min(1, "Seleccione um imposto"),
   })
 
-  .refine(
-    (data) => {
-      if (
-        data.maxStock !== undefined &&
-        data.maxStock !== null &&
-        data.minStock !== undefined &&
-        data.minStock !== null
-      ) {
-        return data.maxStock >= data.minStock;
-      }
-      return true;
-    },
-    {
-      message: "O stock máximo deve ser maior ou igual ao stock mínimo",
-      path: ["maxStock"],
-    },
-  )
   .refine(
     (data) => {
       if (

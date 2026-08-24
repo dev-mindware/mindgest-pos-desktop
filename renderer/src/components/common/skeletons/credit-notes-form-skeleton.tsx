@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function CreditNoteFormSkeleton() {
   return (
-    <div className="p-8 space-y-8 border border-border rounded-test-lg">
+    <div className="p-8 space-y-8 border border-border rounded-lg">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Skeleton className="h-4 w-20" />

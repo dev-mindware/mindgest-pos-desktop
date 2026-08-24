@@ -1,5 +1,5 @@
-import { useModal } from "@/stores/modal/use-modal-store";
 import { SupplierResponse } from "@/types";
+import { useModal } from "@/stores/modal/use-modal-store";
 import { currentSupplierStore } from "@/stores/entities";
 
 export function useSupplierActions() {
@@ -11,19 +11,19 @@ export function useSupplierActions() {
     setCurrentSupplier(supplier);
   }
 
-  function handlerDetailsSupplier(supplier: SupplierResponse) {
-    openModal("view-supplier");
-    setCurrentSupplier(supplier);
-  }
-
   function handlerDeleteSupplier(supplier: SupplierResponse) {
     openModal("delete-supplier");
     setCurrentSupplier(supplier);
   }
 
+  function handlerRestockSupplier(supplier: SupplierResponse) {
+    openModal("restock-supplier");
+    setCurrentSupplier(supplier);
+  }
+
   return {
     handlerDeleteSupplier,
-    handlerDetailsSupplier,
     handlerEditSupplier,
+    handlerRestockSupplier,
   };
 }

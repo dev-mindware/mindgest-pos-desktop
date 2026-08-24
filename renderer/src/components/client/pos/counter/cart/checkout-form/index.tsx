@@ -1,13 +1,12 @@
 "use client";
 
 import { Button } from "@/components";
-import { InvoicePreviewDrawer as PosInvoicePreviewDrawer } from "../../modals/invoice-preview-drawer";
 import { ErrorMessage } from "@/utils";
 import { useCartCheckout, CartItem } from "@/hooks";
 import { PaymentSummary } from "./payment-summary";
 import { CustomerSelection } from "./customer-selection";
 import { PaymentMethods } from "./payment-methods";
-import { DocumentSuccessModal } from "@/components/client/documents/modals/document-success-modal";
+import { PrintSaleDialog } from "./print-sale-dialog";
 
 interface CartCheckoutFormProps {
     cartItems: CartItem[];
@@ -22,13 +21,6 @@ export function CartCheckoutForm({
     type = "invoice",
     cashSessionId,
 }: CartCheckoutFormProps) {
-    const checkout = useCartCheckout({
-        cartItems,
-        type,
-        onSuccess,
-        cashSessionId,
-    });
-
     const {
         form: { handleSubmit },
         paymentMethod,
@@ -41,23 +33,41 @@ export function CartCheckoutForm({
         setIsCustomerExpanded,
         newCustomerPhone,
         setNewCustomerPhone,
-        newCustomerNif,
-        setNewCustomerNif,
+        newCustomerName,
+        setNewCustomerName,
+        newCustomerTaxNumber,
+        setNewCustomerTaxNumber,
+        newCustomerAddress,
+        setNewCustomerAddress,
+        setNewCustomerVerification,
         selectedClient,
         handleClientChange,
         handleQuickCash,
-        handlePreview,
-        handleCancel,
-        handleFinalSubmit,
-        isPreviewOpen,
-        setIsPreviewOpen,
-        pendingPayload,
+        handleCheckout,
+        printDocument,
+        handlePrint,
+        dismissPrint,
+        isPrinting,
         isPending,
-    } = checkout;
+    } = useCartCheckout({ cartItems, type, onSuccess, cashSessionId });
+
+    const handleValidationError = (errors: any) => {
+        console.error("Form Validation Errors:", errors);
+
+        if (errors?.items) {
+            ErrorMessage("Adicione pelo menos um produto ao carrinho antes de criar a factura-recibo.");
+            return;
+        }
+
+        ErrorMessage("Verifique os campos obrigatórios.");
+    };
 
     return (
         <>
-            <div className="mt-4 p-4 flex flex-col gap-4 bg-muted/30 border border-dashed rounded-test-md" data-tour="pos-checkout">
+            <div
+                className="mt-4 p-4 border border-dashed rounded-md bg-muted/30"
+                data-tour="pos-checkout"
+            >
                 <PaymentSummary
                     subtotal={totals.subtotal}
                     taxAmount={totals.taxAmount}
@@ -69,14 +79,18 @@ export function CartCheckoutForm({
 
                 <CustomerSelection
                     isExpanded={isCustomerExpanded}
-                    onToggleExpand={() => setIsCustomerExpanded((s: boolean) => !s)}
+                    onToggleExpand={() => setIsCustomerExpanded(!isCustomerExpanded)}
                     selectedClient={selectedClient}
                     onClientChange={handleClientChange}
                     newCustomerPhone={newCustomerPhone}
                     onPhoneChange={setNewCustomerPhone}
-                    newCustomerNif={newCustomerNif}
-                    onNifChange={setNewCustomerNif}
-                    isProforma={type === "proforma"}
+                    newCustomerName={newCustomerName}
+                    onNameChange={setNewCustomerName}
+                    newCustomerTaxNumber={newCustomerTaxNumber}
+                    onTaxNumberChange={setNewCustomerTaxNumber}
+                    newCustomerAddress={newCustomerAddress}
+                    onAddressChange={setNewCustomerAddress}
+                    onVerificationStatusChange={setNewCustomerVerification}
                 />
 
                 <PaymentMethods
@@ -89,31 +103,21 @@ export function CartCheckoutForm({
                 />
 
                 <Button
-                    type="button"
-                    className="w-full font-bold text-sm"
-                    onClick={handleSubmit(handlePreview, (errors: any) => {
-                        console.error("Form Validation Errors:", errors);
-                        ErrorMessage("Verifique os campos obrigatórios");
-                    })}
+                    className="w-full"
+                    onClick={handleSubmit(handleCheckout, handleValidationError)}
                     disabled={isPending}
                     data-tour="pos-submit"
                 >
-                    {isPending ? "Processando..." : "Confirmar Pagamento"}
+                    {isPending ? "A processar..." : "Confirmar pagamento"}
                 </Button>
             </div>
 
-            <PosInvoicePreviewDrawer
-                open={isPreviewOpen}
-                onOpenChange={setIsPreviewOpen}
-                data={pendingPayload}
-                cartItems={cartItems}
-                onConfirm={handleFinalSubmit}
-                isLoading={isPending}
-                type={type}
+            <PrintSaleDialog
+                document={printDocument}
+                isPrinting={isPrinting}
+                onPrint={handlePrint}
+                onDismiss={dismissPrint}
             />
-
-            <DocumentSuccessModal />
         </>
     );
 }
-

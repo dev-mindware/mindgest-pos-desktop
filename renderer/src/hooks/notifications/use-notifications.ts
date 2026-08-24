@@ -1,20 +1,134 @@
 "use client";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useModal } from "@/stores/modal/use-modal-store";
-import { useCurrentNotificationStore } from "@/stores";
+import { playSoundEffect, primeAudioPlayback } from "@/utils";
+import {
+  useCurrentNotificationStore,
+  useNotificationSettingsStore,
+} from "@/stores";
 import { NotificationParams, NotificationType } from "@/types/notification";
 import { notificationsService } from "@/services/notifications-service";
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { notificationAlertState } from "./notification-alert-state";
 
 let socket: Socket;
 
 export function useNotifications(
-  initialFilters: Omit<NotificationParams, "skip" | "take"> = {}
+  initialFilters: Omit<NotificationParams, "skip" | "take"> = {},
 ) {
   const queryClient = useQueryClient();
+  const filtersKey = JSON.stringify(initialFilters);
+  const filters = useMemo(() => initialFilters, [filtersKey]);
+  const queryKey = useMemo(() => ["notifications", filters] as const, [filters]);
   const { openModal } = useModal();
   const { setCurrentNotification } = useCurrentNotificationStore();
+  const { soundEnabled, soundType, browserNotificationsEnabled } =
+    useNotificationSettingsStore();
+
+  const soundEnabledRef = useRef(soundEnabled);
+  const soundTypeRef = useRef(soundType);
+  const browserNotificationsEnabledRef = useRef(browserNotificationsEnabled);
+  const hasEstablishedBaselineRef = useRef(false);
+
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    soundTypeRef.current = soundType;
+  }, [soundType]);
+
+  useEffect(() => {
+    browserNotificationsEnabledRef.current = browserNotificationsEnabled;
+  }, [browserNotificationsEnabled]);
+
+  useEffect(() => {
+    if (
+      typeof Notification !== "undefined" &&
+      Notification.permission === "granted" &&
+      !browserNotificationsEnabled
+    ) {
+      useNotificationSettingsStore.setState({
+        browserNotificationsEnabled: true,
+      });
+    }
+  }, [browserNotificationsEnabled]);
+
+  useEffect(() => {
+    void primeAudioPlayback(soundType);
+  }, [soundType]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const unlockAudio = async () => {
+      await primeAudioPlayback(soundTypeRef.current);
+    };
+
+    window.addEventListener("pointerdown", unlockAudio, { passive: true });
+    window.addEventListener("keydown", unlockAudio);
+
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+    };
+  }, []);
+
+  const playNotificationSound = useCallback(async () => {
+    if (!soundEnabledRef.current) return;
+
+    const didPlay = await playSoundEffect(soundTypeRef.current, 0.5);
+    if (!didPlay) {
+      console.warn("Navegador não permitiu reproduzir o som da notificação.");
+    }
+  }, []);
+
+  const showBrowserNotification = useCallback((notification: NotificationType) => {
+    if (!browserNotificationsEnabledRef.current) {
+      return;
+    }
+
+    // Priorizar notificação nativa do Electron (com logótipo Mindgest e AppUserModelId)
+    if (typeof window !== "undefined" && window.ipc?.notification?.show) {
+      void window.ipc.notification.show({
+        title: notification.title,
+        body: notification.message,
+        silent: true,
+      });
+      return;
+    }
+
+    if (
+      typeof Notification !== "undefined" &&
+      Notification.permission === "granted"
+    ) {
+      const browserNotification = new Notification(notification.title, {
+        body: notification.message,
+        icon: "/mindgest.png",
+        tag: notification.id,
+      });
+
+      browserNotification.onclick = () => {
+        window.focus();
+        browserNotification.close();
+      };
+    }
+  }, []);
+
+  const alertForNewNotification = useCallback(
+    (notification: NotificationType) => {
+      if (!notificationAlertState.shouldAlert(notification.id)) return;
+
+      void playNotificationSound();
+      showBrowserNotification(notification);
+    },
+    [playNotificationSound, showBrowserNotification],
+  );
 
   const TAKE = 5;
 
@@ -28,10 +142,10 @@ export function useNotifications(
     error,
     refetch,
   } = useInfiniteQuery({
-    queryKey: ["notifications", initialFilters],
+    queryKey,
     queryFn: ({ pageParam = 0 }) =>
       notificationsService.getNotifications({
-        ...initialFilters,
+        ...filters,
         skip: pageParam as number,
         take: TAKE,
       }),
@@ -46,43 +160,106 @@ export function useNotifications(
 
   const notifications = data?.pages.flatMap((page) => page.data) ?? [];
 
-  // Socket.IO Connection — conecta ao servidor VPS (sem o sufixo /api)
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api";
-    const socketUrl = apiUrl.replace(/\/api$/, ""); // Remove /api para a ligação Socket.IO
-    socket = io(socketUrl, { // VPS
-      transports: ["websocket"],
+    if (!data || hasEstablishedBaselineRef.current) return;
+
+    const existingIds = data.pages.flatMap((page) =>
+      page.data.map((notification) => notification.id),
+    );
+
+    notificationAlertState.establishBaseline(existingIds);
+    hasEstablishedBaselineRef.current = true;
+  }, [data]);
+
+  useEffect(() => {
+    if (!notificationAlertState.isBaselineEstablished()) return;
+
+    notifications.forEach((notification) => {
+      alertForNewNotification(notification);
     });
+  }, [notifications, alertForNewNotification]);
 
-    socket.on("connect", () => {
-      console.log("Connected to notification socket");
-    });
+  useEffect(() => {
+    let isSubscribed = true;
+    let activeSocket: Socket | null = null;
 
-    socket.on("new_notification", (newNotification: NotificationType) => {
-      // Optimistically update the cache
-      queryClient.setQueryData<any>(["notifications", initialFilters], (oldData: any) => {
-        if (!oldData) return oldData;
-
-        // Insert into the first page
-        const newPages = [...oldData.pages];
-        if (newPages.length > 0) {
-          newPages[0] = {
-            ...newPages[0],
-            data: [newNotification, ...newPages[0].data]
-          };
+    const setupSocket = async () => {
+      try {
+        const rawUrl =
+          process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api";
+        let socketUrl = rawUrl;
+        try {
+          const parsed = new URL(rawUrl);
+          socketUrl = `${parsed.origin}/notifications`;
+        } catch {
+          socketUrl = `${rawUrl.replace(/\/api\/?$/, "")}/notifications`;
         }
 
-        return {
-          ...oldData,
-          pages: newPages,
+        let token: string | null = null;
+        try {
+          if (typeof window !== "undefined") {
+            token = localStorage.getItem("accessToken") || localStorage.getItem("auth-token");
+          }
+        } catch (tokenErr) {
+          console.warn("Could not retrieve access token for socket:", tokenErr);
+        }
+
+        if (!isSubscribed) return;
+
+        activeSocket = io(socketUrl, {
+          transports: ["websocket", "polling"],
+          auth: token ? { token } : undefined,
+          query: token ? { token } : undefined,
+        });
+
+        activeSocket.on("connect", () => {
+          console.log("Connected to notification socket");
+        });
+
+        const handleIncomingNotification = (newNotification: NotificationType) => {
+          if (!newNotification || !newNotification.id) return;
+
+          queryClient.invalidateQueries({ queryKey: ["opening-requests"] });
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          alertForNewNotification(newNotification);
+
+          queryClient.setQueryData<any>(
+            queryKey,
+            (oldData: any) => {
+              if (!oldData) return oldData;
+              const newPages = [...oldData.pages];
+              if (newPages.length > 0) {
+                const firstPage = (newPages[0].data || []) as NotificationType[];
+                if (firstPage.some((n) => n.id === newNotification.id)) {
+                  return oldData;
+                }
+
+                newPages[0] = {
+                  ...newPages[0],
+                  data: [newNotification, ...firstPage],
+                };
+              }
+              return { ...oldData, pages: newPages };
+            },
+          );
         };
-      });
-    });
+
+        activeSocket.on("notification", handleIncomingNotification);
+        activeSocket.on("new_notification", handleIncomingNotification);
+      } catch (err) {
+        console.warn("Socket initialization error:", err);
+      }
+    };
+
+    void setupSocket();
 
     return () => {
-      if (socket) socket.disconnect();
+      isSubscribed = false;
+      if (activeSocket) {
+        activeSocket.disconnect();
+      }
     };
-  }, [queryClient, initialFilters]);
+  }, [alertForNewNotification, queryClient, queryKey]);
 
   // Mutations
   const { mutateAsync: markAsRead } = useMutation({
@@ -92,18 +269,21 @@ export function useNotifications(
       // For now, simpler to just invalidate or manually update if critical.
       // Let's manually update cache for responsiveness
 
-      queryClient.setQueryData<any>(["notifications", initialFilters], (oldData: any) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page: any) => ({
-            ...page,
-            data: page.data.map((n: NotificationType) =>
-              n.id === id ? { ...n, isRead: true } : n
-            )
-          }))
-        };
-      });
+      queryClient.setQueryData<any>(
+        queryKey,
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              data: page.data.map((n: NotificationType) =>
+                n.id === id ? { ...n, isRead: true } : n,
+              ),
+            })),
+          };
+        },
+      );
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -114,16 +294,19 @@ export function useNotifications(
   const { mutateAsync: deleteNotification } = useMutation({
     mutationFn: notificationsService.deleteNotification,
     onMutate: async (id) => {
-      queryClient.setQueryData<any>(["notifications", initialFilters], (oldData: any) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page: any) => ({
-            ...page,
-            data: page.data.filter((n: NotificationType) => n.id !== id)
-          }))
-        };
-      });
+      queryClient.setQueryData<any>(
+        queryKey,
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              data: page.data.filter((n: NotificationType) => n.id !== id),
+            })),
+          };
+        },
+      );
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -149,6 +332,8 @@ export function useNotifications(
     markAsRead,
     deleteNotification,
     handleNotificationClick,
-    refetch
+    refetch,
+    unreadCount:
+      data?.pages[0]?.data.filter((n) => n.isRead === false).length || 0, // Abordagem provisória, idealmente a API devia enviar isto global
   };
 }

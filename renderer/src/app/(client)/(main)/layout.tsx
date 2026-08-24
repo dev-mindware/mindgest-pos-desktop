@@ -14,7 +14,7 @@ type Props = {
 
 export default function MainLayout({ children }: Props) {
   return (
-    <RouteProtector allowed={["ADMIN", "OWNER", "MANAGER", "CASHIER"]}>
+    <RouteProtector allowed={["OWNER", "MANAGER", "CASHIER"]}>
       <StoreProvider>
         <SidebarProvider defaultOpen={false}>
           <TooltipProvider delayDuration={200}>

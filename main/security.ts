@@ -1,6 +1,7 @@
 import { machineIdSync } from 'node-machine-id';
 import jwt from 'jsonwebtoken';
 import { prisma } from './prisma';
+import { SafeVault } from './storage-key';
 
 // Chave Simétrica do MINDGEST-API (Partilhada entre a Cloud e o Desktop)
 // NOTA: No ambiente de Produção real, podes evoluir isto para um Par de Chaves RSA (Pública/Privada)
@@ -100,8 +101,9 @@ export async function validateOfflineLicense(): Promise<{ valid: boolean; reason
 
     const currentHwid = getHardwareFingerprint();
 
-    // 2. Validar a assinatura do JWT com jsonwebtoken
-    const payload = jwt.verify(settings.offlineLicense, MINDGEST_SECRET) as any;
+    // 2. Desencriptar a licença com SafeVault (DPAPI / HWID) e validar JWT
+    const decryptedJwt = SafeVault.decrypt(settings.offlineLicense);
+    const payload = jwt.verify(decryptedJwt, MINDGEST_SECRET) as any;
 
     // 3. Validar a expiração do JWT
     if (payload.exp && payload.exp * 1000 < Date.now()) {

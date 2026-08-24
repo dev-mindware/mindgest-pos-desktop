@@ -29,16 +29,15 @@ export function UpgradePlanModal() {
       className="sm:max-w-md"
     >
       <div className="space-y-4 pt-2">
-        <div className="p-4 rounded-test-lg bg-primary/5 border border-primary/10 space-y-3">
+        <div className="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-3">
           <div className="space-y-2 text-sm text-foreground/80">
             <p>
-              Você tentou acessar um recurso que não está disponível no seu
-              plano atual. Para utilizar essa funcionalidade, considere fazer um
-              upgrade.
+              Tentou aceder a uma funcionalidade que não está disponível no
+              plano actual. Actualize o plano para a utilizar.
             </p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-1">
               <li>Acesso a relatórios avançados</li>
-              <li>Gestão de múltiplos estoques</li>
+              <li>Gestão de stock em várias lojas</li>
               <li>Recursos de IA (GestAI)</li>
             </ul>
           </div>

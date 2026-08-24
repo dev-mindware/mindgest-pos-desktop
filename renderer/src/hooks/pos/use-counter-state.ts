@@ -1,7 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { Product, CartItem, CartType } from "@/types";
-import { useFraudDetection } from "./use-fraud-detection";
+import { itemsService } from "@/services/items-service";
+import { ErrorMessage } from "@/utils";
 
 interface UseCounterStateProps {
   apiProducts: Product[];
@@ -25,7 +27,87 @@ export function useCounterState({
   const [barcodeBuffer, setBarcodeBuffer] = useState("");
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
 
-  const { checkFraud } = useFraudDetection();
+  const handleAddToCart = useCallback(
+    (product: Product, quantity: number = 1) => {
+      setCarts((prev) => {
+        const currentCart = prev[activeCart];
+        const existingItem = currentCart[product.id];
+        const availableStock = product.quantity ?? Infinity;
+
+        if (existingItem) {
+          const newQty = existingItem.qty + quantity;
+          if (newQty > availableStock) {
+            ErrorMessage(`Stock insuficiente. Disponível: ${availableStock}`);
+            return prev;
+          }
+          const updatedCart = {
+            ...currentCart,
+            [product.id]: { ...existingItem, qty: newQty },
+          };
+          return { ...prev, [activeCart]: updatedCart };
+        } else {
+          if (quantity > availableStock) {
+            ErrorMessage(`Stock insuficiente. Disponível: ${availableStock}`);
+            return prev;
+          }
+          const newItem: CartItem = {
+            ...product,
+            qty: quantity,
+          };
+          return {
+            ...prev,
+            [activeCart]: { ...currentCart, [product.id]: newItem },
+          };
+        }
+      });
+    },
+    [activeCart],
+  );
+
+  const findProductByBarcode = useCallback(
+    async (barcode: string) => {
+      let product = apiProducts.find(
+        (p) => String(p.barcode) === barcode || p.sku === barcode,
+      );
+
+      if (!product) {
+        try {
+          const barcodeData = await itemsService.checkBarcode(barcode);
+          if (barcodeData) {
+            product = {
+              id: barcodeData.id,
+              name: barcodeData.name,
+              price: barcodeData.price || 0,
+              image: barcodeData.image,
+              category: barcodeData.category || "",
+              quantity: barcodeData.quantity || 0,
+              reserved: barcodeData.reserved || 0,
+              description: barcodeData.description,
+              barcode: String(barcodeData.barcode),
+              sku: barcodeData.sku,
+              tax: barcodeData.tax,
+            } as any;
+          }
+        } catch (error) {
+          console.error("Error fetching product by barcode:", error);
+        }
+      }
+
+      return product || null;
+    },
+    [apiProducts],
+  );
+
+  const handleManualScan = useCallback(
+    async (barcode: string) => {
+      const product = await findProductByBarcode(barcode);
+
+      if (product) {
+        handleAddToCart(product, 1);
+      }
+    },
+    [findProductByBarcode, handleAddToCart],
+  );
 
   useEffect(() => {
     const handleGlobalKeyDown = async (e: KeyboardEvent) => {
@@ -38,20 +120,9 @@ export function useCounterState({
 
       if (e.key === "Enter") {
         if (barcodeBuffer) {
-          try {
-            const barcode = barcodeBuffer;
-            setBarcodeBuffer("");
-
-            const product = apiProducts.find(
-              (p) => String(p.barcode) === barcode || p.sku === barcode,
-            );
-
-            if (product) {
-              setScannedProduct(product);
-            }
-          } catch (error) {
-            console.error("Error finding product:", error);
-          }
+          const barcode = barcodeBuffer;
+          setBarcodeBuffer("");
+          await handleManualScan(barcode);
         }
       } else if (e.key.length === 1) {
         setBarcodeBuffer((prev) => prev + e.key);
@@ -60,7 +131,7 @@ export function useCounterState({
 
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [barcodeBuffer, apiProducts]);
+  }, [barcodeBuffer, handleManualScan]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -71,36 +142,11 @@ export function useCounterState({
     return () => clearTimeout(timer);
   }, [barcodeBuffer]);
 
-  const onConfirmScan = () => {
+  const onConfirmScan = (quantity: number = 1) => {
     if (scannedProduct) {
-      handleAddToCart(scannedProduct);
+      handleAddToCart(scannedProduct, quantity);
       setScannedProduct(null);
     }
-  };
-
-  const handleAddToCart = (product: Product) => {
-    setCarts((prev) => {
-      const currentCart = prev[activeCart];
-      const existingItem = currentCart[product.id];
-
-      if (existingItem) {
-        const newQty = existingItem.qty + 1;
-        const updatedCart = {
-          ...currentCart,
-          [product.id]: { ...existingItem, qty: newQty },
-        };
-        return { ...prev, [activeCart]: updatedCart };
-      } else {
-        const newItem: CartItem = {
-          ...product,
-          qty: 1,
-        };
-        return {
-          ...prev,
-          [activeCart]: { ...currentCart, [product.id]: newItem },
-        };
-      }
-    });
   };
 
   const handleRemoveFromCart = (productId: string) => {
@@ -126,9 +172,6 @@ export function useCounterState({
   };
 
   const handleDeleteItem = (productId: string) => {
-    // Fire fraud detection event asynchronously when an item is cancelled
-    checkFraud("Cancelamento de Artigo", 2);
-
     setCarts((prev) => {
       const { [productId]: _, ...rest } = prev[activeCart];
       return { ...prev, [activeCart]: rest };
@@ -146,6 +189,12 @@ export function useCounterState({
       const existingItem = currentCart[productId];
 
       if (!existingItem) return prev;
+
+      const availableStock = existingItem.quantity ?? Infinity;
+      if (quantity > availableStock) {
+        ErrorMessage(`Stock insuficiente. Disponível: ${availableStock}`);
+        return prev;
+      }
 
       return {
         ...prev,
@@ -181,5 +230,7 @@ export function useCounterState({
     handleUpdateQuantity,
     handleClearCart,
     getCartItemsArray,
+    findProductByBarcode,
+    handleManualScan,
   };
 }

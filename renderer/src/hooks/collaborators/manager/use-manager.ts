@@ -22,7 +22,7 @@ export function useUpdateManager() {
     mutationFn: ({ id, data }: { id: string; data: Partial<ManagerData> }) =>
       managerService.updateManager(id, data as any),
     onSuccess: () => {
-      SucessMessage("Gerente atualizado com sucesso!");
+      SucessMessage("Gestor actualizado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["managers"] });
     },
   });
@@ -35,6 +35,18 @@ export function useDeleteManager() {
     mutationFn: (id: string) => managerService.deleteManager(id),
     onSuccess: () => {
       SucessMessage("Gerente removido com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["managers"] });
+    },
+  });
+}
+
+export function useToggleStatusManager() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => managerService.toggleStatusManager(id),
+    onSuccess: () => {
+      SucessMessage("Status alterado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["managers"] });
     },
   });

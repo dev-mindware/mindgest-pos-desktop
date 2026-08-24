@@ -10,7 +10,10 @@ export const registerSchema = z.object({
         .trim()
         .nonempty("Campo obrigatorio")
         .min(3, "No minimo 3 caracters"),
-      email: z.string().trim().email("Email invalido"),
+      email: z
+        .string()
+        .email("Email inválido")
+        .transform((email) => email.toLowerCase().trim()),
       phone: phoneNumberSchema,
       password: passwordSchema,
       passwordConfirmation: z
@@ -18,9 +21,17 @@ export const registerSchema = z.object({
         .trim()
         .nonempty("Campo obrigatorio")
         .min(3, "No minimo 3 caracters"),
+      affiliateCode: z
+        .string()
+        .trim()
+        .transform((val) => (val === "" ? undefined : val))
+        .optional()
+        .refine((val) => !val || /^MWD-AO-\d+$/.test(val), {
+          message: "Código inválido. Formato correto: MWD-AO-1234",
+        }),
     })
     .refine((data) => data.password === data.passwordConfirmation, {
-      message: "As senhas não coincidem",
+      message: "As palavras-passe não coincidem",
       path: ["passwordConfirmation"],
     }),
   step2: z.object({
@@ -28,7 +39,7 @@ export const registerSchema = z.object({
   }),
   step3: z.object({
     terms: z.literal(true, {
-      errorMap: () => ({ message: "Você deve aceitar os termos" }),
+      errorMap: () => ({ message: "Deve aceitar os termos" }),
     }),
   }),
 });

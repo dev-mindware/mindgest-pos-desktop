@@ -33,90 +33,48 @@ export function usePagination<T>({
 
   const page = Number(searchParams.get("page")) || 1;
 
+  const cleanQueryParams = Object.fromEntries(
+    Object.entries(queryParams).filter(
+      ([_, value]) => value !== null && value !== undefined && value !== "",
+    ),
+  );
+
   const query = useQuery<PaginationResponse<T>>({
     queryKey: Array.isArray(queryKey)
-      ? [...queryKey, page, queryParams]
-      : [queryKey, page, queryParams],
+      ? [...queryKey, page, cleanQueryParams]
+      : [queryKey, page, cleanQueryParams],
     queryFn: async () => {
-      try {
-        const response = await api.get(endpoint, {
-          params: { page, ...queryParams },
-        });
+      const response = await api.get(endpoint, {
+        params: { page, ...cleanQueryParams },
+      });
 
-        const raw = response.data;
+      const raw = response.data;
 
-        // 🔹 Normaliza para sempre devolver o mesmo shape
-        const dataKey = Object.keys(raw).find(
-          (key) => Array.isArray(raw[key])
-        ) as keyof typeof raw;
-
+      // Handle direct array response
+      if (Array.isArray(raw)) {
         return {
-          data: (raw[dataKey] as T[]) ?? [],
-          total: raw.total ?? 0,
-          page: raw.page ?? page,
-          limit: raw.limit ?? queryParams.limit ?? 10,
-          totalPages:
-            raw.totalPages ??
-            (raw.total && raw.limit ? Math.ceil(raw.total / raw.limit) : 1),
+          data: raw as T[],
+          total: raw.length,
+          page: page,
+          limit: queryParams.limit ?? Math.max(raw.length, 10),
+          totalPages: 1,
         } satisfies PaginationResponse<T>;
-      } catch (error: any) {
-        // Se for erro de rede e estivermos no Desktop, tenta fallback local
-        if (!error.response && typeof window !== "undefined" && window.ipc?.sync) {
-          console.warn(`🌐 [Offline] Falha ao carregar paginado ${endpoint}. Tentando SQLite...`);
-          
-          let localData: any[] = [];
-          const storeId = queryParams.storeId;
-
-          if (endpoint.includes("/items")) {
-            localData = await window.ipc.sync.searchItems({ storeId, categoryId: queryParams.categoryId });
-          } else if (endpoint.includes("/categories")) {
-            localData = await window.ipc.sync.getCategories({ storeId });
-          } else if (endpoint.includes("/clients")) {
-            localData = await window.ipc.sync.searchClients({ storeId });
-          } else if (endpoint.includes("/invoice/invoice-receipt")) {
-            localData = await window.ipc.sync.searchInvoices({
-              storeId,
-              search: queryParams.search,
-              startDate: queryParams.startDate,
-              endDate: queryParams.endDate,
-              documentType: "FR"
-            });
-          } else if (endpoint.includes("/invoice/normal")) {
-            localData = await window.ipc.sync.searchInvoices({
-              storeId,
-              search: queryParams.search,
-              startDate: queryParams.startDate,
-              endDate: queryParams.endDate,
-              documentType: "FT"
-            });
-          } else if (endpoint.includes("/invoice/proforma")) {
-            localData = await window.ipc.sync.searchInvoices({
-              storeId,
-              search: queryParams.search,
-              startDate: queryParams.startDate,
-              endDate: queryParams.endDate,
-              documentType: "FP"
-            });
-          } else if (endpoint.includes("/credit-note")) {
-            localData = await window.ipc.sync.searchInvoices({
-              storeId,
-              search: queryParams.search,
-              startDate: queryParams.startDate,
-              endDate: queryParams.endDate,
-              documentType: "NC"
-            });
-          }
-
-          return {
-            data: localData as T[],
-            total: localData.length,
-            page: 1,
-            limit: localData.length || 10,
-            totalPages: 1,
-          };
-        }
-        throw error;
       }
+
+      // 🔹 Normaliza para sempre devolver o mesmo shape
+      const dataKey = Object.keys(raw).find(
+        (key) => Array.isArray(raw[key])
+      ) as keyof typeof raw;
+
+      return {
+        data: (raw[dataKey] as T[]) ?? [],
+        total: raw.total ?? 0,
+        page: raw.page ?? page,
+        limit: raw.limit ?? queryParams.limit ?? 10,
+        totalPages:
+          raw.totalPages ??
+          (raw.total && raw.limit ? Math.ceil(raw.total / raw.limit) : 1),
+      } satisfies PaginationResponse<T>;
     },
     enabled,
     gcTime: 300_000, // cache: 5min

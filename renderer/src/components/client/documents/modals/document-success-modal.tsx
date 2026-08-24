@@ -7,14 +7,13 @@ import { DocumentType } from "@/types/documents";
 import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
-import { useOfflineStore } from "@/stores/offline/offline-store";
-import axios from "axios";
+
+
 
 interface DocumentSuccessModalData {
     id: string;
     type: DocumentType;
     format?: "pdf" | "thermal";
-    payload?: any;
 }
 
 export function DocumentSuccessModal() {
@@ -29,69 +28,16 @@ export function DocumentSuccessModal() {
 
     useEffect(() => {
         let url: string | null = null;
-        const offlineQueue = useOfflineStore.getState().queue;
 
         async function fetchDocument() {
             if (isOpen && data?.id) {
                 setIsLoading(true);
                 setError(null);
                 try {
-                    // Check if document is in the offline queue AND if the user is currently offline
-                    const isOffline = !window.navigator.onLine;
-                    const offlineDoc = offlineQueue.find(doc => doc.internalId === data.id);
-
-                    const payloadToUse = data.payload || offlineDoc?.payload;
-                    if (payloadToUse) {
-                        console.log("Gerando documento localmente via microserviço Python (payload disponível)...");
-                        // Call local python-microservice
-                        const mappedPayload = {
-                            format: "pdf",
-                            documentType: data.type === "invoice-receipt" ? "INVOICE_RECEIPT" : data.type === "proforma" ? "PROFORMA_INVOICE" : "NORMAL_INVOICE",
-                            invoiceNumber: payloadToUse.invoiceNumber || "PENDENTE OFFLINE",
-                            invoiceDate: payloadToUse.invoiceDate || new Date().toISOString(),
-                            dueDate: payloadToUse.dueDate,
-                            company: payloadToUse.company || {
-                                name: "A Minha Empresa",
-                                taxNumber: "000000000",
-                                address: "Endereço da Empresa",
-                                email: "geral@empresa.com",
-                                phone: "900000000"
-                            },
-                            client: {
-                                name: payloadToUse.client?.name || "Consumidor Final",
-                                taxNumber: payloadToUse.client?.taxNumber || payloadToUse.client?.taxNumber || "999999999",
-                                address: payloadToUse.client?.address,
-                                phone: payloadToUse.client?.phone,
-                            },
-                            items: (payloadToUse.items || []).map((item: any) => ({
-                                description: item.name || item.description || "Item",
-                                quantity: item.quantity || 1,
-                                unitPrice: item.price || item.unitPrice || 0,
-                                totalPrice: (item.quantity || 1) * (item.price || item.unitPrice || 0),
-                                tax: item.tax || 0
-                            })),
-                            taxDetails: payloadToUse.taxDetails || [],
-                            subtotal: payloadToUse.subtotal || 0,
-                            tax: payloadToUse.tax || payloadToUse.taxAmount || 0,
-                            total: payloadToUse.total || 0,
-                            retentionAmount: payloadToUse.retentionAmount || 0,
-                            discountAmount: payloadToUse.discountAmount || 0,
-                            notes: payloadToUse.notes,
-                            metadata: { layout: format }
-                        };
-
-                        const response = await axios.post("http://localhost:3002/generate-document/download", mappedPayload, { responseType: 'blob' });
-
-                        const blob = new Blob([response.data], { type: "application/pdf" });
-                        url = window.URL.createObjectURL(blob);
-                        setBlobUrl(url);
-                    } else {
-                        // Standard online behavior
-                        const response = await downloadDocument(data.id, data.type, format);
-                        const blob = new Blob([response.data], { type: "application/pdf" });
-                        url = window.URL.createObjectURL(blob);
-                        setBlobUrl(url);
-                    }
+                    const response = await downloadDocument(data.id, data.type, format);
+                    const blob = new Blob([response.data], { type: "application/pdf" });
+                    url = window.URL.createObjectURL(blob);
+                    setBlobUrl(url);
                 } catch (err) {
                     console.error("Erro ao carregar documento para visualização:", err);
                     setError("Não foi possível carregar a visualização do documento.");
@@ -100,7 +46,7 @@ export function DocumentSuccessModal() {
                 }
             }
         }
-
+        
         fetchDocument();
 
         return () => {
@@ -110,6 +56,34 @@ export function DocumentSuccessModal() {
             setBlobUrl(null);
         };
     }, [isOpen, data?.id, data?.type, format]);
+
+    const handlePrint = async () => {
+        if (blobUrl) {
+            try {
+                // Dynamically import print-js only on the client
+                const printJS = (await import("print-js")).default;
+                printJS({
+                    printable: blobUrl,
+                    type: "pdf",
+                    onPrintDialogClose: () => console.log("The print dialog was closed"),
+                    onError: (err: any) => console.error("Print error:", err)
+                });
+            } catch (err) {
+                console.error("Failed to load print-js:", err);
+            }
+        }
+    };
+
+    // Auto-trigger print when blobUrl is ready
+    useEffect(() => {
+        if (blobUrl && !isLoading && isOpen) {
+            // Pequeno delay para garantir que o modal carregou
+            const timer = setTimeout(() => {
+                handlePrint();
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [blobUrl, isLoading, isOpen]);
 
     if (!isOpen) return null;
 
@@ -138,17 +112,17 @@ export function DocumentSuccessModal() {
             id="document-success"
             canClose
             title="Documento Criado!"
-            description={isThermal ? "Visualize abaixo o talão do seu documento." : "Visualize abaixo a versão A4 do seu documento."}
+            description={isThermal ? "Consulte abaixo o talão do documento." : "Consulte abaixo a versão A4 do documento."}
             className={isThermal ? "max-w-md max-h-[90vh] overflow-y-auto" : "max-w-4xl max-h-[90vh] overflow-y-auto"}
         >
             <div className="flex flex-col gap-4 mt-4">
-                <div className={isThermal ? "relative w-full aspect-[1/2] bg-muted rounded-test-lg border overflow-hidden" : "relative w-full aspect-[1/1.4] bg-muted rounded-test-lg border overflow-hidden"}>
+                <div className={isThermal ? "relative w-full aspect-[1/2] bg-muted rounded-lg border overflow-hidden" : "relative w-full aspect-[1/1.4] bg-muted rounded-lg border overflow-hidden"}>
                     {isLoading && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-10 text-center">
                             <Skeleton className="w-full h-full" />
                             <div className="absolute flex flex-col items-center gap-2">
-                                <div className="animate-spin rounded-test-full h-8 w-8 border-b-2 border-primary"></div>
-                                <p className="text-sm text-muted-foreground">Carregando visualização...</p>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                <p className="text-sm text-muted-foreground">A carregar a pré-visualização...</p>
                             </div>
                         </div>
                     )}
@@ -167,7 +141,7 @@ export function DocumentSuccessModal() {
                         <iframe
                             src={`${blobUrl}#toolbar=0&navpanes=0&scrollbar=0`}
                             className="w-full h-full border-none"
-                            title="Visualização do Documento"
+                            title="Pré-visualização do documento"
                         />
                     )}
                 </div>
@@ -176,13 +150,24 @@ export function DocumentSuccessModal() {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
                         {isThermal ? "Versão Talão" : "Versão A4"}
                     </p>
-                    <Button
-                        onClick={handleClose}
-                        variant="default"
-                        className="w-32"
-                    >
-                        Fechar
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button
+                            onClick={handlePrint}
+                            variant="outline"
+                            className="gap-2"
+                            disabled={!blobUrl || isLoading}
+                        >
+                            <Icon name="Printer" size={16} />
+                            Imprimir
+                        </Button>
+                        <Button
+                            onClick={handleClose}
+                            variant="default"
+                            className="w-32"
+                        >
+                            Fechar
+                        </Button>
+                    </div>
                 </div>
             </div>
         </GlobalModal>

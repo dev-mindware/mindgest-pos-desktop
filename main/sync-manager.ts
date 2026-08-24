@@ -1,7 +1,7 @@
 import axios from "axios";
 import { syncService } from "./sync";
+import { CLOUD_API_URL } from "./config";
 
-const CLOUD_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api";
 const CLOUD_API_KEY = process.env.NEXT_PUBLIC_API_KEY || "MG_REg4eFg5eDJQU0lmNWcKUQU0YN3BDZDNvU2dnSnQ5OXRiL3NtbEhqSzhpdXNDZ2V6T2NwbzlCYnJDRWBTkJna3Foa2lHOXcwQkFRRUZBQVNZkbQo2lmN4eFg_MG";
 const DEFAULT_SYNC_INTERVAL_MS = 2 * 60 * 1000; // 5 minutos
 
@@ -92,7 +92,6 @@ export class SyncManager {
       const categoryResult = await syncService.syncCategories(token, storeId);
       const clientResult = await syncService.syncClients(token, storeId);
       const productResult = await syncService.syncProducts(token, storeId);
-      const documentSequenceResult = await syncService.syncDocumentSequence(token, storeId);
       const agtSeriesResult = await syncService.syncAgtSeries(token, storeId);
 
       const result = {
@@ -101,7 +100,6 @@ export class SyncManager {
         categories: categoryResult,
         clients: clientResult, 
         products: productResult,
-        document: documentSequenceResult,
         AGTSeries: agtSeriesResult,
         timestamp: new Date().toISOString()
       };
@@ -147,8 +145,10 @@ export class SyncManager {
     this.currentParams.intervalMs = intervalMs;
     this.nextSyncAt = this.getNextSyncDate(intervalMs);
 
-    // Run cleanup on start
-    syncService.cleanupOldInvoices().catch(e => console.error(e));
+    // Run cleanup on start safely
+    if (typeof (syncService as any)?.cleanupOldInvoices === "function") {
+      (syncService as any).cleanupOldInvoices().catch((e: any) => console.error("Erro na limpeza de faturas antigas:", e));
+    }
 
     this.intervalId = setInterval(async () => {
       if (!this.currentParams) return;

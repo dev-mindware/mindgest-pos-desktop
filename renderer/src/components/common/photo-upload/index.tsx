@@ -55,7 +55,7 @@ const DropzoneContent = ({
         const file = acceptedFiles[0];
         if (file.size > maxSize) {
           alert(
-            `O arquivo excede o tamanho Máximo de ${(
+            `O ficheiro excede o tamanho máximo de ${(
               maxSize /
               1024 /
               1024
@@ -111,7 +111,7 @@ const DropzoneContent = ({
         <div
           {...getRootProps()}
           className={cn(
-            "border-2 border-dashed rounded-test-lg transition-all",
+            "border-2 border-dashed rounded-lg transition-all",
             isDragActive
               ? "border-primary bg-primary/10"
               : "border-border bg-muted/30 hover:bg-muted/50",
@@ -122,7 +122,7 @@ const DropzoneContent = ({
         >
           <input {...getInputProps()} />
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="p-4 bg-muted rounded-test-full">
+            <div className="p-4 bg-muted rounded-full">
               <Icon
                 name={isImage ? "ImagePlus" : "CloudUpload"}
                 className="h-8 w-8 text-muted-foreground"
@@ -131,11 +131,11 @@ const DropzoneContent = ({
             <div>
               <p className="text-sm font-medium text-foreground">
                 {isDragActive
-                  ? "Solte o arquivo aqui..."
-                  : "Arraste e solte ou clique para selecionar"}
+                  ? "Largue o ficheiro aqui..."
+                  : "Arraste e largue ou seleccione o ficheiro"}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Apenas arquivos {isImage ? "de imagem" : "PDF"} (máx.{" "}
+                Apenas ficheiros {isImage ? "de imagem" : "PDF"} (máx.{" "}
                 {(maxSize / 1024 / 1024).toFixed(1)}
                 MB)
               </p>
@@ -143,20 +143,19 @@ const DropzoneContent = ({
           </div>
         </div>
       ) : (
-        <div className="border border-border rounded-test-lg overflow-hidden bg-card shadow-sm">
+        <div className="border border-border rounded-lg overflow-hidden bg-card shadow-sm">
           {isImage && value.url ? (
             <div className="relative aspect-video w-full bg-muted">
-              <Image
+              <img
                 src={value.url}
                 alt={value.originalname}
-                fill
-                className="object-contain"
+                className="w-full h-full object-contain"
               />
             </div>
           ) : null}
 
           <div className="p-4 flex items-center gap-4 border-b border-border bg-muted/30">
-            <div className="p-3 bg-primary/10 rounded-test-lg">
+            <div className="p-3 bg-primary/10 rounded-lg">
               <Icon
                 name={isImage ? "Image" : "FileText"}
                 className="h-6 w-6 text-primary"
@@ -181,7 +180,7 @@ const DropzoneContent = ({
                 href={value.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-sm font-medium rounded-test-md transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-sm font-medium rounded-md transition-colors"
               >
                 <Icon name="Eye" className="h-4 w-4" />
                 <span>Visualizar</span>
@@ -192,7 +191,7 @@ const DropzoneContent = ({
                 e.stopPropagation();
                 onChange(null);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive text-sm font-medium rounded-test-md transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive text-sm font-medium rounded-md transition-colors"
             >
               <Icon name="X" className="h-4 w-4" />
               <span>Remover</span>
@@ -205,7 +204,7 @@ const DropzoneContent = ({
         <div className="mt-2 flex items-center gap-1.5 text-destructive">
           <Icon name="CircleAlert" className="h-4 w-4" />
           <p className="text-xs">
-            Por favor, selecione um arquivo {isImage ? "de imagem" : "PDF"}{" "}
+            Seleccione um ficheiro {isImage ? "de imagem" : "PDF"}{" "}
             válido
           </p>
         </div>
@@ -223,14 +222,20 @@ export function PhotoUpload<T extends FieldValues>({
   maxSize = 1024 * 1024 * 2,
   disabled,
   className,
+  onChange: propOnChange,
 }: FileUploadProps<T>) {
+  if (!control) return null;
+
   return (
     <Controller
       name={name}
       control={control}
       render={({ field: { onChange, value }, fieldState: { error } }) => (
         <DropzoneContent
-          onChange={onChange}
+          onChange={(f) => {
+            onChange(f);
+            if (propOnChange) propOnChange(f as MyFile);
+          }}
           value={value}
           error={!!error}
           label={label}

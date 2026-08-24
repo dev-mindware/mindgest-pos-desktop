@@ -4,6 +4,6 @@ export const MINDWARE_INFO = {
   address: "Rua da Mindware, 123",
   contact: {
     phone: "945551192",
-    email: "support@mindware.com",
+    email: "geral@mindware.ao",
   },
 };

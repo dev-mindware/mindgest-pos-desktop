@@ -2,6 +2,7 @@ export type ManagerData = {
   name: string;
   email?: string;
   password?: string;
+  barcode?: string;
   phone: string;
   role?: string;
   companyId?: string;
@@ -21,6 +22,7 @@ export type CashierData = {
   name: string;
   email?: string;
   password?: string;
+  barcode?: string;
   phone: string;
   role: string;
   companyId?: string;

@@ -2,13 +2,15 @@
 /node_modules
 /.pnpm-debug.log*
 
-# Build outputs
+# Build outputs & Installers
 /app
 /dist
+/releases
 /renderer/.next
 /renderer/out
+*.tsbuildinfo
 
-# Generated Prisma Client & Engines
+# Generated Prisma Client & SQLite Databases
 /main/prisma-client
 /app/generated/prisma
 *.db
@@ -18,6 +20,8 @@
 *.sqlite
 *.sqlite3
 prisma/dev.db*
+dev.db*
+mindgest-pos-dev.db*
 
 # Local environment files (Root & Renderer)
 .env
@@ -31,10 +35,11 @@ renderer/.env.development.local
 renderer/.env.test.local
 renderer/.env.production.local
 
-# Python virtual environments & caches
+# Python virtual environments, caches & AI models
 **/venv/
 **/__pycache__/
 *.py[cod]
+*.pt
 
 # Electron & OS binaries
 *.app/
@@ -45,14 +50,18 @@ renderer/.env.production.local
 *.pkg
 *.deb
 *.rpm
+*.exe
 electron.zip
 
-# Logs
+# Logs & Diagnostics
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 error.log*
+*.log
+dev_logs*.txt
+mind-microservice.log
 
 # OS Files
 .DS_Store
@@ -69,3 +78,6 @@ Thumbs.db
 # Agent & Temp
 /.agent/
 test-electron.js
+dump-offline.js
+scratch/
+scratch_*.js

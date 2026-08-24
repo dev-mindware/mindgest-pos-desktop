@@ -9,8 +9,11 @@ export function DocumentStatusBadge({ status }: DocumentoStatusBadgeProps) {
     DRAFT: "Pendente",
     CANCELLED: "Cancelada",
     PAID: "Paga",
-    CORRECTION: "Correção",
-    CANCELLATION: "Anulação",
+    // Motivos de nota de crédito (D.P. 71/25).
+    CORRECTION: "Rectificação",
+    RETURN: "Devolução",
+    DISCOUNT: "Desconto",
+    ANNULMENT: "Anulação",
   };
 
   const variantMap: Record<string, "default" | "success" | "destructive" | "outline" | "pending"> = {
@@ -18,7 +21,9 @@ export function DocumentStatusBadge({ status }: DocumentoStatusBadgeProps) {
     CANCELLED: "destructive",
     PAID: "success",
     CORRECTION: "outline",
-    CANCELLATION: "destructive",
+    RETURN: "outline",
+    DISCOUNT: "outline",
+    ANNULMENT: "destructive",
   };
 
   const currentStatus = status ?? "DRAFT";

@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function InvoiceFormSkeleton() {
   return (
-    <div className="mt-4 space-y-8 rounded-test-lg">
+    <div className="mt-4 space-y-8 rounded-lg">
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-2">
           <Skeleton className="w-24 h-4" />
@@ -41,7 +41,7 @@ export function InvoiceFormSkeleton() {
       </div>
 
       <div className="space-y-4">
-        <div className="h-10 w-full bg-muted/50 rounded-test-md flex items-center gap-4 px-4">
+        <div className="h-10 w-full bg-muted/50 rounded-md flex items-center gap-4 px-4">
           <Skeleton className="w-1/3 h-4" />
           <Skeleton className="w-1/6 h-4" />
           <Skeleton className="w-1/6 h-4" />

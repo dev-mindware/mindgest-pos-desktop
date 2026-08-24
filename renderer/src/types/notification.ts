@@ -1,4 +1,3 @@
-
 export interface NotificationResponse {
   data: NotificationType[];
   total: number;
@@ -6,19 +5,33 @@ export interface NotificationResponse {
   pageCount: number;
 }
 
+export type NotificationCategory =
+  | "INFO"
+  | "WARNING"
+  | "ATENÇÃO"
+  | "ERROR"
+  | "ERRO"
+  | "SUCCESS"
+  | "SUCESSO"
+  | "AI_ALERT";
+
 export type NotificationType = {
   id: string;
   title: string;
   message: string;
-  type: "INFO" | "WARNING" | "ERROR";
+  type: NotificationCategory | string;
   userId: string;
+  companyId?: string;
   isRead: boolean;
+  isAiAlert?: boolean;
+  aiCategory?: "BILLING" | "STOCK" | "POS" | "CLIENTS" | "MARGIN" | string;
   createdAt: string;
 };
 
 export interface NotificationParams {
   skip: number;
   take: number;
-  type?: "INFO" | "WARNING" | "ERROR";
+  type?: string;
   isRead?: boolean;
 }
+

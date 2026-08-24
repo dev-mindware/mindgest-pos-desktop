@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { SubscriptionStatus, Role } from "@/types";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/auth";
@@ -17,19 +17,30 @@ export function RouteProtector({
 }: RouteProtectorProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
   const { user, isAuthenticating, subscriptionStatus } = useAuth();
 
   useEffect(() => {
-    // Só redireciona após autenticação completa
-    if (isAuthenticating) return;
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || isAuthenticating) return;
 
     if (!user) {
       router.replace("/auth/login");
       return;
     }
 
-    if (!allowed.includes(user.role)) {
+    if (user.role === "ADMIN" || !allowed.includes(user.role)) {
       router.replace("/unauthorized");
+      return;
+    }
+
+    const userPlan = user.company?.subscription?.plan?.name;
+    if (userPlan && userPlan.toUpperCase().includes("BASE")) {
+      router.replace("/unauthorized");
+      return;
     }
 
     if (
@@ -39,17 +50,15 @@ export function RouteProtector({
     ) {
       router.replace("/settings?tab=subscription");
     }
-  }, [user, allowed, router, isAuthenticating, pathname, subscriptionStatus]);
+  }, [user, allowed, router, isAuthenticating, pathname, subscriptionStatus, isMounted]);
+
+  if (!isMounted) {
+    return <>{children}</>;
+  }
 
   // Enquanto está verificando autenticação/autorização
   if (isAuthenticating) {
-    return (
-      fallback || (
-        <div className="flex items-center justify-center bg-red-600 min-h-screen">
-          <div className="animate-spin rounded-test-full h-8 w-8 border-b-2 border-gray-900" />
-        </div>
-      )
-    );
+    return fallback ? <>{fallback}</> : null;
   }
 
   // Se não há usuário após verificação, retorna null (redirecionamento já foi feito)
@@ -59,6 +68,11 @@ export function RouteProtector({
 
   // Se usuário não tem permissão, retorna null (redirecionamento já foi feito)
   if (!allowed.includes(user.role)) {
+    return null;
+  }
+
+  const userPlan = user.company?.subscription?.plan?.name;
+  if (userPlan && userPlan.toUpperCase().includes("BASE")) {
     return null;
   }
 

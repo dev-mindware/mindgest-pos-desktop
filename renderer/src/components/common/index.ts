@@ -18,4 +18,7 @@ export * from "./unauthorized-link";
 export * from "./input-fetch/async-multi-select";
 export * from "./input-fetch/async-select";
 export * from "./feature-gate";
-export * from "./virtual-keyboard";
+export * from "./plan-upgrade-gate";
+export * from "./plan-gate";
+export * from "./onboarding-tour-button";
+export * from "./nif-verification-field";
