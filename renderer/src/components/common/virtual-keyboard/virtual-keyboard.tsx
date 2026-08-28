@@ -206,23 +206,32 @@ export function VirtualKeyboard() {
             <div
                 id="virtual-keyboard"
                 className={cn(
-                    "bg-card border border-primary/20 rounded-md p-4 overflow-hidden shadow-2xl pointer-events-auto",
-                    layout === "numeric" ? "w-[440px]" : "w-[960px] max-w-[95vw]"
+                    "bg-card/95 backdrop-blur-md border border-stone-200/90 dark:border-stone-800/90 rounded-[6px] p-3.5 overflow-hidden shadow-soft-lg pointer-events-auto",
+                    layout === "numeric" ? "w-[400px]" : "w-[960px] max-w-[96vw]"
                 )}
             >
-                {/* Drag Handle */}
+                {/* Drag Handle & Minimal Header */}
                 <div
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
-                    className="flex justify-center mb-4 relative cursor-grab active:cursor-grabbing group p-2 -mt-2"
+                    className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-border/40 cursor-grab active:cursor-grabbing select-none"
                 >
-                    <div className="w-24 h-2 bg-muted-foreground/30 rounded-full group-hover:bg-muted-foreground/50 transition-colors" />
+                    <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                            {layout === "numeric" ? "Teclado Numérico" : "Teclado Touchscreen"}
+                        </span>
+                    </div>
+
+                    <div className="w-16 h-1 bg-stone-300 dark:bg-stone-700 rounded-[1px]" />
+
                     <button
+                        type="button"
                         onClick={closeKeyboard}
-                        className="absolute right-0 top-0 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-6 w-6 rounded-[3px] border border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
+                        title="Ocultar Teclado"
                     >
-                        <ChevronDown className="w-8 h-8" />
+                        <ChevronDown className="w-4 h-4" />
                     </button>
                 </div>
 

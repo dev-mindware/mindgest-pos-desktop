@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useState,
   useRef,
+  useCallback,
 } from "react";
 import { useWorkspaceStore } from "@/stores/pos/workspace-store";
 
@@ -16,8 +17,9 @@ interface KeyboardContextType {
   isShift: boolean;
   isCaps: boolean;
   activeInput: HTMLInputElement | HTMLTextAreaElement | null;
-  openKeyboard: (input: HTMLInputElement | HTMLTextAreaElement) => void;
+  openKeyboard: (input?: HTMLInputElement | HTMLTextAreaElement) => void;
   closeKeyboard: () => void;
+  toggleKeyboard: () => void;
   handleKeyPress: (key: string) => void;
   toggleShift: () => void;
   toggleCaps: () => void;
@@ -38,64 +40,53 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
   );
   const [isShift, setIsShift] = useState(false);
   const [isCaps, setIsCaps] = useState(false);
-  const [shouldOpenOnFocus, setShouldOpenOnFocus] = useState(false);
+  const lastInteractedInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
   const { enableVirtualKeyboard } = useWorkspaceStore();
 
-  // Global listener for pointer/touch down so the keyboard opens only on input click
+  // Detetar cliques e focos em inputs para acionar o teclado virtual
   useEffect(() => {
-    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement
-      ) {
-        setShouldOpenOnFocus(true);
-      } else {
-        setShouldOpenOnFocus(false);
-      }
-    };
+    if (!enableVirtualKeyboard) return;
 
-    const handleFocusIn = (e: Event) => {
-      if (!enableVirtualKeyboard) return;
-
+    const handleFocusOrClick = (e: Event) => {
       const target = e.target as HTMLElement;
+
       if (
-        shouldOpenOnFocus &&
         (target instanceof HTMLInputElement ||
           target instanceof HTMLTextAreaElement) &&
-        !target.dataset.noKeyboard
+        !target.dataset.noKeyboard &&
+        !target.readOnly &&
+        !target.disabled
       ) {
         const input = target as HTMLInputElement;
         const type = input.type;
         const inputMode = input.inputMode;
         const dataLayout = input.getAttribute("data-layout");
 
+        // Deteção inteligente de layout numérico
         const isNumeric =
           type === "number" ||
           type === "tel" ||
           inputMode === "numeric" ||
           dataLayout === "numeric";
 
+        lastInteractedInputRef.current = target as HTMLInputElement | HTMLTextAreaElement;
         setLayout(isNumeric ? "numeric" : "default");
         setActiveInput(target as HTMLInputElement | HTMLTextAreaElement);
         setIsVisible(true);
       }
-
-      setShouldOpenOnFocus(false);
     };
 
-    document.addEventListener("pointerdown", handlePointerDown, true);
-    document.addEventListener("touchstart", handlePointerDown, true);
-    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusin", handleFocusOrClick);
+    document.addEventListener("click", handleFocusOrClick, true);
 
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown, true);
-      document.removeEventListener("touchstart", handlePointerDown, true);
-      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusin", handleFocusOrClick);
+      document.removeEventListener("click", handleFocusOrClick, true);
     };
-  }, [enableVirtualKeyboard, shouldOpenOnFocus]);
+  }, [enableVirtualKeyboard]);
 
-  // Safety sync: ensure layout matches the active input if it transitions or re-mounts
+  // Sincronização segura do layout com o input ativo
   useEffect(() => {
     if (!activeInput) return;
     const input = activeInput;
@@ -110,24 +101,37 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
       dataLayout === "numeric";
     const targetLayout = isNumeric ? "numeric" : "default";
 
-    // Only switch if it's currently on default/numeric (don't break 'accent' manually selected)
     if (layout !== "accent" && layout !== targetLayout) {
       setLayout(targetLayout);
     }
-  }, [activeInput]);
+  }, [activeInput, layout]);
 
-  const openKeyboard = React.useCallback(
-    (input: HTMLInputElement | HTMLTextAreaElement) => {
-      setActiveInput(input);
+  const openKeyboard = useCallback(
+    (input?: HTMLInputElement | HTMLTextAreaElement) => {
+      if (input) {
+        setActiveInput(input);
+        lastInteractedInputRef.current = input;
+      } else if (lastInteractedInputRef.current) {
+        setActiveInput(lastInteractedInputRef.current);
+      }
       setIsVisible(true);
     },
     []
   );
 
-  const closeKeyboard = React.useCallback(() => {
+  const closeKeyboard = useCallback(() => {
     setIsVisible(false);
     setActiveInput(null);
   }, []);
+
+  const toggleKeyboard = useCallback(() => {
+    setIsVisible((prev) => {
+      if (!prev && !activeInput && lastInteractedInputRef.current) {
+        setActiveInput(lastInteractedInputRef.current);
+      }
+      return !prev;
+    });
+  }, [activeInput]);
 
   useEffect(() => {
     if (!enableVirtualKeyboard && isVisible) {
@@ -135,14 +139,15 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
     }
   }, [enableVirtualKeyboard, isVisible, closeKeyboard]);
 
-  const toggleShift = React.useCallback(() => setIsShift((prev) => !prev), []);
-  const toggleCaps = React.useCallback(() => setIsCaps((prev) => !prev), []);
+  const toggleShift = useCallback(() => setIsShift((prev) => !prev), []);
+  const toggleCaps = useCallback(() => setIsCaps((prev) => !prev), []);
 
-  const handleKeyPress = React.useCallback(
+  const handleKeyPress = useCallback(
     (key: string) => {
-      if (!activeInput) return;
+      const targetInput = activeInput || lastInteractedInputRef.current;
+      if (!targetInput) return;
 
-      const input = activeInput;
+      const input = targetInput;
       const currentVal = input.value;
       const start = input.selectionStart ?? currentVal.length;
       const end = input.selectionEnd ?? currentVal.length;
@@ -177,13 +182,11 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
         });
         input.dispatchEvent(event);
 
-        // For textareas, we might want to actually insert a newline if default not prevented
         if (input instanceof HTMLTextAreaElement && !event.defaultPrevented) {
           const nextVal =
             currentVal.substring(0, start) + "\n" + currentVal.substring(end);
           updateInputValue(input, nextVal, start + 1);
         } else {
-          // If not a textarea or default prevented, we close the keyboard as requested
           closeKeyboard();
         }
       } else if (key === "{shift}") {
@@ -197,13 +200,12 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!isSpecialAction) {
-        // Apply Shift/Caps logic to alphabetic characters
         let finalKey = charToInsert;
         if (
           charToInsert.length === 1 &&
           /[a-z\u00C0-\u00FF]/i.test(charToInsert)
         ) {
-          const wantUpper = isCaps !== isShift; // XOR logic for Shift vs Caps
+          const wantUpper = isCaps !== isShift;
           finalKey = wantUpper
             ? charToInsert.toUpperCase()
             : charToInsert.toLowerCase();
@@ -214,7 +216,6 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
         const nextCursor = start + finalKey.length;
         updateInputValue(input, nextVal, nextCursor);
 
-        // If it was a Shift (not Caps), release it after one key
         if (isShift) setIsShift(false);
       }
     },
@@ -241,14 +242,12 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
       input.value = nextVal;
     }
 
-    // Dispatch events
     input.dispatchEvent(new Event("input", { bubbles: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
 
-    // Restore cursor
     requestAnimationFrame(() => {
       try {
-        input.focus({ preventScroll: true }); // Ensure it has focus without jumping
+        input.focus({ preventScroll: true });
         const isSelectionSupported = input.selectionStart !== null;
         if (
           isSelectionSupported &&
@@ -256,7 +255,7 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
         ) {
           input.setSelectionRange(nextCursor, nextCursor);
         }
-      } catch (e) {}
+      } catch {}
     });
   };
 
@@ -270,6 +269,7 @@ export function KeyboardProvider({ children }: { children: React.ReactNode }) {
         activeInput,
         openKeyboard,
         closeKeyboard,
+        toggleKeyboard,
         handleKeyPress,
         toggleShift,
         toggleCaps,

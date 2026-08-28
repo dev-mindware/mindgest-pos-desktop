@@ -32,14 +32,17 @@ export const invoiceService = {
           const lanConfig = await window.ipc.lan.getConfig();
           if (lanConfig?.terminalMode === "SLAVE" && lanConfig.masterIp) {
             const cleanIp = lanConfig.masterIp.trim().replace(/^http:\/\//, "").replace(/\/$/, "");
+            const idempotencyKey = (data as any).idempotencyKey || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `IDEM-${Date.now()}-${Math.random()}`);
+
             const res = await fetch(`http://${cleanIp}:3333/api/invoice/create`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
+                "x-idempotency-key": idempotencyKey,
                 ...(lanConfig.lanSecret ? { "x-lan-secret": lanConfig.lanSecret } : {})
               },
               body: JSON.stringify({
-                invoiceData: { ...data, documentType: "FT" },
+                invoiceData: { ...data, idempotencyKey, documentType: "FT" },
                 storeId,
                 userId,
                 terminalId: await window.ipc.security.getHardwareId()

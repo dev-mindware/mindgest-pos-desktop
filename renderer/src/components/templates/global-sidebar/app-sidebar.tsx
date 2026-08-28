@@ -16,6 +16,7 @@ import { getSidebarForUser } from "@/lib/get-sidebar-for-user";
 import { PlanType } from "@/types";
 import { SyncButton } from "./sync-button";
 import { UpdateButton } from "./update-button";
+import { LanStatusBadge } from "./lan-status-badge";
 
 export function AppSidebar() {
   const { user } = useAuth();
@@ -36,8 +37,9 @@ export function AppSidebar() {
       <SidebarContent className="group-data-[collapsible=icon]:items-center mt-4">
         <NavMenu items={filteredMenu} />
       </SidebarContent>
-      <div className="px-2">
+      <div className="px-1 group-data-[collapsible=icon]:px-0 space-y-1">
         <UpdateButton />
+        <LanStatusBadge />
       </div>
       <SyncButton />
       <SidebarFooter>

@@ -47,6 +47,7 @@ model Settings {
   terminalMode       String    @default("MASTER") // "MASTER" ou "TERMINAL"
   masterIp           String?                      // IP do Master (usado no modo TERMINAL)
   lanSecret          String?                      // Shared secret para autenticação LAN
+  lanEnabled         Boolean   @default(true)     // Estado de ativação da rede local
 
   // Certificação AGT & Chaves de Assinatura Fiscal Offline
   softwareValidationNumber String? @default("FE/241/AGT/2026")
@@ -54,6 +55,9 @@ model Settings {
   companyName              String? @default("MINDGEST")
   encryptedPrivateKey      String? // Chave privada RSA encriptada com AES-256 + HWID
   publicKey                String? // Chave pública RSA
+  serieComunicadaAGT       Boolean @default(false) // Prontidão para comunicação prévia de séries à AGT
+  backupMasterId           String? // ID do terminal Backup Master designado
+  backupMasterIp           String? // IP do terminal Backup Master designado
 }
 
 // ==========================================
@@ -117,6 +121,7 @@ model Invoice {
   id             String   @id @default(uuid())
   localNo        String   @unique // Ref interna local
   agtNo          String?  @unique // Numeração oficial (ex: FT 2026/1)
+  idempotencyKey String?  @unique // Prevenção de duplicados na rede LAN (UUID)
   status         String   @default("DRAFT") // DRAFT, VALID, CANCELED
   issueDate      DateTime @default(now())
   netTotal       Float
@@ -129,6 +134,10 @@ model Invoice {
   previousHash   String?
   qrCode         String?
   systemEntryDate DateTime? @default(now())
+
+  // Telemetria de Terminal
+  terminalId     String?
+  terminalName   String?
   
   // Relacionamentos
   userId         String

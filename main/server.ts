@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import os from 'os';
 import { prisma } from './prisma';
 import { FiscalSignatureService } from './fiscal-signature';
+import { FiscalInvoicingService } from './fiscal-invoicing-service';
 
 const app = express();
 const PORT = Number(process.env.LOCAL_API_PORT) || 3333; // Dedicated port for Local Master Server
@@ -33,35 +34,6 @@ export function setRotatedSecret(newSecret: string) {
   previousLanSecret = activeLanSecret;
   previousLanSecretExpiresAt = Date.now() + (15 * 60 * 1000); // 15 min grace period
   activeLanSecret = newSecret;
-}
-
-// FIFO Mutex Promise Queue for Interleaved Single-Series Invoicing with Busy Retry
-let invoiceQueue = Promise.resolve();
-
-async function enqueueInvoiceTask<T>(task: () => Promise<T>, maxRetries = 3): Promise<T> {
-  const executeWithRetry = async (): Promise<T> => {
-    let attempt = 0;
-    while (attempt < maxRetries) {
-      try {
-        return await task();
-      } catch (err: any) {
-        attempt++;
-        const isBusy = err?.message?.includes('SQLITE_BUSY') || err?.code === 'P2034' || err?.message?.includes('database is locked');
-        if (isBusy && attempt < maxRetries) {
-          const jitter = Math.floor(Math.random() * 150) + 150 * attempt;
-          console.warn(`⏳ [SQLite WAL] Base de dados ocupada (SQLITE_BUSY). Tentativa ${attempt}/${maxRetries} em ${jitter}ms...`);
-          await new Promise((resolve) => setTimeout(resolve, jitter));
-        } else {
-          throw err;
-        }
-      }
-    }
-    throw new Error('Tempo limite excedido na fila de faturação (SQLITE_BUSY).');
-  };
-
-  const result = invoiceQueue.then(executeWithRetry, executeWithRetry);
-  invoiceQueue = result.then(() => {}, () => {});
-  return result;
 }
 
 // Cleanup inactive terminals every 10 seconds (100% in-memory, ZERO disk/SQLite I/O)
@@ -128,6 +100,32 @@ async function lanAuthMiddleware(req: Request, res: Response, next: NextFunction
 }
 
 // ==========================================
+// Gestão de Códigos de Emparelhamento Temporários (TTL 5 min)
+// ==========================================
+interface PairingCode {
+  code: string;
+  expiresAt: number;
+}
+let currentPairingCode: PairingCode | null = null;
+
+export function generatePairingCode(): { code: string; expiresAt: number } {
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  currentPairingCode = {
+    code,
+    expiresAt: Date.now() + 5 * 60 * 1000,
+  };
+  return currentPairingCode;
+}
+
+export function getCurrentPairingCode() {
+  if (currentPairingCode && Date.now() < currentPairingCode.expiresAt) {
+    return currentPairingCode;
+  }
+  currentPairingCode = null;
+  return null;
+}
+
+// ==========================================
 // Rotas Públicas e Diagnóstico Seguro
 // ==========================================
 // Healthcheck anônimo e sem vazamento de topologia
@@ -141,6 +139,7 @@ app.get('/api/health', (req, res) => {
       hostname: os.hostname(),
       port: PORT,
       timestamp: new Date().toISOString(),
+      serverTime: new Date().toISOString(),
       connectedCount: connectedTerminals.size,
     });
   }
@@ -148,8 +147,57 @@ app.get('/api/health', (req, res) => {
   // Resposta pública mínima (sem fingerprinting ou contagem de terminais)
   res.json({
     status: 'online',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    serverTime: new Date().toISOString(),
   });
+});
+
+// Endpoint de Sincronização de Relógio Relativo (Anti-Replay)
+app.get('/api/lan/time', (req, res) => {
+  res.json({
+    serverTime: new Date().toISOString(),
+    timestamp: Date.now(),
+  });
+});
+
+// Endpoint de Emparelhamento Inicial por Código Curto
+app.post('/api/lan/pair', async (req, res) => {
+  try {
+    const { code, terminalId, terminalName } = req.body;
+    if (!code) {
+      return res.status(400).json({ error: 'Código de emparelhamento obrigatório.' });
+    }
+
+    const activeCode = getCurrentPairingCode();
+    if (!activeCode || activeCode.code !== String(code).trim()) {
+      return res.status(401).json({ error: 'Código de emparelhamento inválido ou expirado. Gere um novo código no Master.' });
+    }
+
+    if (!activeLanSecret) {
+      const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+      activeLanSecret = settings?.lanSecret || null;
+      if (!activeLanSecret) {
+        activeLanSecret = crypto.randomBytes(16).toString('hex').toUpperCase();
+        await prisma.settings.upsert({
+          where: { id: 'singleton' },
+          update: { lanSecret: activeLanSecret },
+          create: { id: 'singleton', lanSecret: activeLanSecret, terminalMode: 'MASTER' }
+        });
+      }
+    }
+
+    const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+
+    res.json({
+      success: true,
+      lanSecret: activeLanSecret,
+      serverTime: new Date().toISOString(),
+      companyNif: settings?.companyNif,
+      companyName: settings?.companyName,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Erro ao processar emparelhamento.' });
+  }
 });
 
 // Heartbeat Seguro (Exige autenticação LAN para evitar poluição de telemetria)
@@ -181,6 +229,7 @@ app.post('/api/lan/heartbeat', lanAuthMiddleware, async (req, res) => {
     res.json({
       status: 'OK',
       serverTime: new Date().toISOString(),
+      timestamp: Date.now(),
       activeTerminalsCount: connectedTerminals.size,
     });
   } catch (err: any) {
@@ -200,6 +249,16 @@ apiRouter.get('/lan/terminals', (req, res) => {
     terminals: getConnectedTerminalsList(),
     masterIp: os.networkInterfaces(),
     serverTime: new Date().toISOString(),
+  });
+});
+
+// Gerar novo código de emparelhamento temporário
+apiRouter.get('/lan/pairing-code', (req, res) => {
+  const pairing = generatePairingCode();
+  res.json({
+    code: pairing.code,
+    expiresAt: new Date(pairing.expiresAt).toISOString(),
+    ttlSeconds: Math.round((pairing.expiresAt - Date.now()) / 1000),
   });
 });
 
@@ -228,25 +287,12 @@ apiRouter.get('/items', async (req, res) => {
     }
     const items = await prisma.item.findMany({ where, orderBy: { name: 'asc' } });
     res.json({ items });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar itens.' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao buscar produtos locais.' });
   }
 });
 
-// 2. Obter Categorias
-apiRouter.get('/categories', async (req, res) => {
-  try {
-    const { storeId } = req.query;
-    const where: any = { isActive: true };
-    if (storeId) where.storeId = String(storeId);
-    const categories = await prisma.category.findMany({ where, orderBy: { name: 'asc' } });
-    res.json(categories);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar categorias.' });
-  }
-});
-
-// 3. Obter e Criar Clientes
+// 2. Obter Clientes
 apiRouter.get('/clients', async (req, res) => {
   try {
     const { storeId, search } = req.query;
@@ -256,307 +302,51 @@ apiRouter.get('/clients', async (req, res) => {
       const s = String(search);
       where.OR = [
         { name: { contains: s } },
-        { taxNumber: { contains: s } },
-        { email: { contains: s } },
+        { nif: { contains: s } },
+        { phone: { contains: s } },
       ];
     }
     const clients = await prisma.client.findMany({ where, orderBy: { name: 'asc' } });
-    res.json(clients);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar clientes.' });
-  }
-});
-
-apiRouter.post('/clients', async (req, res) => {
-  try {
-    const clientData = req.body;
-    const id = clientData.id || crypto.randomUUID();
-    const client = await prisma.client.create({
-      data: {
-        id,
-        name: clientData.name,
-        nif: clientData.taxNumber || clientData.nif || '999999999',
-        email: clientData.email,
-        phone: clientData.phone,
-        address: clientData.address,
-        storeId: clientData.storeId || 'DEFAULT_STORE',
-      }
-    });
-
-    // Registrar no Outbox para sincronização com a cloud
-    await prisma.syncOutbox.create({
-      data: {
-        entityType: 'CLIENT',
-        entityId: id,
-        action: 'CREATE',
-        payload: JSON.stringify(client),
-        status: 'PENDING',
-        storeId: clientData.storeId || 'DEFAULT_STORE'
-      }
-    });
-
-    res.json(client);
-  } catch (error: any) {
-    res.status(500).json({ error: error?.message || 'Erro ao criar cliente.' });
-  }
-});
-
-// 4. Sessões e Movimentos de Caixa Centralizados
-apiRouter.get('/cash-sessions/current', async (req, res) => {
-  try {
-    const { storeId } = req.query;
-    const session = await prisma.cashSession.findFirst({
-      where: {
-        storeId: String(storeId),
-        status: 'OPEN'
-      },
-      orderBy: { openingDate: 'desc' }
-    });
-    res.json(session);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar sessão de caixa.' });
-  }
-});
-
-apiRouter.post('/cash-movements', async (req, res) => {
-  try {
-    const { sessionId, type, description, amount } = req.body;
-    const movement = await prisma.cashMovement.create({
-      data: {
-        id: crypto.randomUUID(),
-        cashSessionId: sessionId,
-        type,
-        description,
-        amount: Number(amount),
-      }
-    });
-
-    await prisma.syncOutbox.create({
-      data: {
-        entityType: 'CASH_MOVEMENT',
-        entityId: movement.id,
-        action: 'CREATE',
-        payload: JSON.stringify(movement),
-        status: 'PENDING',
-        storeId: req.body.storeId || 'DEFAULT_STORE'
-      }
-    });
-
-    res.json(movement);
+    res.json({ clients });
   } catch (err: any) {
-    res.status(500).json({ error: err?.message || 'Erro ao criar movimento de caixa.' });
+    res.status(500).json({ error: 'Erro ao buscar clientes locais.' });
   }
 });
 
-// =========================================================================
-// 5. EMISSÃO CENTRALIZADA ATÓMICA DE FATURAS COM FILA FIFO & SÉRIE OFICIAL AGT
-// =========================================================================
-apiRouter.post('/invoice/create', async (req, res) => {
-  const { invoiceData, storeId, userId, terminalId } = req.body;
-
-  if (!invoiceData || !invoiceData.items || !Array.isArray(invoiceData.items) || invoiceData.items.length === 0) {
-    return res.status(400).json({ error: 'Dados da fatura ou itens inválidos.' });
-  }
-
+// 3. Obter Séries Fiscais Ativas no Master
+apiRouter.get('/series', async (req, res) => {
   try {
-    // Processamento estritamente serializado na fila FIFO em memória
-    const invoiceResponse = await enqueueInvoiceTask(async () => {
-      const documentType = (invoiceData.documentType || invoiceData.type || 'FR').toString().toUpperCase();
-      const currentYear = new Date().getFullYear().toString();
-      const storeIdLocal = storeId || invoiceData.storeId || 'DEFAULT_STORE';
-      const establishmentNumber = invoiceData.establishmentNumber || 'SEDE';
-      const companyId = invoiceData.companyId || 'DEFAULT_COMPANY';
+    const { storeId, documentType } = req.query;
+    const where: any = { isActive: true };
+    if (storeId) where.storeId = String(storeId);
+    if (documentType) where.documentType = String(documentType);
 
-      // 1. Procurar série oficial da AGT ativa
-      let seriesRow = await prisma.agtSeries.findFirst({
-        where: {
-          documentType,
-          seriesYear: currentYear,
-          isActive: true,
-          OR: [
-            { storeId: storeIdLocal },
-            { storeId: null },
-            { establishmentNumber: establishmentNumber },
-          ]
-        },
-        orderBy: { updatedAt: 'desc' },
-      });
+    const series = await prisma.agtSeries.findMany({ where, orderBy: { createdAt: 'desc' } });
+    res.json({ series });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao buscar séries no Master.' });
+  }
+});
 
-      if (!seriesRow) {
-        seriesRow = await prisma.agtSeries.findFirst({
-          where: {
-            documentType,
-            isActive: true,
-          },
-          orderBy: { updatedAt: 'desc' },
-        });
-      }
+// 4. Criação de Fatura Atómica Serializada (Delegada ao FiscalInvoicingService)
+apiRouter.post('/invoice/create', async (req, res) => {
+  try {
+    const { invoiceData, storeId, userId, terminalId, terminalName } = req.body;
+    const idempotencyKey = invoiceData?.idempotencyKey || (req.headers['x-idempotency-key'] as string);
 
-      if (!seriesRow || !seriesRow.seriesCode) {
-        throw new Error(`Não é possível faturar: Nenhuma série fiscal oficial da AGT (${documentType}) encontrada no Master.`);
-      }
-
-      // 2. Transação atómica no SQLite (Validação de Stock + Sequencial Atómico + Inserção)
-      return await prisma.$transaction(async (tx) => {
-        // A. Validar stock de todos os itens antes de abater
-        for (const item of invoiceData.items) {
-          const dbItem = await tx.item.findUnique({ where: { id: item.id } });
-          if (!dbItem) {
-            throw new Error(`Item ${item.name || item.id} não encontrado na base de dados do Master.`);
-          }
-          const requestedQty = Number(item.quantity || item.qty || 1);
-          if (dbItem.stock < requestedQty) {
-            throw new Error(`Stock insuficiente para o artigo "${dbItem.name}". Disponível: ${dbItem.stock}, Solicitado: ${requestedQty}`);
-          }
-        }
-
-        // B. Calcular Totais
-        let calculatedNetTotal = 0;
-        let calculatedTaxTotal = 0;
-
-        for (const item of invoiceData.items) {
-          const qty = Number(item.quantity || item.qty || 1);
-          const price = Number(item.price || item.unitPrice || 0);
-          const discount = Number(item.discount || 0);
-          const itemNet = (price * qty) - discount;
-          const taxRate = Number(item.taxRate || item.tax || 0.14);
-          const itemTax = itemNet * taxRate;
-
-          calculatedNetTotal += itemNet;
-          calculatedTaxTotal += itemTax;
-        }
-
-        const calculatedGrossTotal = calculatedNetTotal + calculatedTaxTotal;
-        const nextSequence = (seriesRow.currentSequence || 0) + 1;
-        const seriesCode = seriesRow.seriesCode;
-        const localAgtNo = `${documentType} ${seriesCode}/${nextSequence}`;
-        const previousHash = seriesRow.lastHash || '';
-        const issueDate = invoiceData.issueDate ? new Date(invoiceData.issueDate) : new Date();
-
-        // C. Assinatura Digital RSA-SHA1 AGT
-        const signatureResult = await FiscalSignatureService.signInvoice({
-          docNo: localAgtNo,
-          issueDate,
-          grossTotal: calculatedGrossTotal,
-          taxTotal: calculatedTaxTotal,
-          previousHash,
-        });
-
-        // D. Atualizar a série AGT atómica com o novo número e o hash encadeado
-        await tx.agtSeries.update({
-          where: { id: seriesRow.id },
-          data: {
-            currentSequence: nextSequence,
-            lastDocumentNo: localAgtNo,
-            lastHash: signatureResult.hash,
-          },
-        });
-
-        // E. Abater Stock
-        for (const item of invoiceData.items) {
-          const requestedQty = Number(item.quantity || item.qty || 1);
-          await tx.item.update({
-            where: { id: item.id },
-            data: { stock: { decrement: requestedQty } }
-          });
-        }
-
-        const invoiceId = invoiceData.id || crypto.randomUUID();
-        const localNo = `LOCAL-${Date.now()}`;
-
-        // F. Inserir Fatura
-        const createdInvoice = await tx.invoice.create({
-          data: {
-            id: invoiceId,
-            localNo,
-            agtNo: localAgtNo,
-            status: "VALID",
-            issueDate,
-            systemEntryDate: signatureResult.systemEntryDate,
-            netTotal: calculatedNetTotal,
-            taxTotal: calculatedTaxTotal,
-            grossTotal: calculatedGrossTotal,
-            hash: signatureResult.hash,
-            hashControl: signatureResult.hashControl,
-            previousHash: signatureResult.previousHash,
-            qrCode: signatureResult.qrCode,
-            userId: userId || 'MASTER_USER',
-            clientId: invoiceData.clientId || null,
-            storeId: storeIdLocal,
-          }
-        });
-
-        // G. Inserir Linhas da Fatura
-        for (let i = 0; i < invoiceData.items.length; i++) {
-          const item = invoiceData.items[i];
-          const qty = Number(item.quantity || item.qty || 1);
-          const price = Number(item.price || item.unitPrice || 0);
-          const discount = Number(item.discount || 0);
-          const net = (price * qty) - discount;
-          const taxRate = Number(item.taxRate || item.tax || 0.14);
-          const tax = net * taxRate;
-
-          await tx.invoiceLine.create({
-            data: {
-              id: crypto.randomUUID(),
-              invoiceId: createdInvoice.id,
-              itemId: item.id || crypto.randomUUID(),
-              quantity: qty,
-              unitPrice: price,
-              discount,
-              taxPercent: taxRate * 100,
-              netTotal: net,
-              grossTotal: net + tax,
-            }
-          });
-        }
-
-        // H. Inserir no Outbox do Master para envio posterior à Cloud
-        await tx.syncOutbox.create({
-          data: {
-            entityType: "INVOICE",
-            entityId: createdInvoice.id,
-            action: "CREATE",
-            storeId: storeIdLocal,
-            payload: JSON.stringify({
-              ...invoiceData,
-              id: createdInvoice.id,
-              agtNo: localAgtNo,
-              hash: signatureResult.hash,
-              hashControl: signatureResult.hashControl,
-              qrCode: signatureResult.qrCode,
-              swValidationNumber: signatureResult.swValidationNumber,
-              systemEntryDate: signatureResult.systemEntryDate,
-              netTotal: calculatedNetTotal,
-              taxTotal: calculatedTaxTotal,
-              grossTotal: calculatedGrossTotal,
-            }),
-            status: "PENDING",
-          }
-        });
-
-        // I. Atualizar estatística do terminal conectado
-        if (terminalId && connectedTerminals.has(terminalId)) {
-          const t = connectedTerminals.get(terminalId)!;
-          t.totalSales += 1;
-        }
-
-        return {
-          id: createdInvoice.id,
-          localNo: createdInvoice.localNo,
-          agtNo: localAgtNo,
-          hash: signatureResult.hash,
-          hashControl: signatureResult.hashControl,
-          qrCode: signatureResult.qrCode,
-          swValidationNumber: signatureResult.swValidationNumber,
-          netTotal: calculatedNetTotal,
-          taxTotal: calculatedTaxTotal,
-          grossTotal: calculatedGrossTotal,
-          offline: true,
-          source: 'LAN_MASTER'
-        };
-      });
+    const invoiceResponse = await FiscalInvoicingService.processInvoice({
+      invoiceData,
+      storeId,
+      userId,
+      terminalId,
+      terminalName,
+      idempotencyKey,
     });
+
+    if (terminalId && connectedTerminals.has(terminalId) && !invoiceResponse.idempotentReplay) {
+      const t = connectedTerminals.get(terminalId)!;
+      t.totalSales += 1;
+    }
 
     res.json({ success: true, data: invoiceResponse });
   } catch (err: any) {
@@ -578,31 +368,96 @@ apiRouter.post('/invoice/invoice-receipt', (req, res, next) => {
 app.use('/api', apiRouter);
 
 // ==========================================
-// Inicialização do Servidor Local
+// Inicialização e Ciclo de Vida do Servidor Local
 // ==========================================
+let serverInstance: any = null;
+let isServerRunning = false;
+let serverError: string | null = null;
+
+export function getLocalServerStatus() {
+  return {
+    isRunning: isServerRunning,
+    port: PORT,
+    connectedCount: connectedTerminals.size,
+    error: serverError,
+  };
+}
+
+export async function stopLocalServer(): Promise<void> {
+  const { stopMdnsPublisher, stopBroadcastServer } = await import("./lan-discovery");
+  stopMdnsPublisher();
+  stopBroadcastServer();
+
+  return new Promise((resolve) => {
+    if (serverInstance) {
+      serverInstance.close(() => {
+        isServerRunning = false;
+        serverInstance = null;
+        serverError = null;
+        console.log('🛑 [Local Server] Servidor local encerrado com sucesso.');
+        resolve();
+      });
+    } else {
+      isServerRunning = false;
+      resolve();
+    }
+  });
+}
+
 export function startLocalServer() {
   return new Promise(async (resolve, reject) => {
+    if (isServerRunning && serverInstance) {
+      console.log(`ℹ️ [Local Server] Servidor já se encontra ativo na porta ${PORT}.`);
+      return resolve(serverInstance);
+    }
+
     try {
       try {
         await prisma.$executeRawUnsafe(`PRAGMA journal_mode = WAL;`);
         await prisma.$executeRawUnsafe(`PRAGMA busy_timeout = 5000;`);
-        console.log('⚡ [Local Server SQLite] Modo WAL e busy_timeout ativados.');
+        await prisma.$executeRawUnsafe(`PRAGMA synchronous = NORMAL;`);
+        console.log('⚡ [Local Server SQLite] Modo WAL, busy_timeout=5000 e synchronous=NORMAL ativados.');
       } catch (dbErr) {
         console.warn('⚠️ Falha ao definir PRAGMA WAL no SQLite:', dbErr);
       }
 
-      const server = app.listen(PORT, '0.0.0.0', () => {
+      const server = app.listen(PORT, '0.0.0.0', async () => {
+        isServerRunning = true;
+        serverInstance = server;
+        serverError = null;
         console.log(`🚀 [Local Server] API REST Embutida a rodar em: http://0.0.0.0:${PORT}`);
+
+        // Iniciar anúncios de auto-descoberta mDNS e Broadcast UDP
+        try {
+          const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+          const { startMdnsPublisher, startBroadcastServer } = await import("./lan-discovery");
+          await startMdnsPublisher({
+            port: PORT,
+            storeName: settings?.companyName || "Loja Principal",
+          });
+          startBroadcastServer({
+            port: PORT,
+            storeName: settings?.companyName || "Loja Principal",
+          });
+        } catch (discErr) {
+          console.warn("⚠️ [Local Server] Falha ao iniciar auto-descoberta mDNS/Broadcast:", discErr);
+        }
+
         resolve(server);
       });
 
       server.on('error', (err: any) => {
+        isServerRunning = false;
+        serverError = err?.message || 'Erro no servidor local.';
         if (err.code === 'EADDRINUSE') {
           console.error(`❌ [Local Server] A porta ${PORT} já está em uso!`);
+          serverError = `A porta ${PORT} já está ocupada por outra aplicação.`;
         }
         reject(err);
       });
-    } catch (err) {
+    } catch (err: any) {
+      isServerRunning = false;
+      serverError = err?.message || 'Erro ao inicializar servidor local.';
       reject(err);
     }
   });

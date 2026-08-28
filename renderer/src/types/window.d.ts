@@ -99,11 +99,22 @@ export interface IpcBridge {
       lanSecret: string | null;
       port: number;
       localIp: string;
+      isServerRunning?: boolean;
+      serverError?: string | null;
+      connectedCount?: number;
+    }>;
+    getServerStatus: () => Promise<{
+      isRunning: boolean;
+      port: number;
+      connectedCount: number;
+      error: string | null;
+      localIp: string;
     }>;
     setConfig: (config: {
       terminalMode: 'MASTER' | 'SLAVE';
       masterIp?: string | null;
       lanSecret?: string | null;
+      enabled?: boolean;
     }) => Promise<boolean>;
     rotateSecret: () => Promise<string>;
     getConnectedTerminals: () => Promise<Array<{
@@ -129,11 +140,52 @@ export interface IpcBridge {
       totalMemoryGB: number;
       freeMemoryGB: number;
       cpuCores: number;
-      arch: string;
-      platform: string;
       isMasterEligible: boolean;
-      isOptimalMaster: boolean;
-      recommendation: string;
+      platform: string;
+      arch: string;
+    }>;
+    getPairingCode: () => Promise<{
+      code: string;
+      expiresAt: string;
+      ttlSeconds: number;
+      error?: string;
+    }>;
+    pairTerminal: (params: { targetIp: string; code: string; terminalName?: string }) => Promise<{
+      success: boolean;
+      lanSecret?: string;
+      serverTime?: string;
+      companyNif?: string;
+      companyName?: string;
+      error?: string;
+    }>;
+    startDiscovery: () => Promise<boolean>;
+    stopDiscovery: () => Promise<boolean>;
+    getDiscoveredMasters: () => Promise<Array<{
+      id: string;
+      name: string;
+      host: string;
+      ip: string;
+      port: number;
+      protocolVersion: string;
+      storeId?: string;
+      storeName?: string;
+      discoveryLayer: 'MDNS' | 'UDP_BROADCAST' | 'MANUAL';
+      lastSeen: number;
+    }>>;
+    verifyHashChain: () => Promise<{
+      isValid: boolean;
+      lastInvoice?: any;
+      error?: string;
+    }>;
+    promoteBackupMaster: (params: {
+      authorizedByUserId: string;
+      reason: string;
+      previousMasterIp?: string;
+    }) => Promise<{
+      success: boolean;
+      message: string;
+      failoverLog?: any;
+      error?: string;
     }>;
   };
 }

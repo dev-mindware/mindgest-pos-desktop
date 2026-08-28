@@ -163,7 +163,7 @@ async function ensureSyncOutboxSchema() {
   }
 }
 
-async function ensureSettingsSchema() {
+export async function ensureSettingsSchema() {
   const tableExists = await prisma.$queryRawUnsafe<Array<{ name: string }>>(
     `SELECT name FROM sqlite_master WHERE type='table' AND name='Settings'`
   );
@@ -178,6 +178,10 @@ async function ensureSettingsSchema() {
       ['companyName', 'TEXT DEFAULT "MINDGEST"'],
       ['encryptedPrivateKey', 'TEXT'],
       ['publicKey', 'TEXT'],
+      ['serieComunicadaAGT', 'BOOLEAN NOT NULL DEFAULT 0'],
+      ['backupMasterId', 'TEXT'],
+      ['backupMasterIp', 'TEXT'],
+      ['lanEnabled', 'BOOLEAN NOT NULL DEFAULT 1'],
     ];
 
     for (const [columnName, definition] of columnsToAdd) {
@@ -189,7 +193,7 @@ async function ensureSettingsSchema() {
   }
 }
 
-async function ensureInvoiceSchema() {
+export async function ensureInvoiceSchema() {
   const tableExists = await prisma.$queryRawUnsafe<Array<{ name: string }>>(
     `SELECT name FROM sqlite_master WHERE type='table' AND name='Invoice'`
   );
@@ -199,6 +203,9 @@ async function ensureInvoiceSchema() {
       ['previousHash', 'TEXT'],
       ['qrCode', 'TEXT'],
       ['systemEntryDate', 'DATETIME DEFAULT CURRENT_TIMESTAMP'],
+      ['idempotencyKey', 'TEXT'],
+      ['terminalId', 'TEXT'],
+      ['terminalName', 'TEXT'],
     ];
 
     for (const [columnName, definition] of columnsToAdd) {
@@ -207,6 +214,12 @@ async function ensureInvoiceSchema() {
         await prisma.$executeRawUnsafe(`ALTER TABLE "Invoice" ADD COLUMN "${columnName}" ${definition};`);
       }
     }
+
+    try {
+      await prisma.$executeRawUnsafe(`
+        CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_idempotencyKey_key" ON "Invoice"("idempotencyKey");
+      `);
+    } catch {}
   }
 }
 

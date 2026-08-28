@@ -5,8 +5,8 @@ import { CategorySelector, ProductList } from "./products";
 import { CartList } from "./cart";
 import {
   BarcodeProductScanner,
+  ShortcutsHelpModal,
 } from "./modals";
-import { ShortcutsHelpModal } from "./modals/shortcuts-help-modal";
 import { currentStoreStore, useAuthStore, useModal } from "@/stores";
 import { useGetCategories, useGetItems, useGetCurrentSession } from "@/hooks";
 import { useQueryState } from "nuqs";
@@ -26,8 +26,12 @@ import { SucessMessage, ErrorMessage, WarningMessage } from "@/utils/messages";
 import { Keyboard, KeyRound, Tv } from "lucide-react";
 import { MobilePosLayout } from "../mobile";
 import { ManagerAuthModal, MODAL_MANAGER_AUTH_ID } from "../manager-auth-modal";
+import { useKeyboard } from "@/contexts/keyboard-context";
+import { useWorkspaceStore } from "@/stores/pos/workspace-store";
 
 export function CounterContent() {
+  const { toggleKeyboard, isVisible: isKeyboardVisible } = useKeyboard();
+  const { enableVirtualKeyboard } = useWorkspaceStore();
   const [search] = useQueryState("search", { defaultValue: "" });
   const { categories, isLoading: isLoadingCategories } = useGetCategories();
   const {
@@ -214,10 +218,12 @@ export function CounterContent() {
     onOpenHelp: () => setIsHelpOpen(true),
     onFocusSearch: handleFocusSearch,
     onClearCart: () => handleClearCart(activeCart),
+    onToggleKeyboard: toggleKeyboard,
     onDeleteItem: handleHotkeysDelete,
     onIncreaseQty: handleHotkeysInc,
     onDecreaseQty: handleHotkeysDec,
     onEscape: () => setIsHelpOpen(false),
+    disabled: isHelpOpen,
   });
 
   const handleToggleCustomerDisplay = useCallback(async () => {
@@ -322,6 +328,19 @@ export function CounterContent() {
             {currentCategoryName || "Todos"}
           </h2>
           <div className="flex items-center gap-2">
+            {enableVirtualKeyboard && (
+              <Button
+                variant={isKeyboardVisible ? "secondary" : "outline"}
+                size="sm"
+                onClick={toggleKeyboard}
+                className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                title="Teclado Virtual no Ecrã (F7)"
+              >
+                <Keyboard className={`w-3.5 h-3.5 ${isKeyboardVisible ? "text-primary" : "text-emerald-500"}`} />
+                <span className="hidden sm:inline">Teclado</span>
+                <kbd className="px-1 text-[10px] font-mono bg-muted border border-border">F7</kbd>
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface WorkspaceState {
+  enableVirtualKeyboard: boolean;
   disableVirtualKeyboard: boolean;
   useThermalPrinter: boolean;
   autoOpenDrawerOnCash: boolean;
@@ -9,6 +10,7 @@ interface WorkspaceState {
   printerHost: string;
   printerPort: number;
   drawerPin: 2 | 5;
+  setEnableVirtualKeyboard: (value: boolean) => void;
   setDisableVirtualKeyboard: (value: boolean) => void;
   setUseThermalPrinter: (value: boolean) => void;
   setAutoOpenDrawerOnCash: (value: boolean) => void;
@@ -21,6 +23,7 @@ interface WorkspaceState {
 export const useWorkspaceStore = create<WorkspaceState>()(
   persist(
     (set) => ({
+      enableVirtualKeyboard: true,
       disableVirtualKeyboard: false,
       useThermalPrinter: true,
       autoOpenDrawerOnCash: true,
@@ -28,8 +31,16 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       printerHost: '',
       printerPort: 9100,
       drawerPin: 2,
+      setEnableVirtualKeyboard: (enableVirtualKeyboard) =>
+        set({
+          enableVirtualKeyboard,
+          disableVirtualKeyboard: !enableVirtualKeyboard,
+        }),
       setDisableVirtualKeyboard: (disableVirtualKeyboard) =>
-        set({ disableVirtualKeyboard }),
+        set({
+          disableVirtualKeyboard,
+          enableVirtualKeyboard: !disableVirtualKeyboard,
+        }),
       setUseThermalPrinter: (useThermalPrinter) => set({ useThermalPrinter }),
       setAutoOpenDrawerOnCash: (autoOpenDrawerOnCash) => set({ autoOpenDrawerOnCash }),
       setPrinterTransport: (printerTransport) => set({ printerTransport }),

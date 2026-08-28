@@ -49,6 +49,7 @@ contextBridge.exposeInMainWorld("ipc", {
   lan: {
     getLocalIp: () => ipcRenderer.invoke("lan:get-local-ip"),
     getConfig: () => ipcRenderer.invoke("lan:get-config"),
+    getServerStatus: () => ipcRenderer.invoke("lan:get-server-status"),
     setConfig: (config: any) => ipcRenderer.invoke("lan:set-config", config),
     rotateSecret: () => ipcRenderer.invoke("lan:rotate-secret"),
     getConnectedTerminals: () => ipcRenderer.invoke("lan:get-connected-terminals"),
@@ -56,6 +57,13 @@ contextBridge.exposeInMainWorld("ipc", {
     testConnection: (params: { targetIp: string; lanSecret?: string }) => ipcRenderer.invoke("lan:test-connection", params),
     sendHeartbeat: (params: { masterIp: string; lanSecret?: string; terminalName?: string }) => ipcRenderer.invoke("lan:send-heartbeat", params),
     checkSystemCapability: () => ipcRenderer.invoke("lan:check-system-capability"),
+    getPairingCode: () => ipcRenderer.invoke("lan:get-pairing-code"),
+    pairTerminal: (params: { targetIp: string; code: string; terminalName?: string }) => ipcRenderer.invoke("lan:pair-terminal", params),
+    startDiscovery: () => ipcRenderer.invoke("lan:start-discovery"),
+    stopDiscovery: () => ipcRenderer.invoke("lan:stop-discovery"),
+    getDiscoveredMasters: () => ipcRenderer.invoke("lan:get-discovered-masters"),
+    verifyHashChain: () => ipcRenderer.invoke("lan:verify-hash-chain"),
+    promoteBackupMaster: (params: { authorizedByUserId: string; reason: string; previousMasterIp?: string }) => ipcRenderer.invoke("lan:promote-backup-master", params),
   },
   // Sync Bridge (Cloud to Local)
   sync: {

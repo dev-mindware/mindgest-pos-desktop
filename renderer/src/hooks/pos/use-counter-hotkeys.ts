@@ -11,6 +11,7 @@ export interface CounterHotkeysHandlers {
   onHoldCart?: () => void;
   onOpenDrawer?: () => void;
   onClearCart?: () => void;
+  onToggleKeyboard?: () => void;
   onDeleteItem?: () => void;
   onIncreaseQty?: () => void;
   onDecreaseQty?: () => void;
@@ -27,6 +28,7 @@ export function useCounterHotkeys({
   onHoldCart,
   onOpenDrawer,
   onClearCart,
+  onToggleKeyboard,
   onDeleteItem,
   onIncreaseQty,
   onDecreaseQty,
@@ -79,6 +81,11 @@ export function useCounterHotkeys({
         case "F5":
           e.preventDefault();
           onQuickCash?.();
+          return;
+
+        case "F7":
+          e.preventDefault();
+          onToggleKeyboard?.();
           return;
 
         case "F8":
