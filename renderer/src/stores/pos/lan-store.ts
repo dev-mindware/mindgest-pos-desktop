@@ -20,7 +20,7 @@ export interface DiscoveredMasterNode {
   protocolVersion: string;
   storeId?: string;
   storeName?: string;
-  discoveryLayer: "MDNS" | "UDP_BROADCAST" | "MANUAL";
+  discoveryLayer: "DIRECT_IP" | "MDNS" | "UDP_BROADCAST" | "MANUAL";
   lastSeen: number;
 }
 

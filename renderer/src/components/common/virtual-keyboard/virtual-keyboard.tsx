@@ -6,15 +6,13 @@ import Keyboard from "simple-keyboard";
 import "simple-keyboard/build/css/index.css";
 import { useKeyboard } from "@/contexts/keyboard-context";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, GripHorizontal } from "lucide-react";
 
 export function VirtualKeyboard() {
     const {
         isVisible,
         layout,
-        isShift,
         isCaps,
-        toggleShift,
         toggleCaps,
         handleKeyPress,
         closeKeyboard,
@@ -39,7 +37,7 @@ export function VirtualKeyboard() {
         if (!isVisible || !containerRef.current) return;
 
         keyboardRef.current = new Keyboard(containerRef.current, {
-            onChange: (input: string) => { },
+            onChange: () => { },
             layoutName: layout,
             onKeyPress: (button: string) => {
                 let key = button;
@@ -98,57 +96,33 @@ export function VirtualKeyboard() {
                 "{space}": "Espaço",
                 "{lock}": "Caps Lock",
                 "{accent}": "Áàã...",
-                "{abc}": "Abc",
+                "{abc}": "ABC"
             },
-            buttonTheme: [
-                {
-                    class: "hg-button-primary",
-                    buttons: "{enter}"
-                },
-                {
-                    class: "hg-button-special",
-                    buttons: "{bksp} {lock} 00 {accent} {abc}"
-                }
-            ]
+            theme: "hg-theme-default simple-keyboard-theme",
+            mergeDisplay: true
         });
 
         return () => {
-            keyboardRef.current?.destroy();
+            if (keyboardRef.current) {
+                keyboardRef.current.destroy();
+                keyboardRef.current = null;
+            }
         };
-    }, [isVisible, layout, toggleCaps, handleKeyPress, setLayout]);
+    }, [isVisible]);
 
-    // Sync layout and highlighting with library
+    // Update layout whenever layout changes
     useEffect(() => {
-        if (!keyboardRef.current) return;
-
-        let targetLayout: string = layout;
-        const wantUpper = isCaps !== (isShift && layout !== "numeric");
-
-        if (layout === "default" && wantUpper) {
-            targetLayout = "shift";
-        } else if (layout === "accent" && wantUpper) {
-            targetLayout = "accentShift";
+        if (keyboardRef.current) {
+            keyboardRef.current.setOptions({ layoutName: layout });
         }
-
-        const themes = [
-            { class: "hg-button-primary", buttons: "{enter}" },
-            { class: "hg-button-special", buttons: "{bksp} {lock} 00 {accent} {abc}" }
-        ];
-
-        if (isCaps) {
-            themes.push({ class: "hg-button-active", buttons: "{lock}" });
-        }
-
-        keyboardRef.current.setOptions({
-            layoutName: targetLayout,
-            buttonTheme: themes
-        });
-    }, [isVisible, layout, isShift, isCaps]);
+    }, [layout]);
 
     if (!mounted || !isVisible) return null;
 
-    // Draggable Logic
-    const onPointerDown = (e: React.PointerEvent) => {
+    // Pointer-based Dragging
+    const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        if ((e.target as HTMLElement).closest("button")) return;
+
         setIsDragging(true);
         dragRef.current = {
             startX: e.clientX,
@@ -159,21 +133,19 @@ export function VirtualKeyboard() {
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
     };
 
-    const onPointerMove = (e: React.PointerEvent) => {
-        if (!isDragging || !dragRef.current || !mainContainerRef.current) return;
-
+    const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!isDragging || !dragRef.current) return;
         const dx = e.clientX - dragRef.current.startX;
         const dy = e.clientY - dragRef.current.startY;
 
-        const nextX = dragRef.current.startPosX + dx;
-        const nextY = dragRef.current.startPosY + dy;
-
-        mainContainerRef.current.style.transform = `translate(calc(-50% + ${nextX}px), ${nextY}px)`;
+        setPosition({
+            x: dragRef.current.startPosX + dx,
+            y: dragRef.current.startPosY + dy,
+        });
     };
 
-    const onPointerUp = (e: React.PointerEvent) => {
+    const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
         if (!isDragging || !dragRef.current) return;
-
         const dx = e.clientX - dragRef.current.startX;
         const dy = e.clientY - dragRef.current.startY;
 
@@ -190,7 +162,7 @@ export function VirtualKeyboard() {
     const keyboardContent = (
         <div
             ref={mainContainerRef}
-            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[999999] animate-in slide-in-from-bottom duration-200"
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[999999] animate-in slide-in-from-bottom duration-200"
             style={{
                 transform: `translate(calc(-50% + ${position.x}px), ${position.y}px)`,
                 touchAction: "none",
@@ -210,26 +182,70 @@ export function VirtualKeyboard() {
                     layout === "numeric" ? "w-[400px]" : "w-[960px] max-w-[96vw]"
                 )}
             >
-                {/* Drag Handle & Minimal Header */}
+                {/* Drag Handle & Fast Layout Switcher Header */}
                 <div
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
                     className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-border/40 cursor-grab active:cursor-grabbing select-none"
                 >
-                    <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                            {layout === "numeric" ? "Teclado Numérico" : "Teclado Touchscreen"}
-                        </span>
+                    {/* Left: Layout Switcher Chips */}
+                    <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-[3px] border border-border/40">
+                        <button
+                            type="button"
+                            onClick={() => setLayout("default")}
+                            className={cn(
+                                "font-mono text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-[2px] transition-colors",
+                                layout === "default" || layout === "shift"
+                                    ? "bg-primary text-white shadow-soft-sm"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            QWERTY
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setLayout("numeric")}
+                            className={cn(
+                                "font-mono text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-[2px] transition-colors",
+                                layout === "numeric"
+                                    ? "bg-primary text-white shadow-soft-sm"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            123 Num
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setLayout("accent")}
+                            className={cn(
+                                "font-mono text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-[2px] transition-colors",
+                                layout === "accent" || layout === "accentShift"
+                                    ? "bg-primary text-white shadow-soft-sm"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            Áàã
+                        </button>
+                        {isCaps && (
+                            <span className="font-mono text-[9px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-1 rounded-[2px] font-bold">
+                                CAPS
+                            </span>
+                        )}
                     </div>
 
-                    <div className="w-16 h-1 bg-stone-300 dark:bg-stone-700 rounded-[1px]" />
+                    {/* Center: Drag Handle */}
+                    <div className="flex items-center gap-1 text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                        <GripHorizontal className="w-5 h-4" />
+                        <span className="text-[10px] font-mono text-muted-foreground/70 hidden sm:inline font-normal">Arrastar</span>
+                    </div>
 
+                    {/* Right: Close Button */}
                     <button
                         type="button"
                         onClick={closeKeyboard}
-                        className="h-6 w-6 rounded-[3px] border border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
-                        title="Ocultar Teclado"
+                        className="h-6 w-6 rounded-[3px] border border-border/50 bg-muted/40 hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-600 text-muted-foreground flex items-center justify-center transition-colors cursor-pointer"
+                        title="Ocultar Teclado (F7)"
                     >
                         <ChevronDown className="w-4 h-4" />
                     </button>

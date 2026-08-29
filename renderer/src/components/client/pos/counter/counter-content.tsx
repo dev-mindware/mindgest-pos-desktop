@@ -333,12 +333,16 @@ export function CounterContent() {
                 variant={isKeyboardVisible ? "secondary" : "outline"}
                 size="sm"
                 onClick={toggleKeyboard}
-                className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                className={`h-8 gap-1.5 text-xs transition-all duration-200 cursor-pointer ${
+                  isKeyboardVisible
+                    ? "border-primary bg-primary/10 text-primary font-semibold shadow-soft-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
                 title="Teclado Virtual no Ecrã (F7)"
               >
-                <Keyboard className={`w-3.5 h-3.5 ${isKeyboardVisible ? "text-primary" : "text-emerald-500"}`} />
+                <Keyboard className={`w-3.5 h-3.5 ${isKeyboardVisible ? "text-primary animate-pulse" : "text-emerald-500"}`} />
                 <span className="hidden sm:inline">Teclado</span>
-                <kbd className="px-1 text-[10px] font-mono bg-muted border border-border">F7</kbd>
+                <kbd className="px-1 text-[10px] font-mono bg-muted/80 border border-border/80 rounded-[2px]">F7</kbd>
               </Button>
             )}
             <Button

@@ -158,7 +158,7 @@ export interface IpcBridge {
       companyName?: string;
       error?: string;
     }>;
-    startDiscovery: () => Promise<boolean>;
+    startDiscovery: (params?: { lastKnownMasterIp?: string }) => Promise<boolean>;
     stopDiscovery: () => Promise<boolean>;
     getDiscoveredMasters: () => Promise<Array<{
       id: string;
@@ -169,9 +169,18 @@ export interface IpcBridge {
       protocolVersion: string;
       storeId?: string;
       storeName?: string;
-      discoveryLayer: 'MDNS' | 'UDP_BROADCAST' | 'MANUAL';
+      discoveryLayer: 'DIRECT_IP' | 'MDNS' | 'UDP_BROADCAST' | 'MANUAL';
       lastSeen: number;
     }>>;
+    diagnoseSwitch: (params: { targetIp: string; port?: number }) => Promise<{
+      success: boolean;
+      isTcpReachable: boolean;
+      isMdnsReachable: boolean;
+      possibleIgmpSnooping: boolean;
+      latencyMs?: number;
+      message: string;
+      error?: string;
+    }>;
     verifyHashChain: () => Promise<{
       isValid: boolean;
       lastInvoice?: any;

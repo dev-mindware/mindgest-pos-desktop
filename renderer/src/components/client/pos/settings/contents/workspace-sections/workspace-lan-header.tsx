@@ -11,7 +11,7 @@ export function WorkspaceLanHeader({ lanEnabled, onToggleLan }: WorkspaceLanHead
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
       <div className="flex items-start sm:items-center gap-3">
-        <div className="p-2.5 rounded-[4px] bg-primary/10 text-primary shrink-0 shadow-soft-sm">
+        <div className="p-2.5 rounded-[4px] bg-primary/10 text-primary shrink-0 shadow-soft-sm transition-transform duration-200 group-hover:scale-105">
           <Icon name="Network" size={18} />
         </div>
         <div>
@@ -24,13 +24,25 @@ export function WorkspaceLanHeader({ lanEnabled, onToggleLan }: WorkspaceLanHead
         </div>
       </div>
       <div className="flex items-center justify-between sm:justify-end gap-3 self-end sm:self-auto w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40">
-        <span className="text-xs font-normal text-muted-foreground">
-          {lanEnabled ? "Rede Ativa" : "Rede em Pausa"}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            {lanEnabled ? (
+              <>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </>
+            ) : (
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+            )}
+          </span>
+          <span className="text-xs font-medium text-foreground">
+            {lanEnabled ? "Rede Ativa (Online)" : "Rede em Pausa"}
+          </span>
+        </div>
         <Switch
           checked={lanEnabled}
           onCheckedChange={onToggleLan}
-          className="data-[state=checked]:bg-primary"
+          className="data-[state=checked]:bg-primary transition-colors cursor-pointer"
         />
       </div>
     </div>

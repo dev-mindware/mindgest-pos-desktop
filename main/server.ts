@@ -36,20 +36,20 @@ export function setRotatedSecret(newSecret: string) {
   activeLanSecret = newSecret;
 }
 
-// Cleanup inactive terminals every 10 seconds (100% in-memory, ZERO disk/SQLite I/O)
+// Telemetria em tempo real para rede cabeada estável (varredura a cada 2s, 100% in-memory)
 setInterval(() => {
   const now = Date.now();
   for (const [id, terminal] of connectedTerminals.entries()) {
     const elapsed = now - new Date(terminal.lastSeen).getTime();
-    if (elapsed > 60_000) {
+    if (elapsed > 8_000) {
       terminal.status = 'DISCONNECTED';
-    } else if (elapsed > 15_000) {
+    } else if (elapsed > 5_000) {
       terminal.status = 'IDLE';
     } else {
       terminal.status = 'ACTIVE';
     }
   }
-}, 10_000);
+}, 2_000);
 
 export function getConnectedTerminalsList(): ConnectedTerminal[] {
   return Array.from(connectedTerminals.values());

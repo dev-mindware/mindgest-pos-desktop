@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon, Button } from "@/components";
 import { ConnectedTerminal } from "@/stores/pos/lan-store";
 import { SucessMessage } from "@/utils/messages";
@@ -39,10 +39,39 @@ export function LanMasterPanel({
   onRevokeTerminal,
 }: LanMasterPanelProps) {
   const [showSecret, setShowSecret] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [remainingPinSeconds, setRemainingPinSeconds] = useState<number>(0);
+
+  // Contador regressivo do PIN de 6 dígitos
+  useEffect(() => {
+    if (!masterPairingCode?.expiresAt) {
+      setRemainingPinSeconds(0);
+      return;
+    }
+
+    const updateRemaining = () => {
+      const diff = Math.max(
+        0,
+        Math.round((new Date(masterPairingCode.expiresAt).getTime() - Date.now()) / 1000)
+      );
+      setRemainingPinSeconds(diff);
+    };
+
+    updateRemaining();
+    const interval = setInterval(updateRemaining, 1000);
+    return () => clearInterval(interval);
+  }, [masterPairingCode]);
+
+  const copyToClipboard = (text: string, key: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    SucessMessage(`${label} copiado para a área de transferência!`);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
   return (
     <div className="p-4 sm:p-5 space-y-5">
-      {/* Banner de Estado do Servidor Local */}
+      {/* Banner de Estado do Servidor Local com Efeito Beacon */}
       <div
         className={`p-3.5 sm:p-4 rounded-[4px] border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all duration-300 shadow-soft-sm ${
           isMasterServerRunning
@@ -76,7 +105,7 @@ export function LanMasterPanel({
             </div>
             <p className="text-xs opacity-90 leading-relaxed mt-0.5 font-normal">
               {isMasterServerRunning
-                ? `Anúncios mDNS (_mindgest-pos._tcp) e Broadcast UDP ativos. SQLite WAL e PRAGMA synchronous=FULL para máxima durabilidade fiscal.`
+                ? `Anúncios mDNS (_mindgest-pos._tcp), Broadcast UDP e escuta direta TCP na porta 3333. SQLite WAL e PRAGMA synchronous=FULL.`
                 : masterServerError || "Clique no botão ao lado para iniciar o serviço HTTP e as regras de escuta local."}
             </p>
           </div>
@@ -84,16 +113,31 @@ export function LanMasterPanel({
 
         <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
           {isMasterServerRunning ? (
-            <span className="font-mono text-xs font-medium px-2.5 py-1 rounded-[3px] bg-background/90 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 shadow-soft-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-              0.0.0.0:3333
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-medium px-2.5 py-1 rounded-[2px] bg-background/90 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 shadow-soft-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                0.0.0.0:3333
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => copyToClipboard(`http://${localIp}:3333`, "master-url", "Endereço do Master")}
+                className="h-7 px-2 text-xs gap-1 font-normal"
+                title="Copiar URL completa"
+              >
+                <Icon name={copiedKey === "master-url" ? "Check" : "Copy"} size={12} className={copiedKey === "master-url" ? "text-emerald-500" : ""} />
+                <span className="hidden sm:inline">{copiedKey === "master-url" ? "Copiado!" : "Copiar IP"}</span>
+              </Button>
+            </div>
           ) : (
             <Button
               size="sm"
               variant="default"
               onClick={onStartServer}
-              className="h-8 text-xs gap-1.5 font-medium"
+              className="h-8 text-xs gap-1.5 font-medium cursor-pointer"
             >
               <Icon name="Play" size={13} />
               Iniciar Servidor Master
@@ -108,9 +152,12 @@ export function LanMasterPanel({
         <div className="p-3.5 sm:p-4 rounded-[4px] bg-card border border-border/60 space-y-3 flex flex-col justify-between shadow-soft-sm">
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-medium text-muted-foreground">
-                Código de Emparelhamento Rápido (PIN)
-              </p>
+              <div className="flex items-center gap-1.5">
+                <Icon name="KeyRound" size={14} className="text-primary" />
+                <p className="text-xs font-semibold text-foreground">
+                  Código de Emparelhamento Rápido (PIN)
+                </p>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
@@ -118,35 +165,57 @@ export function LanMasterPanel({
                 disabled={isGeneratingCode}
                 className="h-6 text-xs text-primary hover:bg-primary/10 gap-1 px-2 font-medium"
               >
-                <Icon name="Sparkles" size={12} />
-                {masterPairingCode ? "Novo PIN" : "Gerar PIN"}
+                <Icon name="Sparkles" size={12} className={isGeneratingCode ? "animate-spin" : ""} />
+                {masterPairingCode ? "Gerar Novo PIN" : "Gerar PIN"}
               </Button>
             </div>
-            {masterPairingCode ? (
-              <div className="p-3 rounded-[3px] bg-muted/20 border border-primary/30 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-xl font-bold text-primary tracking-widest">
-                    {masterPairingCode.code.slice(0, 3)}
-                  </span>
-                  <span className="text-muted-foreground font-normal">-</span>
-                  <span className="font-mono text-xl font-bold text-primary tracking-widest">
-                    {masterPairingCode.code.slice(3)}
-                  </span>
+
+            {masterPairingCode && remainingPinSeconds > 0 ? (
+              <div className="space-y-2">
+                <div className="p-3 rounded-[3px] bg-primary/5 border border-primary/20 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-2xl font-bold text-primary tracking-widest">
+                      {masterPairingCode.code.slice(0, 3)}
+                    </span>
+                    <span className="text-muted-foreground font-light text-xl">-</span>
+                    <span className="font-mono text-2xl font-bold text-primary tracking-widest">
+                      {masterPairingCode.code.slice(3)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground font-mono bg-background px-2 py-0.5 rounded-[2px] border border-border/40 font-medium flex items-center gap-1">
+                      <Icon name="Clock" size={11} />
+                      {Math.floor(remainingPinSeconds / 60)}:{(remainingPinSeconds % 60).toString().padStart(2, "0")}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(masterPairingCode.code, "pin", "Código PIN")}
+                      className="h-7 w-7 p-0"
+                      title="Copiar PIN"
+                    >
+                      <Icon name={copiedKey === "pin" ? "Check" : "Copy"} size={13} className={copiedKey === "pin" ? "text-emerald-500" : ""} />
+                    </Button>
+                  </div>
                 </div>
-                <span className="text-[11px] text-muted-foreground font-mono bg-background px-2 py-0.5 rounded border border-border/40 font-normal">
-                  Válido por 5 min
-                </span>
+                {/* Barra de Progresso do Tempo Restante */}
+                <div className="w-full bg-muted/60 h-1 rounded-full overflow-hidden">
+                  <div
+                    className="bg-primary h-full transition-all duration-1000 ease-linear"
+                    style={{ width: `${Math.min(100, (remainingPinSeconds / 300) * 100)}%` }}
+                  />
+                </div>
               </div>
             ) : (
-              <div className="p-3 rounded-[3px] bg-muted/10 border border-dashed border-border/60 text-center">
+              <div className="p-3.5 rounded-[3px] bg-muted/10 border border-dashed border-border/60 text-center space-y-1">
                 <p className="text-xs text-muted-foreground font-normal">
-                  Gere um PIN temporário de 6 dígitos para autorizar novos caixas sem digitar chaves longas.
+                  Nenhum código ativo no momento. Clique em <span className="font-medium text-foreground">"Gerar PIN"</span> para autorizar novos caixas com facilidade.
                 </p>
               </div>
             )}
           </div>
           <p className="text-[11px] text-muted-foreground leading-normal font-normal">
-            Os novos caixas podem emparelhar digitando este PIN numérico.
+            Os novos caixas podem emparelhar digitando este PIN numérico sem necessidade de chave complexa.
           </p>
         </div>
 
@@ -154,47 +223,51 @@ export function LanMasterPanel({
         <div className="p-3.5 sm:p-4 rounded-[4px] bg-card border border-border/60 space-y-3 flex flex-col justify-between shadow-soft-sm">
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-medium text-muted-foreground">
-                Endereço IP e Chave LAN
-              </p>
+              <div className="flex items-center gap-1.5">
+                <Icon name="Shield" size={14} className="text-primary" />
+                <p className="text-xs font-semibold text-foreground">
+                  Endereço IP & Chave Criptográfica LAN
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={onRotateSecret}
                 disabled={isRotatingSecret}
                 className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
+                title="Gera uma nova chave com 15 min de tolerância para caixas ativos"
               >
-                <Icon name="RotateCcw" size={11} />
-                Rotacionar
+                <Icon name="RotateCcw" size={11} className={isRotatingSecret ? "animate-spin" : ""} />
+                Rotacionar Chave
               </button>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex-1 min-w-0 font-mono text-xs bg-muted/20 px-2.5 py-1.5 rounded-[3px] border border-border/60 flex items-center justify-between gap-2">
                 <span className="truncate">{showSecret ? storeLanSecret || "PADRÃO" : "••••••••••••••••••••"}</span>
-                <button
-                  type="button"
-                  onClick={() => setShowSecret(!showSecret)}
-                  className="text-muted-foreground hover:text-foreground shrink-0"
-                >
-                  <Icon name={showSecret ? "EyeOff" : "Eye"} size={14} />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowSecret(!showSecret)}
+                    className="text-muted-foreground hover:text-foreground p-1"
+                    title={showSecret ? "Ocultar Chave" : "Mostrar Chave"}
+                  >
+                    <Icon name={showSecret ? "EyeOff" : "Eye"} size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(storeLanSecret || "", "secret", "Chave Secreta")}
+                    className="text-muted-foreground hover:text-foreground p-1"
+                    title="Copiar Chave Secreta"
+                  >
+                    <Icon name={copiedKey === "secret" ? "Check" : "Copy"} size={13} className={copiedKey === "secret" ? "text-emerald-500" : ""} />
+                  </button>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  navigator.clipboard.writeText(`http://${localIp}:3333`);
-                  SucessMessage("Endereço IP copiado!");
-                }}
-                className="h-8 text-xs gap-1 shrink-0 font-normal"
-              >
-                <Icon name="Copy" size={13} />
-                Copiar IP
-              </Button>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground leading-normal font-normal">
-            Endereço direto: <span className="text-foreground font-mono font-medium">http://{localIp}:3333</span>
-          </p>
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/30">
+            <span>Porta da API Fiscal: <span className="font-mono text-foreground font-medium">3333</span></span>
+            <span>IP Local: <span className="font-mono text-foreground font-medium">{localIp}</span></span>
+          </div>
         </div>
       </div>
 
@@ -202,13 +275,16 @@ export function LanMasterPanel({
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
-            <p className="text-xs font-medium text-muted-foreground">
-              Terminais de Caixa Conectados em Tempo Real ({connectedTerminals.length})
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <p className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
+              Terminais de Caixa Conectados ({connectedTerminals.length})
             </p>
           </div>
           <span className="text-[11px] text-muted-foreground font-mono font-normal">
-            Telemetria em RAM • Atualização a cada 4s
+            Telemetria em RAM • Atualização a cada 2s
           </span>
         </div>
 
@@ -244,33 +320,57 @@ export function LanMasterPanel({
                         <div className="p-1 rounded-[3px] bg-primary/10 text-primary shrink-0">
                           <Icon name="Laptop" size={13} />
                         </div>
-                        <span className="truncate max-w-[140px] sm:max-w-[200px] font-medium text-foreground">
+                        <span className="truncate max-w-[140px] sm:max-w-[200px] font-semibold text-foreground">
                           {t.name}
                         </span>
                       </td>
-                      <td className="p-3 font-mono text-muted-foreground font-normal">{t.ip}</td>
+                      <td className="p-3 font-mono text-muted-foreground font-normal">
+                        <div className="flex items-center gap-1.5">
+                          <span>{t.ip}</span>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(t.ip, `ip-${t.id}`, "IP do terminal")}
+                            className="text-muted-foreground/60 hover:text-foreground"
+                            title="Copiar IP"
+                          >
+                            <Icon name={copiedKey === `ip-${t.id}` ? "Check" : "Copy"} size={11} className={copiedKey === `ip-${t.id}` ? "text-emerald-500" : ""} />
+                          </button>
+                        </div>
+                      </td>
                       <td className="p-3">
                         <div className="flex items-center gap-2 font-normal">
                           <span
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            className={`w-2 h-2 rounded-full shrink-0 ${
                               t.status === "ACTIVE"
-                                ? "bg-emerald-500"
-                                : "bg-stone-400"
+                                ? "bg-emerald-500 animate-pulse"
+                                : t.status === "IDLE"
+                                ? "bg-amber-500"
+                                : "bg-rose-500"
                             }`}
                           />
-                          <span>
+                          <span className="font-medium text-foreground">
                             {t.status === "ACTIVE"
                               ? "Ativo"
-                              : "Em Espera"}
+                              : t.status === "IDLE"
+                              ? "Em Espera"
+                              : "Desconectado"}
                           </span>
                           {t.latencyMs !== undefined && (
-                            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
+                            <span
+                              className={`font-mono text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium ${
+                                t.latencyMs < 5
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                  : t.latencyMs < 50
+                                  ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                                  : "bg-rose-500/10 text-rose-600 border border-rose-500/20"
+                              }`}
+                            >
                               {t.latencyMs}ms
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="p-3 font-mono font-medium text-emerald-600 whitespace-nowrap">
+                      <td className="p-3 font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                         {t.totalSales ?? 0} faturas
                       </td>
                       <td className="p-3 text-right">
@@ -278,7 +378,8 @@ export function LanMasterPanel({
                           variant="ghost"
                           size="sm"
                           onClick={() => onRevokeTerminal(t.id)}
-                          className="h-7 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 gap-1 font-normal"
+                          className="h-7 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 gap-1 font-normal cursor-pointer"
+                          title="Desconectar este caixa da rede local"
                         >
                           <Icon name="Trash2" size={13} />
                           <span className="hidden sm:inline">Desconectar</span>
@@ -295,7 +396,7 @@ export function LanMasterPanel({
 
       {/* Recursos e Garantias Fiscais Compartilhados */}
       <div className="p-3.5 sm:p-4 rounded-[4px] bg-card border border-border/60 space-y-2.5 shadow-soft-sm">
-        <p className="text-xs font-medium text-muted-foreground">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider font-mono">
           Garantias de Engenharia da Rede Offline (AGT Fiscal Safe)
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
@@ -309,7 +410,7 @@ export function LanMasterPanel({
           </div>
           <div className="p-2.5 rounded-[3px] bg-muted/20 border border-border/40 flex items-center gap-2">
             <Icon name="ShieldAlert" size={15} className="text-primary shrink-0" />
-            <span className="font-normal text-foreground">Fila FIFO + BEGIN IMM</span>
+            <span className="font-normal text-foreground">Fila FIFO + Mutex SQLite</span>
           </div>
           <div className="p-2.5 rounded-[3px] bg-muted/20 border border-border/40 flex items-center gap-2">
             <Icon name="HardDrive" size={15} className="text-purple-500 shrink-0" />

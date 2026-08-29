@@ -1,5 +1,6 @@
 import dgram from "dgram";
 import os from "os";
+import net from "net";
 
 export interface DiscoveredMasterNode {
   id: string;
@@ -10,8 +11,18 @@ export interface DiscoveredMasterNode {
   protocolVersion: string;
   storeId?: string;
   storeName?: string;
-  discoveryLayer: "MDNS" | "UDP_BROADCAST" | "MANUAL";
+  discoveryLayer: "DIRECT_IP" | "MDNS" | "UDP_BROADCAST" | "MANUAL";
   lastSeen: number;
+}
+
+export interface SwitchDiagnosisResult {
+  success: boolean;
+  isTcpReachable: boolean;
+  isMdnsReachable: boolean;
+  possibleIgmpSnooping: boolean;
+  latencyMs?: number;
+  message: string;
+  error?: string;
 }
 
 const DISCOVERY_SERVICE_TYPE = "mindgest-pos";
@@ -180,7 +191,7 @@ export function stopBroadcastServer() {
 }
 
 // ==============================================================================
-// MOTOR UNIFICADO DE DESCOBERTA NO SLAVE (mDNS + UDP BROADCAST)
+// MOTOR UNIFICADO DE DESCOBERTA NO SLAVE (DIRECT IP + mDNS + UDP BROADCAST)
 // ==============================================================================
 
 export class LanDiscoveryClient {
@@ -207,7 +218,7 @@ export class LanDiscoveryClient {
     });
   }
 
-  private registerNode(node: DiscoveredMasterNode) {
+  public registerNode(node: DiscoveredMasterNode) {
     const key = `${node.ip}:${node.port}`;
     this.discoveredNodes.set(key, {
       ...node,
@@ -217,12 +228,136 @@ export class LanDiscoveryClient {
   }
 
   /**
-   * Dispara busca ativa multi-camada (mDNS + UDP Broadcast)
+   * Sonda direta instantânea para IP persistido (sem esperar mDNS/broadcast)
+   * Responde em 1-5ms em rede Ethernet Gigabit local
    */
-  public async startScanning() {
+  public async probeDirectIp(ip: string, port = DEFAULT_HTTP_PORT): Promise<DiscoveredMasterNode | null> {
+    if (!ip) return null;
+    const cleanIp = ip.trim().replace(/^http:\/\//, '').replace(/\/$/, '');
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
+
+      const res = await fetch(`http://${cleanIp}:${port}/api/lan/status`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        const node: DiscoveredMasterNode = {
+          id: `direct-${cleanIp}`,
+          name: data.storeName ? `Master - ${data.storeName}` : `Master (${cleanIp})`,
+          host: cleanIp,
+          ip: cleanIp,
+          port: port,
+          protocolVersion: data.protocolVersion || "2.0",
+          storeId: data.storeId,
+          storeName: data.storeName,
+          discoveryLayer: "DIRECT_IP",
+          lastSeen: Date.now(),
+        };
+        this.registerNode(node);
+        return node;
+      }
+    } catch {
+      // Ignora se o IP não responder
+    }
+    return null;
+  }
+
+  /**
+   * Diagnóstico de switch Ethernet e bloqueio de Multicast (IGMP Snooping)
+   */
+  public async diagnoseMasterConnection(targetIp: string, targetPort = DEFAULT_HTTP_PORT): Promise<SwitchDiagnosisResult> {
+    if (!targetIp) {
+      return {
+        success: false,
+        isTcpReachable: false,
+        isMdnsReachable: false,
+        possibleIgmpSnooping: false,
+        message: "Endereço IP não informado para diagnóstico.",
+      };
+    }
+
+    const cleanIp = targetIp.trim().replace(/^http:\/\//, '').replace(/\/$/, '');
+    const startTime = Date.now();
+
+    // 1. Testar conexão TCP de baixo nível
+    const tcpResult = await new Promise<{ ok: boolean; latencyMs: number; error?: string }>((resolve) => {
+      const socket = new net.Socket();
+      socket.setTimeout(2000);
+
+      socket.on("connect", () => {
+        const latency = Date.now() - startTime;
+        socket.destroy();
+        resolve({ ok: true, latencyMs: latency });
+      });
+
+      socket.on("timeout", () => {
+        socket.destroy();
+        resolve({ ok: false, latencyMs: 2000, error: "Tempo limite TCP excedido (2s)." });
+      });
+
+      socket.on("error", (err) => {
+        socket.destroy();
+        resolve({ ok: false, latencyMs: Date.now() - startTime, error: err.message });
+      });
+
+      socket.connect(targetPort, cleanIp);
+    });
+
+    // 2. Verificar se o nó foi anunciado via mDNS
+    const mdnsNode = Array.from(this.discoveredNodes.values()).find(
+      (n) => n.ip === cleanIp && n.discoveryLayer === "MDNS"
+    );
+    const isMdnsReachable = Boolean(mdnsNode);
+
+    if (tcpResult.ok) {
+      if (!isMdnsReachable) {
+        return {
+          success: true,
+          isTcpReachable: true,
+          isMdnsReachable: false,
+          possibleIgmpSnooping: true,
+          latencyMs: tcpResult.latencyMs,
+          message: "O Servidor Master está acessível via cabo (porta TCP 3333 aberta), mas os anúncios mDNS não chegaram. Provável bloqueio de tráfego Multicast no switch (IGMP Snooping ativo sem IGMP Querier configurado). A conexão manual direta por IP funciona normalmente.",
+        };
+      }
+
+      return {
+        success: true,
+        isTcpReachable: true,
+        isMdnsReachable: true,
+        possibleIgmpSnooping: false,
+        latencyMs: tcpResult.latencyMs,
+        message: "Cabo Ethernet e descoberta mDNS operando perfeitamente. Latência ideal para rede cabeada local.",
+      };
+    }
+
+    return {
+      success: false,
+      isTcpReachable: false,
+      isMdnsReachable: false,
+      possibleIgmpSnooping: false,
+      error: tcpResult.error,
+      message: `Não foi possível conectar ao Master via TCP/IP (${tcpResult.error || "Falha"}). Verifique se o cabo Ethernet Cat6 está inserido, a porta do switch está ativa e a firewall do Windows no Master permite a porta ${targetPort}.`,
+    };
+  }
+
+  /**
+   * Dispara busca ativa multi-camada (Direct IP + mDNS + UDP Broadcast)
+   */
+  public async startScanning(lastKnownMasterIp?: string) {
     if (this.isScanning) return;
     this.isScanning = true;
     this.discoveredNodes.clear();
+
+    // 0. Sonda direta prioritária no último IP conhecido
+    if (lastKnownMasterIp) {
+      this.probeDirectIp(lastKnownMasterIp).catch(() => {});
+    }
 
     // 1. Iniciar scanner mDNS
     try {

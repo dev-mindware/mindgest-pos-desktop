@@ -329,14 +329,29 @@ export function registerLanIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle("lan:start-discovery", async () => {
+  ipcMain.handle("lan:start-discovery", async (_, params?: { lastKnownMasterIp?: string }) => {
     try {
       const { lanDiscoveryClient } = await import("../lan-discovery");
-      await lanDiscoveryClient.startScanning();
+      await lanDiscoveryClient.startScanning(params?.lastKnownMasterIp);
       return true;
     } catch (err: any) {
       console.warn("⚠️ Falha ao iniciar scan de auto-descoberta LAN:", err);
       return false;
+    }
+  });
+
+  ipcMain.handle("lan:diagnose-switch", async (_, { targetIp, port = 3333 }) => {
+    try {
+      const { lanDiscoveryClient } = await import("../lan-discovery");
+      return await lanDiscoveryClient.diagnoseMasterConnection(targetIp, port);
+    } catch (err: any) {
+      return {
+        success: false,
+        isTcpReachable: false,
+        isMdnsReachable: false,
+        possibleIgmpSnooping: false,
+        message: err?.message || "Erro ao executar diagnóstico de rede.",
+      };
     }
   });
 

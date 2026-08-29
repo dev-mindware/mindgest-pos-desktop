@@ -58,6 +58,16 @@ export function PosWorkspaceSettings() {
     latencyMs?: number;
     message?: string;
   } | null>(null);
+  const [switchDiagnosis, setSwitchDiagnosis] = useState<{
+    success: boolean;
+    isTcpReachable: boolean;
+    isMdnsReachable: boolean;
+    possibleIgmpSnooping: boolean;
+    latencyMs?: number;
+    message: string;
+    error?: string;
+  } | null>(null);
+  const [isDiagnosingSwitch, setIsDiagnosingSwitch] = useState(false);
   const [isRotatingSecret, setIsRotatingSecret] = useState(false);
   const [systemCap, setSystemCap] = useState<SystemCapability | null>(null);
 
@@ -75,17 +85,17 @@ export function PosWorkspaceSettings() {
     if (storeLanSecret && !localLanSecret) setLocalLanSecret(storeLanSecret);
   }, [storeMasterIp, storeLanSecret]);
 
-  // Iniciar auto-descoberta LAN ao abrir configurações no modo Slave
+  // Iniciar auto-descoberta LAN ao abrir configurações no modo Slave (com reconexão rápida por IP persistido)
   useEffect(() => {
     if (terminalMode === "SLAVE" && typeof window !== "undefined" && window.ipc?.lan) {
       setLanState({ isScanningDiscovery: true });
-      window.ipc.lan.startDiscovery?.();
+      window.ipc.lan.startDiscovery?.({ lastKnownMasterIp: storeMasterIp || localMasterIp || undefined });
       return () => {
         window.ipc.lan.stopDiscovery?.();
         setLanState({ isScanningDiscovery: false });
       };
     }
-  }, [terminalMode, setLanState]);
+  }, [terminalMode, storeMasterIp, localMasterIp, setLanState]);
 
   // Carregar Diagnóstico de Hardware
   useEffect(() => {
@@ -341,6 +351,36 @@ export function PosWorkspaceSettings() {
     }
   };
 
+  // Diagnóstico de Switch Ethernet & IGMP Snooping
+  const handleDiagnoseSwitch = async () => {
+    if (!localMasterIp) {
+      WarningMessage("Introduza o IP do Servidor Master para diagnosticar o switch/cabo.");
+      return;
+    }
+
+    setIsDiagnosingSwitch(true);
+    setSwitchDiagnosis(null);
+    try {
+      if (typeof window !== "undefined" && window.ipc?.lan) {
+        const res = await window.ipc.lan.diagnoseSwitch({
+          targetIp: localMasterIp.trim(),
+        });
+        setSwitchDiagnosis(res);
+        if (res.possibleIgmpSnooping) {
+          WarningMessage("Bloqueio Multicast: IGMP Snooping ativo no Switch.");
+        } else if (res.success) {
+          SucessMessage("Switch e cabo Ethernet 100% operacionais!");
+        } else {
+          ErrorMessage(res.message || "Falha na comunicação física por cabo.");
+        }
+      }
+    } catch {
+      ErrorMessage("Erro ao executar diagnóstico de switch.");
+    } finally {
+      setIsDiagnosingSwitch(false);
+    }
+  };
+
   // Revogar Terminal Conectado
   const handleRevokeTerminal = async (terminalId: string) => {
     try {
@@ -434,6 +474,9 @@ export function PosWorkspaceSettings() {
               isTestingLan={isTestingLan}
               isConnectingSlave={isConnectingSlave}
               lanTestResult={lanTestResult}
+              switchDiagnosis={switchDiagnosis}
+              isDiagnosingSwitch={isDiagnosingSwitch}
+              onDiagnoseSwitch={handleDiagnoseSwitch}
               onQuickConnectDiscoveredMaster={handleQuickConnectDiscoveredMaster}
               onPairByShortCode={handlePairByShortCode}
               onTestConnection={handleTestConnection}

@@ -11,11 +11,11 @@ export function LanModeSelector({ terminalMode, onSelectMode }: LanModeSelectorP
   return (
     <div className="p-4 sm:p-5 bg-muted/10 space-y-3.5">
       <div className="space-y-0.5">
-        <label className="text-xs font-medium text-muted-foreground block">
-          Papel deste Computador na Loja
+        <label className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono block">
+          Papel deste Terminal na Loja
         </label>
-        <p className="text-xs text-muted-foreground/80 font-normal">
-          Selecione se este computador é o <strong>Servidor Central (Master)</strong> com a sequência AGT principal ou um <strong>Terminal de Caixa (Slave)</strong>.
+        <p className="text-xs text-muted-foreground font-normal">
+          Defina se este computador é o <strong>Servidor Central (Master)</strong> com a sequência AGT principal ou um <strong>Terminal de Caixa (Slave)</strong>.
         </p>
       </div>
 
@@ -23,73 +23,81 @@ export function LanModeSelector({ terminalMode, onSelectMode }: LanModeSelectorP
         {/* Opção: Servidor Master */}
         <div
           onClick={() => onSelectMode("MASTER")}
-          className={`p-3.5 sm:p-4 rounded-[4px] border-2 transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+          className={`p-4 rounded-[4px] border-2 transition-all duration-200 cursor-pointer flex flex-col justify-between select-none ${
             terminalMode === "MASTER"
-              ? "border-primary bg-primary/5 shadow-soft-sm"
-              : "border-border/60 bg-card hover:bg-muted/30 hover:border-stone-300 dark:hover:border-stone-700"
+              ? "border-primary bg-primary/5 shadow-soft-md ring-1 ring-primary/20"
+              : "border-border/60 bg-card hover:bg-muted/30 hover:border-primary/40 shadow-soft-sm"
           }`}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0">
               <div
                 className={`p-2 rounded-[3px] shrink-0 transition-colors ${
-                  terminalMode === "MASTER" ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                  terminalMode === "MASTER" ? "bg-primary text-white shadow-soft-sm" : "bg-muted text-muted-foreground"
                 }`}
               >
-                <Icon name="Server" size={18} />
+                <Icon name="Server" size={20} />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-semibold truncate text-foreground">Servidor Central (Master)</p>
+                  <p className="text-sm font-bold truncate text-foreground">Servidor Central (Master)</p>
                   <Icon name="ShieldCheck" size={14} className="text-emerald-500 shrink-0" />
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 font-normal">
-                  Autoridade central de séries AGT, stock JIT e assinatura RSA-SHA1
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed font-normal">
+                  Autoridade central de séries AGT, controlo de stock JIT e assinatura RSA-SHA1 em tempo real.
                 </p>
               </div>
             </div>
-            {terminalMode === "MASTER" && (
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0 mt-1" />
+            {terminalMode === "MASTER" ? (
+              <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                <Icon name="CheckCircle2" size={16} className="text-primary" />
+              </div>
+            ) : (
+              <div className="w-4 h-4 rounded-full border border-border/80 shrink-0 mt-0.5" />
             )}
           </div>
-          <div className="mt-3 pt-2 border-t border-border/40 flex items-center justify-between text-[11px] font-mono text-muted-foreground font-normal">
-            <span>Porta: 3333</span>
-            <span className="text-primary font-medium">Exige Supervisor</span>
+          <div className="mt-3.5 pt-2.5 border-t border-border/40 flex items-center justify-between text-[11px] font-mono font-normal">
+            <span className="text-muted-foreground">Porta TCP: <span className="text-foreground font-semibold">3333</span></span>
+            <span className="text-primary font-semibold bg-primary/10 px-1.5 py-0.5 rounded-[2px]">Exige Supervisor</span>
           </div>
         </div>
 
         {/* Opção: Terminal Slave */}
         <div
           onClick={() => onSelectMode("SLAVE")}
-          className={`p-3.5 sm:p-4 rounded-[4px] border-2 transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+          className={`p-4 rounded-[4px] border-2 transition-all duration-200 cursor-pointer flex flex-col justify-between select-none ${
             terminalMode === "SLAVE"
-              ? "border-primary bg-primary/5 shadow-soft-sm"
-              : "border-border/60 bg-card hover:bg-muted/30 hover:border-stone-300 dark:hover:border-stone-700"
+              ? "border-primary bg-primary/5 shadow-soft-md ring-1 ring-primary/20"
+              : "border-border/60 bg-card hover:bg-muted/30 hover:border-primary/40 shadow-soft-sm"
           }`}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0">
               <div
                 className={`p-2 rounded-[3px] shrink-0 transition-colors ${
-                  terminalMode === "SLAVE" ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                  terminalMode === "SLAVE" ? "bg-primary text-white shadow-soft-sm" : "bg-muted text-muted-foreground"
                 }`}
               >
-                <Icon name="Laptop" size={18} />
+                <Icon name="Laptop" size={20} />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold truncate text-foreground">Terminal de Venda (Caixa)</p>
-                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 font-normal">
-                  Auto-descoberta mDNS/Broadcast e emissão com idempotência
+                <p className="text-sm font-bold truncate text-foreground">Terminal de Caixa (Slave)</p>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed font-normal">
+                  Auto-descoberta na rede local por cabo ou mDNS, emissão contínua e tolerância a cortes.
                 </p>
               </div>
             </div>
-            {terminalMode === "SLAVE" && (
-              <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />
+            {terminalMode === "SLAVE" ? (
+              <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                <Icon name="CheckCircle2" size={16} className="text-primary" />
+              </div>
+            ) : (
+              <div className="w-4 h-4 rounded-full border border-border/80 shrink-0 mt-0.5" />
             )}
           </div>
-          <div className="mt-3 pt-2 border-t border-border/40 flex items-center justify-between text-[11px] font-mono text-muted-foreground font-normal">
-            <span>Faturação Intercalada</span>
-            <span className="text-primary font-medium">Zero-Config</span>
+          <div className="mt-3.5 pt-2.5 border-t border-border/40 flex items-center justify-between text-[11px] font-mono font-normal">
+            <span className="text-muted-foreground">Faturação Intercalada</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded-[2px]">Zero-Config</span>
           </div>
         </div>
       </div>
