@@ -315,13 +315,82 @@ apiRouter.get('/items', async (req, res) => {
       ];
     }
     const items = await prisma.item.findMany({ where, orderBy: { name: 'asc' } });
-    res.json({ items });
+    const mappedItems = items.map((item) => ({
+      ...item,
+      id: item.cloudId || item.id, // Compatibilidade com checkout
+      localId: item.id,
+      quantity: item.stock,
+      sku: item.code,
+      tax: { rate: (item.taxPercent || 14) / 100 },
+      taxRate: (item.taxPercent || 14) / 100,
+    }));
+    res.json({ data: mappedItems, items: mappedItems, totalPages: 1, total: mappedItems.length });
   } catch (err: any) {
     res.status(500).json({ error: 'Erro ao buscar produtos locais.' });
   }
 });
 
-// 2. Obter Clientes
+// 2. Obter Categorias de Produtos
+apiRouter.get('/categories', async (req, res) => {
+  try {
+    const { storeId } = req.query;
+    const where: any = { isActive: true };
+    if (storeId) where.storeId = String(storeId);
+    const categories = await prisma.category.findMany({ where, orderBy: { name: 'asc' } });
+    const mapped = categories.map((c) => ({
+      ...c,
+      id: c.cloudId || c.id,
+      localId: c.id,
+    }));
+    res.json({ data: mapped, categories: mapped, totalPages: 1, total: mapped.length });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Erro ao buscar categorias locais.' });
+  }
+});
+
+// 3. Obter Sessão de Caixa Atual
+apiRouter.get('/cash-sessions/current', async (req, res) => {
+  try {
+    const { storeId } = req.query;
+    const where: any = { closingDate: null };
+    if (storeId) where.storeId = String(storeId);
+    const session = await prisma.cashSession.findFirst({
+      where,
+      orderBy: { openingDate: 'desc' },
+    });
+
+    if (!session) {
+      return res.json({
+        data: {
+          id: 'LOCAL_DEFAULT_SESSION',
+          isOpen: true,
+          openingDate: new Date().toISOString(),
+          openingBalance: 0,
+        },
+      });
+    }
+
+    res.json({
+      data: {
+        ...session,
+        id: session.cloudId || session.id,
+        localId: session.id,
+        isOpen: true,
+      },
+    });
+  } catch (err: any) {
+    res.json({
+      data: {
+        id: 'LOCAL_DEFAULT_SESSION',
+        isOpen: true,
+        openingDate: new Date().toISOString(),
+        openingBalance: 0,
+      },
+    });
+  }
+});
+
+// 4. Obter Clientes
 apiRouter.get('/clients', async (req, res) => {
   try {
     const { storeId, search } = req.query;
@@ -336,13 +405,18 @@ apiRouter.get('/clients', async (req, res) => {
       ];
     }
     const clients = await prisma.client.findMany({ where, orderBy: { name: 'asc' } });
-    res.json({ clients });
+    const mapped = clients.map((c) => ({
+      ...c,
+      id: c.cloudId || c.id,
+      localId: c.id,
+    }));
+    res.json({ data: mapped, clients: mapped, totalPages: 1, total: mapped.length });
   } catch (err: any) {
     res.status(500).json({ error: 'Erro ao buscar clientes locais.' });
   }
 });
 
-// 3. Obter Séries Fiscais Ativas no Master
+// 5. Obter Séries Fiscais Ativas no Master
 apiRouter.get('/series', async (req, res) => {
   try {
     const { storeId, documentType } = req.query;
@@ -351,7 +425,7 @@ apiRouter.get('/series', async (req, res) => {
     if (documentType) where.documentType = String(documentType);
 
     const series = await prisma.agtSeries.findMany({ where, orderBy: { createdAt: 'desc' } });
-    res.json({ series });
+    res.json({ data: series, series });
   } catch (err: any) {
     res.status(500).json({ error: 'Erro ao buscar séries no Master.' });
   }

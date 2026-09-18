@@ -146,18 +146,35 @@ export class FiscalInvoicingService {
 
       try {
         return await prisma.$transaction(async (tx) => {
-          // A. Validar stock de todos os itens antes de abater
+          // A. Validar stock de todos os itens antes de abater (compatível com id UUID ou cloudId CUID)
+          const matchedItemMap = new Map<string, any>();
+
           for (const item of invoiceData.items) {
-            const dbItem = await tx.item.findUnique({ where: { id: item.id } });
+            const targetId = String(item.id || '');
+            const itemAny = item as any;
+            const dbItem = await tx.item.findFirst({
+              where: {
+                OR: [
+                  { id: targetId },
+                  { cloudId: targetId },
+                  ...(itemAny.code ? [{ code: String(itemAny.code) }] : []),
+                  ...(itemAny.barcode ? [{ barcode: String(itemAny.barcode) }] : []),
+                ],
+              },
+            });
+
             if (!dbItem) {
-              throw new Error(`Item ${item.name || item.id} não encontrado na base de dados do Master.`);
+              throw new Error(`Item ${item.name || targetId} não encontrado na base de dados do Master.`);
             }
+
             const requestedQty = Number(item.quantity || item.qty || 1);
             if (dbItem.stock < requestedQty) {
               throw new Error(
                 `Stock insuficiente para o artigo "${dbItem.name}". Disponível: ${dbItem.stock}, Solicitado: ${requestedQty}`
               );
             }
+
+            matchedItemMap.set(targetId, dbItem);
           }
 
           // B. Calcular Totais
@@ -209,17 +226,47 @@ export class FiscalInvoicingService {
             },
           });
 
-          // E. Abater Stock
+          // E. Abater Stock no SQLite local do Master
           for (const item of invoiceData.items) {
+            const targetId = String(item.id || '');
+            const matchedItem = matchedItemMap.get(targetId) || { id: targetId };
             const requestedQty = Number(item.quantity || item.qty || 1);
             await tx.item.update({
-              where: { id: item.id },
+              where: { id: matchedItem.id },
               data: { stock: { decrement: requestedQty } },
             });
           }
 
           const invoiceId = invoiceData.id || crypto.randomUUID();
           const localNo = `LOCAL-${Date.now()}`;
+
+          // Garantir integridade de chave estrangeira com User
+          const effectiveUserId = userId || invoiceData.userId || 'MASTER_USER';
+          await tx.user.upsert({
+            where: { id: effectiveUserId },
+            update: {},
+            create: {
+              id: effectiveUserId,
+              name: terminalName ? `Operador (${terminalName})` : 'Operador de Caixa',
+              email: `${effectiveUserId}@mindgest.local`,
+              role: 'CASHIER',
+              storeId: storeIdLocal,
+            },
+          });
+
+          // Validar se cliente existe na base local antes de associar FK
+          let validClientId: string | null = null;
+          if (invoiceData.clientId) {
+            const dbClient = await tx.client.findFirst({
+              where: {
+                OR: [
+                  { id: String(invoiceData.clientId) },
+                  { cloudId: String(invoiceData.clientId) },
+                ],
+              },
+            });
+            validClientId = dbClient ? dbClient.id : null;
+          }
 
           // F. Inserir Fatura
           const createdInvoice = await tx.invoice.create({
@@ -240,8 +287,8 @@ export class FiscalInvoicingService {
               hashControl: signatureResult.hashControl,
               previousHash: signatureResult.previousHash,
               qrCode: signatureResult.qrCode,
-              userId: userId || 'MASTER_USER',
-              clientId: invoiceData.clientId || null,
+              userId: effectiveUserId,
+              clientId: validClientId,
               storeId: storeIdLocal,
             },
           });
@@ -249,6 +296,8 @@ export class FiscalInvoicingService {
           // G. Inserir Linhas da Fatura
           for (let i = 0; i < invoiceData.items.length; i++) {
             const item = invoiceData.items[i];
+            const targetId = String(item.id || '');
+            const matchedItem = matchedItemMap.get(targetId);
             const qty = Number(item.quantity || item.qty || 1);
             const price = Number(item.price || item.unitPrice || 0);
             const discount = Number(item.discount || 0);
@@ -260,7 +309,7 @@ export class FiscalInvoicingService {
               data: {
                 id: crypto.randomUUID(),
                 invoiceId: createdInvoice.id,
-                itemId: item.id || crypto.randomUUID(),
+                itemId: matchedItem?.id || targetId,
                 quantity: qty,
                 unitPrice: price,
                 discount,

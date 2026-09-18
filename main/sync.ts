@@ -219,6 +219,7 @@ export const syncService = {
               isActive: item.status === 'ACTIVE'
             },
             create: {
+              id: item.id,
               cloudId: item.id,
               name: item.name,
               description: item.description,

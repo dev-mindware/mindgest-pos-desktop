@@ -160,6 +160,13 @@ api.interceptors.request.use(async (config) => {
     }
   }
 
+  const FAST_TIMEOUT_ROUTES = ["/items", "/categories", "/clients", "/cash-sessions", "/series"];
+  if (config.url && FAST_TIMEOUT_ROUTES.some((r) => config.url?.includes(r))) {
+    if (currentMethod === "get" && (!config.timeout || config.timeout > 4000)) {
+      config.timeout = 4000;
+    }
+  }
+
   return config;
 });
 
@@ -170,6 +177,43 @@ api.interceptors.response.use(
 
     if (!original || !original.url) {
       return Promise.reject(err);
+    }
+
+    // 🛡️ Fallback Automático para LAN / Local SQLite se a API Cloud estiver inacessível
+    const isNetworkOrTimeout =
+      !err.response ||
+      err.code === "ERR_NETWORK" ||
+      err.code === "ECONNABORTED" ||
+      err.message?.includes("Network Error") ||
+      err.message?.includes("timeout");
+
+    const OFFLINE_SUPPORTED_ROUTES = [
+      "/items",
+      "/categories",
+      "/clients",
+      "/cash-sessions",
+      "/series",
+    ];
+
+    const canFallback =
+      isNetworkOrTimeout &&
+      original.url &&
+      OFFLINE_SUPPORTED_ROUTES.some((r) => original.url.includes(r)) &&
+      !original._isLocalFallback;
+
+    if (canFallback) {
+      original._isLocalFallback = true;
+      try {
+        console.log(`📡 [LAN Offline Fallback] Nuvem inacessível. Redirecionando ${original.url} para API local/Master...`);
+        const localResponse = await localApi({
+          ...original,
+          url: original.url,
+          baseURL: undefined, // Deixa o interceptor do localApi injetar http://127.0.0.1:3333/api ou Master IP
+        });
+        return localResponse;
+      } catch (localErr: any) {
+        console.warn(`⚠️ [LAN Offline Fallback] Chamada local também falhou:`, localErr?.message || localErr);
+      }
     }
 
     const isNonRefreshableAuthRoute =
