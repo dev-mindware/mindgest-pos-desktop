@@ -41,7 +41,7 @@ localApi.interceptors.request.use(async (config) => {
   if (typeof window !== "undefined" && (window as any).ipc?.lan) {
     try {
       const lanConfig = await (window as any).ipc.lan.getConfig();
-      if (lanConfig.terminalMode === 'TERMINAL' && lanConfig.masterIp) {
+      if ((lanConfig.terminalMode === 'SLAVE' || lanConfig.terminalMode === 'TERMINAL') && lanConfig.masterIp) {
         config.baseURL = `http://${lanConfig.masterIp}:3333/api`;
       } else {
         config.baseURL = `http://127.0.0.1:3333/api`;

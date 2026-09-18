@@ -22,13 +22,15 @@ export function useLanHeartbeat() {
       const config = await window.ipc.lan.getConfig();
       if (!isMountedRef.current) return;
 
+      const activeMode = config?.terminalMode || terminalMode || "MASTER";
+
       if (config) {
         const locallyDisabled = typeof window !== "undefined" && localStorage.getItem("mindgest_lan_enabled") === "false";
         const isEnabled = !locallyDisabled && config.enabled !== false;
 
         setLanState({
           enabled: isEnabled,
-          terminalMode: config.terminalMode || "MASTER",
+          terminalMode: activeMode,
           masterIp: config.masterIp || "",
           lanSecret: config.lanSecret || "",
           localIp: config.localIp || "127.0.0.1",
@@ -58,7 +60,7 @@ export function useLanHeartbeat() {
           });
         }
       } else if (activeMode === "SLAVE") {
-        const targetMasterIp = config?.masterIp;
+        const targetMasterIp = config?.masterIp || masterIp;
         if (!targetMasterIp) {
           setLanState({
             isSlaveConnected: false,
@@ -71,7 +73,7 @@ export function useLanHeartbeat() {
         const startTime = Date.now();
         const heartbeatRes = await window.ipc.lan.sendHeartbeat({
           masterIp: targetMasterIp,
-          lanSecret: config?.lanSecret || undefined,
+          lanSecret: config?.lanSecret || lanSecret || undefined,
         });
         const latencyMs = Date.now() - startTime;
 
@@ -108,7 +110,7 @@ export function useLanHeartbeat() {
         console.warn("⚠️ [LAN Heartbeat] Erro ao atualizar status:", err?.message || err);
       }
     }
-  }, [isScanningDiscovery, setLanState]);
+  }, [terminalMode, masterIp, lanSecret, isScanningDiscovery, setLanState]);
 
   useEffect(() => {
     isMountedRef.current = true;
