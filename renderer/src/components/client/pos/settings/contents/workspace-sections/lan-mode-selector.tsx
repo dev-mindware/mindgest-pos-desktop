@@ -50,7 +50,7 @@ export function LanModeSelector({ terminalMode, onSelectMode }: LanModeSelectorP
             </div>
             {terminalMode === "MASTER" ? (
               <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                <Icon name="CheckCircle2" size={16} className="text-primary" />
+                <Icon name="CircleCheck" size={16} className="text-primary" />
               </div>
             ) : (
               <div className="w-4 h-4 rounded-full border border-border/80 shrink-0 mt-0.5" />
@@ -89,7 +89,7 @@ export function LanModeSelector({ terminalMode, onSelectMode }: LanModeSelectorP
             </div>
             {terminalMode === "SLAVE" ? (
               <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                <Icon name="CheckCircle2" size={16} className="text-primary" />
+                <Icon name="CircleCheck" size={16} className="text-primary" />
               </div>
             ) : (
               <div className="w-4 h-4 rounded-full border border-border/80 shrink-0 mt-0.5" />

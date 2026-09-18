@@ -44,7 +44,7 @@ function resolveCloudApiUrl(): string {
     } catch {}
   }
 
-  return "https://mindgest.mindware-vps.cloud/api";
+  return "https://test.mindgest.mindware-vps.cloud/api";
 }
 
 export const CLOUD_API_URL = resolveCloudApiUrl();

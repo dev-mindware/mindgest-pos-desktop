@@ -7,7 +7,7 @@ import axios from "axios";
 export const publicApi = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL ||
-    "https://mindgest.mindware-vps.cloud/api", // VPS
+    "https://test.mindgest.mindware-vps.cloud/api", // Staging VPS
   headers: {
     "Content-Type": "application/json",
     "x-api-key":

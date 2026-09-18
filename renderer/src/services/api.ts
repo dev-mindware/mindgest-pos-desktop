@@ -21,7 +21,7 @@ const processQueue = (error: any, token: string | null = null) => {
 export const api = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL ||
-    "https://mindgest.mindware-vps.cloud/api", // VPS
+    "https://test.mindgest.mindware-vps.cloud/api", // Staging VPS
   headers: {
     "Content-Type": "application/json",
     "x-api-key":
@@ -212,7 +212,7 @@ api.interceptors.response.use(
         }
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api"}/auth/refresh`, // VPS
+          `${process.env.NEXT_PUBLIC_API_URL || "https://test.mindgest.mindware-vps.cloud/api"}/auth/refresh`, // Staging VPS
           {
             method: "POST",
             body: JSON.stringify({ 

@@ -18,6 +18,10 @@ export function Icon({
 }: IconProps) {
   const LucideIcon = icons[name];
 
+  if (!LucideIcon) {
+    return null;
+  }
+
   return (
     <LucideIcon
       color={color}

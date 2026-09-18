@@ -1,5 +1,6 @@
+"use client";
+
 import { useState } from "react";
-import printJS from "print-js";
 import {
     Dialog,
     DialogContent,
@@ -25,20 +26,26 @@ export function ThermalPrintModal({
 }: ThermalPrintModalProps) {
     const [isPrinting, setIsPrinting] = useState(false);
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
         setIsPrinting(true);
 
-        printJS({
-            printable: pdfUrl,
-            type: 'pdf',
-            onPrintDialogClose: () => {
-                setIsPrinting(false);
-            },
-            onError: (err) => {
-                console.error("Erro ao imprimir:", err);
-                setIsPrinting(false);
-            }
-        });
+        try {
+            const printJS = (await import("print-js")).default;
+            printJS({
+                printable: pdfUrl,
+                type: 'pdf',
+                onPrintDialogClose: () => {
+                    setIsPrinting(false);
+                },
+                onError: (err) => {
+                    console.error("Erro ao imprimir:", err);
+                    setIsPrinting(false);
+                }
+            });
+        } catch (error) {
+            console.error("Erro ao carregar print-js:", error);
+            setIsPrinting(false);
+        }
     };
 
     const handleDownload = () => {

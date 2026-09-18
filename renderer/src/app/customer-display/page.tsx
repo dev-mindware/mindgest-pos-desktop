@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { formatCurrency } from "@/utils";
-import { ShoppingBag, Sparkles, CheckCircle2, Clock, Store } from "lucide-react";
+import { ShoppingBag, Sparkles, CircleCheck, Clock, Store } from "lucide-react";
 import { useTheme } from "next-themes";
 
 interface CustomerDisplayItem {
@@ -176,7 +176,7 @@ export default function CustomerDisplayPage() {
           <div className="w-full max-w-3xl p-8 rounded-3xl bg-card border border-border shadow-2xl space-y-8 backdrop-blur-xl">
             <div className="flex items-center gap-4 pb-6 border-b border-border">
               <div className="p-3.5 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="w-8 h-8" />
+                <CircleCheck className="w-8 h-8" />
               </div>
               <div>
                 <h2 className="text-2xl font-black text-foreground">Pagamento da Fatura</h2>

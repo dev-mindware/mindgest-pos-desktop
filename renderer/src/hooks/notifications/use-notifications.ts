@@ -186,7 +186,7 @@ export function useNotifications(
     const setupSocket = async () => {
       try {
         const rawUrl =
-          process.env.NEXT_PUBLIC_API_URL || "https://mindgest.mindware-vps.cloud/api";
+          process.env.NEXT_PUBLIC_API_URL || "https://test.mindgest.mindware-vps.cloud/api";
         let socketUrl = rawUrl;
         try {
           const parsed = new URL(rawUrl);

@@ -7,11 +7,7 @@ export const loginSchema = z.object({
     .min(1, "Email é obrigatório")
     .email("Email inválido"),
 
-  password: z
-    .string()
-    .trim()
-    .min(1, "A palavra-passe é obrigatória")
-    .refine((val) => !/\s/.test(val), "Não pode conter espaços")
+  password: z.string().min(1, "A palavra-passe é obrigatória"),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
