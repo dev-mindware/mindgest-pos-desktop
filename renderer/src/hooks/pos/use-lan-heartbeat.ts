@@ -4,15 +4,6 @@ import { useEffect, useCallback, useRef } from "react";
 import { useLanStore } from "@/stores/pos/lan-store";
 
 export function useLanHeartbeat() {
-  const {
-    enabled,
-    terminalMode,
-    masterIp,
-    lanSecret,
-    isScanningDiscovery,
-    setLanState,
-  } = useLanStore();
-
   const isMountedRef = useRef(true);
 
   const refreshLanStatus = useCallback(async () => {
@@ -22,27 +13,25 @@ export function useLanHeartbeat() {
       const config = await window.ipc.lan.getConfig();
       if (!isMountedRef.current) return;
 
-      const activeMode = config?.terminalMode || terminalMode || "MASTER";
+      const storeState = useLanStore.getState();
+      const activeMode = config?.terminalMode || storeState.terminalMode || "MASTER";
+      const locallyDisabled = typeof window !== "undefined" && localStorage.getItem("mindgest_lan_enabled") === "false";
+      const isEnabled = !locallyDisabled && config?.enabled !== false;
 
-      if (config) {
-        const locallyDisabled = typeof window !== "undefined" && localStorage.getItem("mindgest_lan_enabled") === "false";
-        const isEnabled = !locallyDisabled && config.enabled !== false;
+      storeState.setLanState({
+        enabled: isEnabled,
+        terminalMode: activeMode,
+        masterIp: config?.masterIp || "",
+        lanSecret: config?.lanSecret || "",
+        localIp: config?.localIp || "127.0.0.1",
+      });
 
-        setLanState({
-          enabled: isEnabled,
-          terminalMode: activeMode,
-          masterIp: config.masterIp || "",
-          lanSecret: config.lanSecret || "",
-          localIp: config.localIp || "127.0.0.1",
+      if (!isEnabled) {
+        storeState.setLanState({
+          isMasterServerRunning: false,
+          isSlaveConnected: false,
         });
-
-        if (!isEnabled) {
-          setLanState({
-            isMasterServerRunning: false,
-            isSlaveConnected: false,
-          });
-          return;
-        }
+        return;
       }
 
       if (activeMode === "MASTER") {
@@ -52,7 +41,7 @@ export function useLanHeartbeat() {
         ]);
 
         if (isMountedRef.current) {
-          setLanState({
+          storeState.setLanState({
             isMasterServerRunning: serverStatus?.isRunning ?? false,
             masterServerError: serverStatus?.error ?? null,
             connectedTerminals: terminals || [],
@@ -60,9 +49,9 @@ export function useLanHeartbeat() {
           });
         }
       } else if (activeMode === "SLAVE") {
-        const targetMasterIp = config?.masterIp || masterIp;
+        const targetMasterIp = config?.masterIp || storeState.masterIp;
         if (!targetMasterIp) {
-          setLanState({
+          storeState.setLanState({
             isSlaveConnected: false,
             slaveError: "Endereço IP do Master não configurado.",
             isMasterServerRunning: false,
@@ -73,13 +62,13 @@ export function useLanHeartbeat() {
         const startTime = Date.now();
         const heartbeatRes = await window.ipc.lan.sendHeartbeat({
           masterIp: targetMasterIp,
-          lanSecret: config?.lanSecret || lanSecret || undefined,
+          lanSecret: config?.lanSecret || storeState.lanSecret || undefined,
         });
         const latencyMs = Date.now() - startTime;
 
         if (isMountedRef.current) {
           if (heartbeatRes?.success || heartbeatRes?.status === "OK") {
-            setLanState({
+            storeState.setLanState({
               isSlaveConnected: true,
               slaveLatencyMs: latencyMs,
               slaveLastSeen: new Date().toISOString(),
@@ -88,7 +77,7 @@ export function useLanHeartbeat() {
               isMasterServerRunning: false,
             });
           } else {
-            setLanState({
+            storeState.setLanState({
               isSlaveConnected: false,
               slaveLatencyMs: null,
               slaveError: heartbeatRes?.error || "Falha de comunicação com o Servidor Master.",
@@ -99,10 +88,10 @@ export function useLanHeartbeat() {
       }
 
       // Se a varredura estiver ativa, consultar nós descobertos
-      if (isScanningDiscovery) {
+      if (storeState.isScanningDiscovery) {
         const discovered = await window.ipc.lan.getDiscoveredMasters();
         if (isMountedRef.current) {
-          setLanState({ discoveredMasters: discovered || [] });
+          storeState.setLanState({ discoveredMasters: discovered || [] });
         }
       }
     } catch (err: any) {
@@ -110,7 +99,7 @@ export function useLanHeartbeat() {
         console.warn("⚠️ [LAN Heartbeat] Erro ao atualizar status:", err?.message || err);
       }
     }
-  }, [terminalMode, masterIp, lanSecret, isScanningDiscovery, setLanState]);
+  }, []);
 
   useEffect(() => {
     isMountedRef.current = true;

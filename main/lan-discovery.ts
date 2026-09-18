@@ -229,7 +229,7 @@ export class LanDiscoveryClient {
 
   /**
    * Sonda direta instantânea para IP persistido (sem esperar mDNS/broadcast)
-   * Responde em 1-5ms em rede Ethernet Gigabit local
+   * Responde em 1-5ms em rede Ethernet Gigabit local e Wi-Fi
    */
   public async probeDirectIp(ip: string, port = DEFAULT_HTTP_PORT): Promise<DiscoveredMasterNode | null> {
     if (!ip) return null;
@@ -237,19 +237,27 @@ export class LanDiscoveryClient {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
 
-      const res = await fetch(`http://${cleanIp}:${port}/api/lan/status`, {
+      let res = await fetch(`http://${cleanIp}:${port}/api/lan/status`, {
         signal: controller.signal,
-      });
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        res = await fetch(`http://${cleanIp}:${port}/api/health`, {
+          signal: controller.signal,
+        }).catch(() => null);
+      }
       clearTimeout(timeoutId);
 
-      if (res.ok) {
-        const data = await res.json();
+      if (res && res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const hostName = data.hostname || cleanIp;
+        const storeName = data.storeName || (data.hostname ? `Master (${data.hostname})` : `Master (${cleanIp})`);
         const node: DiscoveredMasterNode = {
           id: `direct-${cleanIp}`,
-          name: data.storeName ? `Master - ${data.storeName}` : `Master (${cleanIp})`,
-          host: cleanIp,
+          name: storeName.startsWith('Mindgest POS') ? storeName : `Mindgest POS - ${storeName}`,
+          host: hostName,
           ip: cleanIp,
           port: port,
           protocolVersion: data.protocolVersion || "2.0",
@@ -265,6 +273,31 @@ export class LanDiscoveryClient {
       // Ignora se o IP não responder
     }
     return null;
+  }
+
+  /**
+   * Varredura ativa na sub-rede local IPv4 (porta 3333) para ultrapassar bloqueios de IGMP Snooping em Wi-Fi
+   */
+  public async scanSubnet(port = DEFAULT_HTTP_PORT) {
+    try {
+      const localIps = getAllLocalIps();
+      for (const localIp of localIps) {
+        if (localIp === "127.0.0.1") continue;
+        const parts = localIp.split(".");
+        if (parts.length !== 4) continue;
+        const subnetBase = `${parts[0]}.${parts[1]}.${parts[2]}`;
+
+        const promises: Promise<any>[] = [];
+        for (let i = 1; i <= 254; i++) {
+          const targetIp = `${subnetBase}.${i}`;
+          if (targetIp === localIp) continue;
+          promises.push(this.probeDirectIp(targetIp, port));
+        }
+        await Promise.allSettled(promises);
+      }
+    } catch (err) {
+      console.warn("⚠️ [LAN Discovery] Erro ao varrer sub-rede:", err);
+    }
   }
 
   /**
@@ -354,10 +387,11 @@ export class LanDiscoveryClient {
     this.isScanning = true;
     this.discoveredNodes.clear();
 
-    // 0. Sonda direta prioritária no último IP conhecido
+    // 0. Sonda direta prioritária no último IP conhecido e varredura da sub-rede Wi-Fi / Ethernet
     if (lastKnownMasterIp) {
       this.probeDirectIp(lastKnownMasterIp).catch(() => {});
     }
+    this.scanSubnet().catch(() => {});
 
     // 1. Iniciar scanner mDNS
     try {

@@ -1168,6 +1168,10 @@ app.on("ready", async () => {
       await startLocalServer();
     } else {
       console.log("🖥️ [Terminal Mode] Servidor local desativado. Este PC é um terminal slave.");
+      const { startSlaveBackgroundHeartbeat } = await import("./ipc/lan.ipc");
+      if (settings.masterIp && (settings as any).lanEnabled !== false) {
+        startSlaveBackgroundHeartbeat();
+      }
     }
   } catch (error) {
     console.error("⚠️ [Aviso] Não foi possível iniciar o servidor local. A porta pode estar ocupada:", error);

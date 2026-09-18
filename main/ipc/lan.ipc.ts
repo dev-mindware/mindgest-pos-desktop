@@ -17,9 +17,70 @@ export function getLocalIpAddress(): string {
 }
 
 let clientClockOffsetMs = 0;
+let slaveHeartbeatTimer: NodeJS.Timeout | null = null;
 
 export function getClientClockOffsetMs(): number {
   return clientClockOffsetMs;
+}
+
+export function startSlaveBackgroundHeartbeat(): void {
+  if (slaveHeartbeatTimer) {
+    clearInterval(slaveHeartbeatTimer);
+    slaveHeartbeatTimer = null;
+  }
+
+  const runHeartbeat = async () => {
+    try {
+      const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+      if (!settings || settings.terminalMode !== 'SLAVE' || !settings.masterIp || (settings as any).lanEnabled === false) {
+        return;
+      }
+
+      const cleanIp = settings.masterIp.trim().replace(/^http:\/\//, '').replace(/\/$/, '');
+      const url = `http://${cleanIp}:3333/api/lan/heartbeat`;
+      const hwid = getHardwareFingerprint();
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+      const clientSendTime = Date.now();
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(settings.lanSecret ? { "x-lan-secret": settings.lanSecret } : {})
+        },
+        body: JSON.stringify({
+          terminalId: hwid,
+          terminalName: os.hostname(),
+          appVersion: app.getVersion(),
+          clientTime: new Date(clientSendTime).toISOString()
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.serverTime) {
+          const serverTimestamp = new Date(data.serverTime).getTime();
+          clientClockOffsetMs = serverTimestamp - Date.now();
+        }
+      }
+    } catch {
+      // Falha de rede transitória no heartbeat
+    }
+  };
+
+  runHeartbeat();
+  slaveHeartbeatTimer = setInterval(runHeartbeat, 3000);
+}
+
+export function stopSlaveBackgroundHeartbeat(): void {
+  if (slaveHeartbeatTimer) {
+    clearInterval(slaveHeartbeatTimer);
+    slaveHeartbeatTimer = null;
+  }
 }
 
 export function registerLanIpcHandlers(): void {
@@ -114,6 +175,7 @@ export function registerLanIpcHandlers(): void {
 
       const { startLocalServer, stopLocalServer } = await import("../server");
       if (terminalMode === 'MASTER' && lanEnabled) {
+        stopSlaveBackgroundHeartbeat();
         try {
           await startLocalServer();
           console.log("✅ [LAN] Servidor Master iniciado dinamicamente!");
@@ -123,6 +185,12 @@ export function registerLanIpcHandlers(): void {
       } else {
         await stopLocalServer();
         console.log("🛑 [LAN] Servidor Master desativado dinamicamente.");
+        if (terminalMode === 'SLAVE' && lanEnabled && masterIp) {
+          startSlaveBackgroundHeartbeat();
+          console.log("💓 [LAN] Heartbeat do Slave ativado em background.");
+        } else {
+          stopSlaveBackgroundHeartbeat();
+        }
       }
 
       return true;

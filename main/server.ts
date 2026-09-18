@@ -160,6 +160,35 @@ app.get('/api/lan/time', (req, res) => {
   });
 });
 
+// Endpoint de Status e Descoberta Direta de Master
+app.get(['/api/lan/status', '/api/status'], async (req, res) => {
+  try {
+    const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } }).catch(() => null);
+    res.json({
+      status: 'online',
+      hostname: os.hostname(),
+      storeName: settings?.companyName || 'Mindgest POS',
+      storeId: settings?.storeId || '',
+      protocolVersion: '2.0',
+      port: PORT,
+      timestamp: Date.now(),
+      serverTime: new Date().toISOString(),
+      connectedCount: connectedTerminals.size,
+    });
+  } catch {
+    res.json({
+      status: 'online',
+      hostname: os.hostname(),
+      storeName: 'Mindgest POS',
+      protocolVersion: '2.0',
+      port: PORT,
+      timestamp: Date.now(),
+      serverTime: new Date().toISOString(),
+      connectedCount: connectedTerminals.size,
+    });
+  }
+});
+
 // Endpoint de Emparelhamento Inicial por Código Curto
 app.post('/api/lan/pair', async (req, res) => {
   try {
