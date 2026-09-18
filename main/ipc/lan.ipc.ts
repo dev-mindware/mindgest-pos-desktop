@@ -45,6 +45,7 @@ export function registerLanIpcHandlers(): void {
         lanSecret: settings?.lanSecret || null,
         port: 3333,
         localIp: getLocalIpAddress(),
+        hostname: os.hostname(),
         isServerRunning: serverStatus.isRunning,
         serverError: serverStatus.error,
         connectedCount: serverStatus.connectedCount,
@@ -412,6 +413,7 @@ export function registerLanIpcHandlers(): void {
     }
 
     return {
+      hostname: os.hostname(),
       totalMemoryGB,
       freeMemoryGB,
       cpuCores,

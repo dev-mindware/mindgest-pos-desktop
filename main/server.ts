@@ -36,14 +36,14 @@ export function setRotatedSecret(newSecret: string) {
   activeLanSecret = newSecret;
 }
 
-// Telemetria em tempo real para rede cabeada estável (varredura a cada 2s, 100% in-memory)
+// Telemetria em tempo real para rede cabeada e Wi-Fi (varredura a cada 2s, 100% in-memory)
 setInterval(() => {
   const now = Date.now();
   for (const [id, terminal] of connectedTerminals.entries()) {
     const elapsed = now - new Date(terminal.lastSeen).getTime();
-    if (elapsed > 8_000) {
+    if (elapsed > 20_000) {
       terminal.status = 'DISCONNECTED';
-    } else if (elapsed > 5_000) {
+    } else if (elapsed > 10_000) {
       terminal.status = 'IDLE';
     } else {
       terminal.status = 'ACTIVE';

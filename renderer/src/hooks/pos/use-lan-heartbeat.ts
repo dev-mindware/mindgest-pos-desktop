@@ -118,7 +118,7 @@ export function useLanHeartbeat() {
 
     const interval = setInterval(() => {
       refreshLanStatus();
-    }, 4000);
+    }, 2500);
 
     return () => {
       isMountedRef.current = false;

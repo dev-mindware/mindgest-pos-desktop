@@ -195,6 +195,13 @@ export function LanSlavePanel({
                       )}
                     </span>
                   </div>
+
+                  {/* Nome do Computador Remoto (Host) */}
+                  <div className="flex items-center gap-1.5 text-xs text-foreground font-medium">
+                    <Icon name="Laptop" size={13} className="text-primary shrink-0" />
+                    <span className="truncate">Computador: <span className="font-mono font-bold">{node.host || "PC Master"}</span></span>
+                  </div>
+
                   <div className="flex items-center justify-between gap-2 text-xs font-mono text-muted-foreground">
                     <span className="truncate">http://{node.ip}:{node.port}</span>
                     <button

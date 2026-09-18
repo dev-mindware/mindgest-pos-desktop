@@ -3,6 +3,7 @@
 import { Icon } from "@/components";
 
 export interface SystemCapability {
+  hostname?: string;
   totalMemoryGB: number;
   freeMemoryGB: number;
   cpuCores: number;
@@ -22,11 +23,13 @@ export function LanSystemDiagnostics({ systemCap }: LanSystemDiagnosticsProps) {
     <div className="p-3.5 rounded-[4px] border border-stone-200/90 dark:border-stone-800/90 bg-card text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-soft-sm">
       <div className="flex items-start sm:items-center gap-3 min-w-0">
         <div className="p-2 rounded-[3px] bg-primary/10 text-primary shrink-0">
-          <Icon name="Cpu" size={16} />
+          <Icon name="Laptop" size={16} />
         </div>
         <div className="space-y-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-foreground">Diagnóstico de Capacidade:</span>
+            <span className="font-semibold text-foreground">
+              {systemCap.hostname ? `Este PC (${systemCap.hostname}):` : "Diagnóstico de Capacidade:"}
+            </span>
             <span className="font-mono text-[11px] bg-muted/60 px-1.5 py-0.5 rounded-[2px] border border-border/50 text-foreground">
               {systemCap.cpuCores} Cores CPU
             </span>
