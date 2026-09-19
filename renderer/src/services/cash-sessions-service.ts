@@ -33,10 +33,13 @@ export const cashSessionsService = {
   },
 
   getCurrentSession: async (id: string | undefined) => {
-    const { data } = await api.get<CashSession>("/cash-sessions/current", {
+    const res = await api.get<any>("/cash-sessions/current", {
       params: id ? { storeId: id } : undefined,
     });
-    return data;
+    if (res.data?.data && res.data.isOpen === undefined) {
+      return res.data.data as CashSession;
+    }
+    return res.data as CashSession;
   },
 
   getCashSessions: async (params: any) => {

@@ -23,17 +23,13 @@ prisma/dev.db*
 dev.db*
 mindgest-pos-dev.db*
 
-# Local environment files (Root & Renderer)
+# Local environment files (Root & Renderer) - Protect all variants except example
 .env
-.env*.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 renderer/.env
-renderer/.env*.local
-renderer/.env.development.local
-renderer/.env.test.local
-renderer/.env.production.local
+renderer/.env.*
+!renderer/.env.example
 
 # Python virtual environments, caches & AI models
 **/venv/

@@ -1162,6 +1162,39 @@ app.on("ready", async () => {
   console.log("Main process READY EVENT triggered");
   await testPrismaConnection();
 
+  // Sanitização segura no arranque: soft disable de serviços para o POS (preserva FKs de vendas históricas)
+  try {
+    const serviceCategoryNames = ['Serviços de IT', 'Serviços'];
+    const serviceItemNames = [
+      'Desenvolvimento de Softwares',
+      'Música (DJ)',
+      'Decoração',
+      'Alimentação',
+      'Publicidade e Convites',
+      'Orquestra',
+      'Revisão do sistema de alimentação',
+      'Revisão da suspensão',
+      'Revisão do circuito eléctrico',
+    ];
+
+    const disabledServices = await prisma.item.updateMany({
+      where: {
+        OR: [
+          { name: { in: serviceItemNames } },
+          { category: { name: { in: serviceCategoryNames } } },
+        ],
+        isActive: true,
+      },
+      data: { isActive: false },
+    });
+
+    if (disabledServices.count > 0) {
+      console.log(`🧹 [Sanitize] ${disabledServices.count} serviço(s) desativado(s) com segurança (soft disable) no POS.`);
+    }
+  } catch (sanitizeErr: any) {
+    console.warn("⚠️ [Sanitize] Falha na desativação segura de serviços:", sanitizeErr?.message || sanitizeErr);
+  }
+
   try {
     const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
     if (!settings || settings.terminalMode === 'MASTER') {

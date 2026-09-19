@@ -330,11 +330,18 @@ apiRouter.get('/items', async (req, res) => {
   }
 });
 
-// 2. Obter Categorias de Produtos
+// 2. Obter Categorias de Produtos (apenas categorias que tenham produtos ativos - suporta categorias mistas)
 apiRouter.get('/categories', async (req, res) => {
   try {
     const { storeId } = req.query;
-    const where: any = { isActive: true };
+    const where: any = {
+      isActive: true,
+      items: {
+        some: {
+          isActive: true,
+        },
+      },
+    };
     if (storeId) where.storeId = String(storeId);
     const categories = await prisma.category.findMany({ where, orderBy: { name: 'asc' } });
     const mapped = categories.map((c) => ({
@@ -360,32 +367,39 @@ apiRouter.get('/cash-sessions/current', async (req, res) => {
     });
 
     if (!session) {
-      return res.json({
-        data: {
-          id: 'LOCAL_DEFAULT_SESSION',
-          isOpen: true,
-          openingDate: new Date().toISOString(),
-          openingBalance: 0,
-        },
-      });
-    }
-
-    res.json({
-      data: {
-        ...session,
-        id: session.cloudId || session.id,
-        localId: session.id,
-        isOpen: true,
-      },
-    });
-  } catch (err: any) {
-    res.json({
-      data: {
+      const defaultSession = {
         id: 'LOCAL_DEFAULT_SESSION',
         isOpen: true,
         openingDate: new Date().toISOString(),
         openingBalance: 0,
-      },
+      };
+      return res.json({
+        ...defaultSession,
+        data: defaultSession,
+      });
+    }
+
+    const sessionPayload = {
+      ...session,
+      id: session.cloudId || session.id,
+      localId: session.id,
+      isOpen: true,
+    };
+
+    res.json({
+      ...sessionPayload,
+      data: sessionPayload,
+    });
+  } catch (err: any) {
+    const defaultSession = {
+      id: 'LOCAL_DEFAULT_SESSION',
+      isOpen: true,
+      openingDate: new Date().toISOString(),
+      openingBalance: 0,
+    };
+    res.json({
+      ...defaultSession,
+      data: defaultSession,
     });
   }
 });
@@ -431,8 +445,65 @@ apiRouter.get('/series', async (req, res) => {
   }
 });
 
+// Helper para mapear fatura local do SQLite para o contrato esperado pelo frontend
+function mapLocalInvoiceToResponse(inv: any, outboxStatusMap: Map<string, string>) {
+  const syncStatus = outboxStatusMap.get(inv.id) || (inv.agtNo ? 'SYNCED' : 'PENDING');
+  return {
+    id: inv.id,
+    number: inv.agtNo || inv.localNo,
+    localNo: inv.localNo,
+    agtNo: inv.agtNo,
+    type: inv.agtNo?.startsWith('FT') ? 'INVOICE' : inv.agtNo?.startsWith('PP') ? 'PROFORMA' : 'INVOICE_RECEIPT',
+    status: inv.status === 'VALID' ? 'PAID' : inv.status,
+    syncStatus,
+    issueDate: inv.issueDate instanceof Date ? inv.issueDate.toISOString() : inv.issueDate,
+    createdAt: inv.createdAt instanceof Date ? inv.createdAt.toISOString() : (inv.systemEntryDate || inv.issueDate),
+    total: inv.grossTotal,
+    grossTotal: inv.grossTotal,
+    netTotal: inv.netTotal,
+    subtotal: inv.netTotal,
+    taxTotal: inv.taxTotal,
+    taxAmount: inv.taxTotal,
+    discountAmount: 0,
+    retentionAmount: 0,
+    hash: inv.hash,
+    hashControl: inv.hashControl,
+    qrCode: inv.qrCode,
+    client: inv.client ? {
+      id: inv.client.id,
+      name: inv.client.name,
+      taxNumber: inv.client.nif || '999999999',
+      phone: inv.client.phone,
+      address: inv.client.address,
+      email: inv.client.email,
+    } : {
+      id: 'final-consumer',
+      name: 'Consumidor Final',
+      taxNumber: '999999999',
+    },
+    user: inv.user ? {
+      id: inv.user.id,
+      name: inv.user.name,
+    } : undefined,
+    items: Array.isArray(inv.lines) ? inv.lines.map((l: any) => ({
+      id: l.id,
+      itemId: l.itemId,
+      name: l.item?.name || 'Artigo',
+      quantity: l.quantity,
+      price: l.unitPrice,
+      unitPrice: l.unitPrice,
+      discount: l.discount || 0,
+      subtotal: l.netTotal,
+      taxAmount: l.taxPercent ? (l.netTotal * (l.taxPercent / 100)) : 0,
+      total: l.grossTotal,
+      tax: { rate: (l.taxPercent || 14) / 100 },
+      taxRate: (l.taxPercent || 14) / 100,
+    })) : [],
+  };
+}
+
 // 4. Criação de Fatura Atómica Serializada (Delegada ao FiscalInvoicingService)
-apiRouter.post('/invoice/create', async (req, res) => {
+async function handleCreateInvoice(req: any, res: any) {
   try {
     const { invoiceData, storeId, userId, terminalId, terminalName } = req.body;
     const idempotencyKey = invoiceData?.idempotencyKey || (req.headers['x-idempotency-key'] as string);
@@ -456,16 +527,149 @@ apiRouter.post('/invoice/create', async (req, res) => {
     console.error('❌ [Local Server /invoice/create] Erro na emissão:', err?.message || err);
     res.status(400).json({ error: err?.message || 'Erro ao emitir fatura no Master.' });
   }
-});
+}
 
-apiRouter.post('/invoice/normal', (req, res, next) => {
+apiRouter.post('/invoice/create', handleCreateInvoice);
+
+apiRouter.post('/invoice/normal', (req, res) => {
   req.body.invoiceData = { ...req.body.invoiceData, documentType: 'FT' };
-  next();
+  return handleCreateInvoice(req, res);
 });
 
-apiRouter.post('/invoice/invoice-receipt', (req, res, next) => {
+apiRouter.post('/invoice/invoice-receipt', (req, res) => {
   req.body.invoiceData = { ...req.body.invoiceData, documentType: 'FR' };
-  next();
+  return handleCreateInvoice(req, res);
+});
+
+// Helper para listar faturas locais com paginação e busca
+async function handleListInvoices(req: any, res: any, documentTypePrefix?: string) {
+  try {
+    const storeId = req.query.storeId ? String(req.query.storeId) : undefined;
+    const search = req.query.search ? String(req.query.search).trim() : undefined;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 10));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (storeId) where.storeId = storeId;
+    if (documentTypePrefix) {
+      where.OR = [
+        { agtNo: { startsWith: documentTypePrefix } },
+        { localNo: { startsWith: documentTypePrefix } },
+      ];
+    }
+    if (search) {
+      const searchConditions = [
+        { agtNo: { contains: search } },
+        { localNo: { contains: search } },
+        { client: { name: { contains: search } } },
+      ];
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchConditions }];
+        delete where.OR;
+      } else {
+        where.OR = searchConditions;
+      }
+    }
+
+    const [invoices, total, outboxDocs] = await Promise.all([
+      prisma.invoice.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          client: true,
+          user: true,
+          lines: { include: { item: true } },
+        },
+        orderBy: { issueDate: 'desc' },
+      }),
+      prisma.invoice.count({ where }),
+      prisma.syncOutbox.findMany({
+        where: { entityType: 'INVOICE' },
+        select: { entityId: true, status: true },
+      }),
+    ]);
+
+    const outboxStatusMap = new Map<string, string>();
+    outboxDocs.forEach((d) => outboxStatusMap.set(d.entityId, d.status));
+
+    const mapped = invoices.map((inv) => mapLocalInvoiceToResponse(inv, outboxStatusMap));
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
+    res.json({
+      data: mapped,
+      total,
+      page,
+      limit,
+      totalPages,
+    });
+  } catch (err: any) {
+    console.error('❌ [Local Server GET /invoice] Erro ao listar faturas:', err?.message || err);
+    res.status(500).json({ error: 'Erro ao buscar faturas locais.' });
+  }
+}
+
+// 5. Listar Faturas-Recibo (FR), Faturas Normais (FT) e Proformas (PP) para Movimentos
+apiRouter.get('/invoice/invoice-receipt', (req, res) => handleListInvoices(req, res, 'FR'));
+apiRouter.get('/invoice/normal', (req, res) => handleListInvoices(req, res, 'FT'));
+apiRouter.get('/invoice/proforma', (req, res) => handleListInvoices(req, res, 'PP'));
+apiRouter.get('/invoice', (req, res) => handleListInvoices(req, res));
+
+// 6. Obter Fatura por ID (para Visualização e Emissão de Notas de Crédito)
+async function handleGetInvoiceById(req: any, res: any) {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'ID da fatura é obrigatório.' });
+
+    const invoice = await prisma.invoice.findFirst({
+      where: {
+        OR: [{ id }, { localNo: id }, { agtNo: id }],
+      },
+      include: {
+        client: true,
+        user: true,
+        lines: { include: { item: true } },
+      },
+    });
+
+    if (!invoice) {
+      return res.status(404).json({ error: 'Fatura não encontrada no banco local.' });
+    }
+
+    const outboxDocs = await prisma.syncOutbox.findMany({
+      where: { entityType: 'INVOICE', entityId: invoice.id },
+      select: { status: true },
+    });
+    const outboxStatusMap = new Map<string, string>();
+    if (outboxDocs.length > 0) {
+      outboxStatusMap.set(invoice.id, outboxDocs[0].status);
+    }
+
+    const mapped = mapLocalInvoiceToResponse(invoice, outboxStatusMap);
+    res.json({
+      ...mapped,
+      data: mapped,
+    });
+  } catch (err: any) {
+    console.error('❌ [Local Server GET /invoice/:id] Erro:', err?.message || err);
+    res.status(500).json({ error: 'Erro ao obter dados da fatura local.' });
+  }
+}
+
+apiRouter.get('/invoice/invoice-receipt/:id', handleGetInvoiceById);
+apiRouter.get('/invoice/normal/:id', handleGetInvoiceById);
+apiRouter.get('/invoice/:id', handleGetInvoiceById);
+
+// 7. Obter Notas de Crédito Locais
+apiRouter.get('/credit-note', async (req, res) => {
+  res.json({
+    data: [],
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+  });
 });
 
 app.use('/api', apiRouter);

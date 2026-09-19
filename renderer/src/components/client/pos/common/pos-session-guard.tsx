@@ -54,8 +54,13 @@ export function PosSessionGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
+    // Normalize session object in case of nested data wrapper
+    const rawSession: any = currentSession;
+    const sessionData = rawSession?.data?.isOpen !== undefined ? rawSession.data : rawSession;
+    const isOpen = Boolean(sessionData?.isOpen);
+
     // If there is an active session, allow access
-    if (currentSession?.isOpen) {
+    if (isOpen) {
         return <>{children}</>;
     }
 
@@ -63,9 +68,9 @@ export function PosSessionGuard({ children }: { children: React.ReactNode }) {
     const isNotFound = (error as any)?.response?.status === 404;
 
     // Otherwise, show blocking modal
-    const hasSession = !!currentSession;
-    const isClosed = hasSession && !currentSession.isOpen;
-    const noSessionFound = isNotFound || (!isLoading && !currentSession);
+    const hasSession = !!sessionData && Boolean(sessionData.id);
+    const isClosed = hasSession && !isOpen;
+    const noSessionFound = isNotFound || (!isLoading && !sessionData);
 
     // If it's a real error (not a 404), and we don't have a session, show error state
     if (error && !isNotFound) {

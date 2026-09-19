@@ -109,7 +109,11 @@ async function normalizeInvoicePayload(payload: any): Promise<InvoiceReceiptClou
   if (invoice.companyId) finalPayload.companyId = invoice.companyId;
   if (invoice.establishmentNumber) finalPayload.establishmentNumber = invoice.establishmentNumber;
   if (invoice.agtNo) finalPayload.agtNo = invoice.agtNo;
-  if (invoice.offline) finalPayload.offline = invoice.offline;
+  if (invoice.hash) finalPayload.hash = invoice.hash;
+  if (invoice.hashControl) finalPayload.hashControl = invoice.hashControl;
+  if (invoice.previousHash) finalPayload.previousHash = invoice.previousHash;
+  if (invoice.systemEntryDate) finalPayload.systemEntryDate = invoice.systemEntryDate;
+  if (invoice.offline !== undefined) finalPayload.offline = invoice.offline;
   if (invoice.cashSessionId) finalPayload.cashSessionId = invoice.cashSessionId;
 
   return finalPayload as InvoiceReceiptCloudPayload;
@@ -169,13 +173,22 @@ export const syncService = {
 
       const response = await axios.get(`${CLOUD_API_URL}/items`, {
         headers: getCloudHeaders(token),
-        params: { limit: 1000, storeId } // Tentamos buscar todos de uma vez para o POS
+        params: { limit: 1000, storeId, type: 'PRODUCT' } // Apenas produtos vendáveis para o POS
       });
 
       const cloudItems = response.data.data;
 
       for (const item of cloudItems) {
         try {
+          // O POS não deve listar serviços — ignora itens do tipo SERVICE
+          if (item.type && item.type === 'SERVICE') {
+            await prisma.item.updateMany({
+              where: { cloudId: item.id },
+              data: { isActive: false }
+            });
+            continue;
+          }
+
           // Prevenir erro de Unique Constraint no barcode
           if (item.barcode) {
             const existingWithBarcode = await prisma.item.findUnique({
@@ -458,6 +471,80 @@ export const syncService = {
     }
   },
 
+  /**
+   * Sincroniza faturas recentes da Cloud para o SQLite Local (para visualização no histórico offline)
+   */
+  syncInvoices: async (token: string, storeId: string) => {
+    try {
+      console.log("🔄 [Sync] A descarregar faturas recentes da Cloud para histórico offline...");
+      const response = await axios.get(`${CLOUD_API_URL}/invoice/invoice-receipt`, {
+        headers: getCloudHeaders(token),
+        params: { limit: 50, storeId },
+        timeout: 10000,
+      });
+
+      const cloudInvoices = response.data?.data || response.data || [];
+      if (!Array.isArray(cloudInvoices)) return { success: true, count: 0 };
+
+      let imported = 0;
+      for (const inv of cloudInvoices) {
+        try {
+          if (!inv.id && !inv.number) continue;
+          const existing = await prisma.invoice.findFirst({
+            where: {
+              OR: [
+                { id: inv.id },
+                { agtNo: inv.number || inv.agtNo },
+                { localNo: inv.number || inv.localNo },
+              ],
+            },
+          });
+
+          if (!existing) {
+            let clientId: string | null = null;
+            if (inv.client?.name) {
+              const localClient = await prisma.client.findFirst({
+                where: { OR: [{ cloudId: inv.client.id }, { name: inv.client.name }] },
+              });
+              clientId = localClient?.id || null;
+            }
+
+            const defaultUser = await prisma.user.findFirst();
+            if (!defaultUser) continue;
+
+            await prisma.invoice.create({
+              data: {
+                id: inv.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `INV-${Date.now()}-${Math.random()}`),
+                localNo: inv.number || `CLOUD-${Date.now()}-${Math.random()}`,
+                agtNo: inv.number,
+                status: inv.status === 'PAID' ? 'VALID' : (inv.status || 'VALID'),
+                issueDate: inv.issueDate ? new Date(inv.issueDate) : new Date(),
+                netTotal: Number(inv.subtotal || inv.netTotal || 0),
+                taxTotal: Number(inv.taxAmount || inv.taxTotal || 0),
+                grossTotal: Number(inv.total || inv.grossTotal || 0),
+                hash: inv.hash || null,
+                hashControl: inv.hashControl || null,
+                qrCode: inv.qrCode || null,
+                storeId,
+                userId: defaultUser.id,
+                clientId: clientId,
+              },
+            });
+            imported++;
+          }
+        } catch (itemErr: any) {
+          console.warn("⚠️ [Sync] Falha ao importar fatura histórica:", itemErr?.message);
+        }
+      }
+
+      console.log(`✅ [Sync] ${imported} faturas históricas descarregadas para o SQLite local.`);
+      return { success: true, count: imported };
+    } catch (err: any) {
+      console.warn("⚠️ [Sync] Falha ao descarregar faturas da Cloud:", err?.message);
+      return { success: false, error: err?.message };
+    }
+  },
+
   syncAll: async function (token: string, storeId: string, userId: string) {
     console.log("🔄 [Sync] Iniciando sincronização completa (upload + download)...");
     const uploadResult = await this.processOutbox(token, userId);
@@ -465,6 +552,7 @@ export const syncService = {
     const clientResult = await this.syncClients(token, storeId);
     const productResult = await this.syncProducts(token, storeId);
     const agtSeriesResult = await this.syncAgtSeries(token, storeId);
+    const invoiceResult = await this.syncInvoices(token, storeId);
 
     return {
       success: true,
@@ -472,7 +560,8 @@ export const syncService = {
       categories: categoryResult,
       clients: clientResult,
       products: productResult,
-      AGTSeries: agtSeriesResult
+      AGTSeries: agtSeriesResult,
+      invoices: invoiceResult,
     };
   },
 
@@ -505,6 +594,16 @@ export const syncService = {
 
       for (const doc of sortedDocs) {
         try {
+          // Backoff exponencial para retentativas da Outbox (evita sobrecarga contínua)
+          if (doc.retryCount && doc.retryCount > 0 && doc.lastErrorTime) {
+            const backoffDelayMs = Math.min(Math.pow(2, doc.retryCount) * 5000, 300000); // 10s, 20s, 40s, 80s... máx 5min
+            const timeSinceLastError = Date.now() - new Date(doc.lastErrorTime).getTime();
+            if (timeSinceLastError < backoffDelayMs) {
+              console.log(`⏳ [SyncWorker] Documento ${doc.entityType} ${doc.entityId} em período de backoff (${Math.round((backoffDelayMs - timeSinceLastError) / 1000)}s restantes).`);
+              continue;
+            }
+          }
+
           // 1. Verificação de Dependências mais tolerante
           if (doc.dependsOnType && doc.dependsOnId) {
             const dep = await prisma.syncOutbox.findFirst({
@@ -551,7 +650,7 @@ export const syncService = {
               delete payload.id;
             }
           } else if (doc.entityType === "INVOICE") {
-            endpoint = "/invoice/invoice-receipt"; // Corrigido o endpoint!
+            endpoint = "/invoice/invoice-receipt";
             method = "post";
             payload = await normalizeInvoicePayload(rawPayload);
           } else if (doc.entityType === "PROFORMA") {
@@ -612,9 +711,10 @@ export const syncService = {
           console.error(`❌ [SyncWorker] Erro na API ao sincronizar ${doc.entityType} ${doc.id}:`, apiError);
 
           const newRetry = (doc.retryCount ?? 0) + 1;
-          const maxRetries = 8;
+          const maxRetries = 5;
 
           if (newRetry >= maxRetries) {
+            console.error(`🛑 [SyncWorker] Limite de tentativas (${maxRetries}) excedido para ${doc.entityType} ${doc.id}. Marcando como FAILED.`);
             await prisma.syncOutbox.update({
               where: { id: doc.id },
               data: { status: "FAILED", errorMsg: apiError, lastErrorTime: new Date(), retryCount: newRetry }
@@ -625,7 +725,6 @@ export const syncService = {
               data: { status: "PENDING", errorMsg: apiError, lastErrorTime: new Date(), retryCount: newRetry }
             });
           }
-          // Removido o 'break;' para permitir que o ciclo continue a processar outros documentos!
         }
       }
 

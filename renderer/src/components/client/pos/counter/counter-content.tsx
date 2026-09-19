@@ -76,7 +76,8 @@ export function CounterContent() {
   });
 
   const { currentStore } = currentStoreStore();
-  const { data: currentSession } = useGetCurrentSession(currentStore?.id);
+  const { data: rawSession } = useGetCurrentSession(currentStore?.id);
+  const currentSession = (rawSession as any)?.data?.id ? (rawSession as any).data : rawSession;
 
   const [activeCart, setActiveCart] = useState<CartType>("invoice");
   const { openModal } = useModal();

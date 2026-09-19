@@ -18,6 +18,33 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
+export const OFFLINE_SUPPORTED_ROUTES = [
+  "/items",
+  "/categories",
+  "/clients",
+  "/cash-sessions",
+  "/series",
+  "/invoice",
+  "/credit-note",
+];
+
+let isNetworkOfflineUntil = 0;
+
+export function isCloudNetworkOffline(): boolean {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return true;
+  }
+  return Date.now() < isNetworkOfflineUntil;
+}
+
+export function markCloudNetworkOffline(durationMs: number = 20000) {
+  isNetworkOfflineUntil = Date.now() + durationMs;
+}
+
+export function resetCloudNetworkStatus() {
+  isNetworkOfflineUntil = 0;
+}
+
 export const api = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL ||
@@ -160,18 +187,44 @@ api.interceptors.request.use(async (config) => {
     }
   }
 
-  const FAST_TIMEOUT_ROUTES = ["/items", "/categories", "/clients", "/cash-sessions", "/series"];
+  const FAST_TIMEOUT_ROUTES = [
+    "/items",
+    "/categories",
+    "/clients",
+    "/cash-sessions",
+    "/series",
+    "/invoice",
+    "/credit-note",
+  ];
   if (config.url && FAST_TIMEOUT_ROUTES.some((r) => config.url?.includes(r))) {
-    if (currentMethod === "get" && (!config.timeout || config.timeout > 4000)) {
-      config.timeout = 4000;
+    if (!config.timeout || config.timeout > 3500) {
+      config.timeout = 3500; // Timeout inicial curto de 3.5s no POS
     }
+  }
+
+  // Failover imediato (0ms) se a rede já estiver comprovadamente offline
+  if (
+    config.url &&
+    OFFLINE_SUPPORTED_ROUTES.some((r) => config.url?.includes(r)) &&
+    isCloudNetworkOffline() &&
+    !(config as any)._isLocalFallback
+  ) {
+    (config as any)._isLocalFallback = true;
+    return localApi({
+      ...config,
+      baseURL: undefined, // localApi interceptor injeta 127.0.0.1 ou IP do Master LAN
+    });
   }
 
   return config;
 });
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    // Ao receber resposta bem-sucedida da Cloud, reseta o status offline
+    resetCloudNetworkStatus();
+    return res;
+  },
   async (err) => {
     const original = err.config;
 
@@ -179,24 +232,22 @@ api.interceptors.response.use(
       return Promise.reject(err);
     }
 
-    // 🛡️ Fallback Automático para LAN / Local SQLite se a API Cloud estiver inacessível
-    const isNetworkOrTimeout =
+    // 🛡️ Distinção Estrita: Erro de Rede / Timeout vs. Erro de Aplicação (5xx)
+    // Erros 5xx têm err.response presente — não ativam o circuit breaker global
+    const isStrictNetworkFailure =
       !err.response ||
       err.code === "ERR_NETWORK" ||
       err.code === "ECONNABORTED" ||
+      err.code === "ECONNREFUSED" ||
       err.message?.includes("Network Error") ||
       err.message?.includes("timeout");
 
-    const OFFLINE_SUPPORTED_ROUTES = [
-      "/items",
-      "/categories",
-      "/clients",
-      "/cash-sessions",
-      "/series",
-    ];
+    if (isStrictNetworkFailure) {
+      markCloudNetworkOffline(20000); // Marca rede offline por 20 segundos
+    }
 
     const canFallback =
-      isNetworkOrTimeout &&
+      isStrictNetworkFailure &&
       original.url &&
       OFFLINE_SUPPORTED_ROUTES.some((r) => original.url.includes(r)) &&
       !original._isLocalFallback;
@@ -204,7 +255,7 @@ api.interceptors.response.use(
     if (canFallback) {
       original._isLocalFallback = true;
       try {
-        console.log(`📡 [LAN Offline Fallback] Nuvem inacessível. Redirecionando ${original.url} para API local/Master...`);
+        console.log(`📡 [LAN Offline Fallback] Falha de rede na Cloud (${err.code || 'timeout'}). Redirecionando ${original.url} para API local/Master...`);
         const localResponse = await localApi({
           ...original,
           url: original.url,
