@@ -1177,6 +1177,11 @@ app.on("ready", async () => {
     console.error("⚠️ [Aviso] Não foi possível iniciar o servidor local. A porta pode estar ocupada:", error);
   }
 
+  // Pré-aquecer chaves criptográficas RSA para emissão fiscal instantânea sem atrasos na primeira fatura
+  FiscalSignatureService.getOrInitializeKeys().catch((err) => {
+    console.warn("⚠️ [Fiscal] Falha ao pré-inicializar chaves RSA no arranque:", err);
+  });
+
   // Iniciar automaticamente o microserviço de IA da MIND
   startPythonSubprocess();
   

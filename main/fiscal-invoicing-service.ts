@@ -139,6 +139,13 @@ export class FiscalInvoicingService {
 
     // 3. Fila Serializada FIFO de Faturação
     return await enqueueInvoiceTask(async () => {
+      // Pré-aquecimento das chaves RSA fora da transação para não consumir o tempo do SQLite
+      try {
+        await FiscalSignatureService.getOrInitializeKeys();
+      } catch (keyErr) {
+        console.warn('⚠️ [FiscalInvoicingService] Falha ao pré-carregar chaves RSA:', keyErr);
+      }
+
       // Ativar PRAGMA synchronous = FULL no início da transação fiscal para proteção contra cortes
       try {
         await prisma.$executeRawUnsafe(`PRAGMA synchronous = FULL;`);
@@ -359,6 +366,9 @@ export class FiscalInvoicingService {
             offline: true,
             source: 'LAN_MASTER',
           };
+        }, {
+          maxWait: 15000,
+          timeout: 30000,
         });
       } finally {
         // Restaurar modo síncrono NORMAL para as leituras subsequentes

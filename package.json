@@ -8,6 +8,8 @@
     "build": "nextron build --win",
     "build:staging": "powershell -Command \"$env:NEXT_PUBLIC_API_URL='https://test.mindgest.mindware-vps.cloud/api'; Remove-Item -Recurse -Force app/dev, app, dist -ErrorAction SilentlyContinue; Copy-Item -Path .env.staging -Destination .env.production.local -Force; Copy-Item -Path renderer/.env.staging -Destination renderer/.env.production.local -Force; try { node node_modules/nextron/bin/nextron.cjs build --win } finally { Remove-Item .env.production.local, renderer/.env.production.local -ErrorAction SilentlyContinue }\"",
     "build:all": "nextron build",
+    "prisma:studio": "powershell -Command \"$env:DATABASE_URL='file:' + $env:APPDATA + '/mindgest-pos-desktop/dev.db'; npx prisma studio\"",
+    "db:open": "powershell -Command \"explorer.exe $env:APPDATA\\mindgest-pos-desktop\"",
     "postinstall": "prisma generate && electron-builder install-app-deps"
   },
   "dependencies": {
