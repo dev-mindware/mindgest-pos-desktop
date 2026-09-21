@@ -182,6 +182,7 @@ export async function ensureSettingsSchema() {
       ['backupMasterId', 'TEXT'],
       ['backupMasterIp', 'TEXT'],
       ['lanEnabled', 'BOOLEAN NOT NULL DEFAULT 1'],
+      ['lastConfirmedCheckpointHash', 'TEXT'],
     ];
 
     for (const [columnName, definition] of columnsToAdd) {
@@ -191,6 +192,19 @@ export async function ensureSettingsSchema() {
       }
     }
   }
+}
+
+export async function ensureFiscalKeyHistorySchema() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "FiscalKeyHistory" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "publicKey" TEXT NOT NULL,
+      "createdAt" DATETIME NOT NULL,
+      "rotatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "rotatedBy" TEXT,
+      "reason" TEXT
+    );
+  `);
 }
 
 export async function ensureInvoiceSchema() {
@@ -506,6 +520,7 @@ export async function testPrismaConnection() {
 
     await ensureSyncOutboxSchema();
     await ensureSettingsSchema();
+    await ensureFiscalKeyHistorySchema();
     await ensureInvoiceSchema();
     await ensureAgtSeriesSchema();
     await ensureAgtImmutabilityTriggers();

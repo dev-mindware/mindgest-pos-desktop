@@ -1,4 +1,6 @@
 "use client";
+
+import { useState, useEffect } from "react";
 import {
   NavMenu,
   UserInfo,
@@ -20,8 +22,13 @@ import { LanStatusBadge } from "./lan-status-badge";
 
 export function AppSidebar() {
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
-  if (!user) return <SidebarSkeleton />;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !user) return <SidebarSkeleton />;
 
   const plan = user?.company?.subscription
     ? (user.company?.subscription?.plan?.name as PlanType)

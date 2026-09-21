@@ -113,6 +113,11 @@ export function CreditNoteForm({ invoice, docType }: Props) {
   const reason = useWatch({ control, name: "reason" });
   const watchedItems = useWatch({ control, name: "invoiceBody.items" });
 
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "invoiceBody.items",
+  });
+
   // Mantém no documento os dados do cliente associado à factura original.
   useEffect(() => {
     if (invoice.client) {
@@ -162,22 +167,54 @@ export function CreditNoteForm({ invoice, docType }: Props) {
     setValue("creditNote", correction.creditNote);
   }, [watchedItems, reason, invoice, setValue]);
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "invoiceBody.items",
+  const originalItems = isInvoice(invoice)
+    ? invoice.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        quantity: Number(item.quantity || 1),
+        unitPrice: Number(item.unitPrice || (item as any).price || 0),
+      }))
+    : [];
+
+  const originalTotal = Number(invoice.total ?? (invoice as any).totalAmount ?? 0);
+  const watchedCreditNoteTotal = useWatch({ control, name: "creditNote.total" });
+  const watchedInvoiceBodyTotal = useWatch({ control, name: "invoiceBody.total" });
+
+  const hasLineExceeding = (watchedItems || []).some((item) => {
+    const orig = originalItems.find((o) => o.id === item.id);
+    return orig && (Number(item.quantity || 0) > orig.quantity || Number(item.price || 0) > orig.unitPrice + 0.01);
   });
 
-  // Anulação total: a autorização do gerente é recolhida pelo ManagerAuthModal
-  // (scanner) e só então a nota de crédito de anulação é criada.
+  const isExceedingTotal = (Number(watchedInvoiceBodyTotal) || 0) > originalTotal + 0.01;
+  const isCreditZeroOrNegative = (Number(watchedCreditNoteTotal) || 0) <= 0;
+  const isSubmitDisabled = reason !== "ANNULMENT" && (hasLineExceeding || isExceedingTotal || isCreditZeroOrNegative);
+
+  // Anulação ou Correção: a autorização do gerente é recolhida pelo ManagerAuthModal
+  // (scanner) quando o utilizador tem role CASHIER.
   async function handleManagerAuthenticated(barcode: string) {
     const data = getValues();
     try {
-      await annulationNote({
-        id: invoice.id,
-        reason: "ANNULMENT",
-        notes: data.notes ?? "",
-        managerBarcode: barcode,
-      });
+      if (data.reason === "ANNULMENT") {
+        await annulationNote({
+          id: invoice.id,
+          reason: "ANNULMENT",
+          notes: data.notes ?? "",
+          managerBarcode: barcode || undefined,
+        });
+      } else {
+        const payload = {
+          ...data,
+          managerBarcode: barcode || undefined,
+          invoiceBody: {
+            ...data.invoiceBody,
+            items: data.invoiceBody.items.map(
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              ({ tax, taxId, ...item }) => item,
+            ),
+          },
+        };
+        await createCreditNote({ id: invoice.id, data: payload });
+      }
       router.replace("/pos/movements?tab=credit-notes");
     } catch (error: any) {
       ErrorMessage(
@@ -189,61 +226,37 @@ export function CreditNoteForm({ invoice, docType }: Props) {
   }
 
   async function onSubmit(data: CreditNoteFormData) {
-    if (data.reason === "ANNULMENT") {
-      if (user?.role === "OWNER" || user?.role === "MANAGER") {
-        // OWNER/MANAGER não precisam de autorização por barcode
-        await handleManagerAuthenticated("");
-      } else {
-        // CASHIER: pede autorização do gerente via barcode
-        openModal(MODAL_MANAGER_AUTH_ID);
+    if (data.reason !== "ANNULMENT") {
+      // Correção/rectificação: a nota de crédito só pode reduzir valor (art. 3.º l)).
+      const originalTotal = invoice.total ?? (invoice as any).totalAmount ?? 0;
+      if (data.invoiceBody.total > originalTotal + 0.01) {
+        ErrorMessage(
+          "O total corrigido não pode ser superior ao total do documento original.",
+        );
+        return;
       }
-      return;
+      if (data.creditNote.total <= 0) {
+        ErrorMessage("A nota de crédito não altera o valor do documento.");
+        return;
+      }
+      const hasLineIncrease = data.creditNote.items.some(
+        (item) =>
+          item.newPrice > item.originalPrice + 0.01 ||
+          item.quantity > item.originalQuantity,
+      );
+      if (hasLineIncrease) {
+        ErrorMessage(
+          "Uma nota de crédito só pode reduzir: não aumente a quantidade nem o preço dos itens.",
+        );
+        return;
+      }
     }
 
-    // Correção/rectificação: a nota de crédito só pode reduzir valor (art. 3.º l)).
-    const originalTotal = invoice.total ?? invoice.totalAmount ?? 0;
-    if (data.invoiceBody.total > originalTotal + 0.01) {
-      ErrorMessage(
-        "O total corrigido não pode ser superior ao total do documento original.",
-      );
-      return;
-    }
-    if (data.creditNote.total <= 0) {
-      ErrorMessage("A nota de crédito não altera o valor do documento.");
-      return;
-    }
-    const hasLineIncrease = data.creditNote.items.some(
-      (item) =>
-        item.newPrice > item.originalPrice + 0.01 ||
-        item.quantity > item.originalQuantity,
-    );
-    if (hasLineIncrease) {
-      ErrorMessage(
-        "Uma nota de crédito só pode reduzir: não aumente a quantidade nem o preço dos itens.",
-      );
-      return;
-    }
-
-    // `tax`/`taxId` só servem para o cálculo no frontend; não fazem parte do
-    // contrato de invoiceBody.items, por isso são removidos antes do envio.
-    const payload = {
-      ...data,
-      invoiceBody: {
-        ...data.invoiceBody,
-        items: data.invoiceBody.items.map(
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          ({ tax, taxId, ...item }) => item,
-        ),
-      },
-    };
-
-    try {
-      await createCreditNote({ id: invoice.id, data: payload });
-      router.replace("/pos/movements?tab=credit-notes");
-    } catch (error: any) {
-      ErrorMessage(
-        error?.response?.data?.message || "Erro ao emitir nota de crédito",
-      );
+    // Role CASHIER necessita de autorização de gerente (OWNER/MANAGER/ADMIN podem autorizar directamente)
+    if (user?.role === "CASHIER") {
+      openModal(MODAL_MANAGER_AUTH_ID);
+    } else {
+      await handleManagerAuthenticated("");
     }
   }
 
@@ -286,6 +299,8 @@ export function CreditNoteForm({ invoice, docType }: Props) {
               register={register}
               errors={errors}
               fields={fields}
+              originalItems={originalItems}
+              originalTotal={originalTotal}
               append={append}
               remove={remove}
             />
@@ -294,7 +309,7 @@ export function CreditNoteForm({ invoice, docType }: Props) {
       )}
 
       <div className="sticky bottom-0 flex justify-end border-t bg-background/95 py-4 backdrop-blur" data-tour="credit-note-submit">
-        <ButtonSubmit className="w-max" isLoading={isSubmitting}>
+        <ButtonSubmit className="w-max" isLoading={isSubmitting} disabled={isSubmitDisabled}>
           {reason === "ANNULMENT"
             ? "Confirmar Anulação"
             : "Emitir Nota de Crédito"}

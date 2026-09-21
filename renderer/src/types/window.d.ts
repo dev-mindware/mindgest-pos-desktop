@@ -29,6 +29,15 @@ export interface IpcBridge {
     getSavedCredentials: () => Promise<{ email: string; password: string } | null>;
     clearSavedCredentials: () => Promise<boolean>;
   };
+  fiscal: {
+    rotateKeys: (params: { pinGerente?: string; reason?: string; actorId?: string }) => Promise<{ success: boolean; newPublicKey: string; rotatedAt: Date; previousPublicKey?: string }>;
+    getKeyHistory: () => Promise<any[]>;
+    getPublicKey: () => Promise<{ publicKey: string; swValidationNumber: string; companyNif: string; companyName: string }>;
+    verifyDocumentSignature: (params: { hashBase: string; signature: string; signingDate?: string }) => Promise<{ valid: boolean; publicKeyUsed: string }>;
+  };
+  backup: {
+    exportManual: (params: { pinGerente?: string; destPath?: string; actorId?: string }) => Promise<{ success: boolean; destPath: string; exportedAt: string; offlineDocsCount: number }>;
+  };
   sync: {
     products: (token: string, storeId: string) => Promise<{ success: boolean; count: number }>;
     categories: (token: string, storeId: string) => Promise<{ success: boolean; count: number }>;
@@ -62,6 +71,8 @@ export interface IpcBridge {
     stopAutoSync: () => Promise<{ stopped: true }>;
     triggerSync: (params: { token: string, storeId: string, userId: string }) => Promise<any>;
     getSyncStatus: () => Promise<{ running: boolean; lastSyncAt?: string; nextSyncAt?: string; lastResult?: any }>;
+    onStateChanged: (callback: (event: { isSyncing: boolean; pendingCount?: number; lastResult?: 'success' | 'partial' | 'error'; lastSyncAt?: number }) => void) => () => void;
+    onOutboxChanged: (callback: (event: { pendingCount: number }) => void) => () => void;
   };
   app: {
     getVersion: () => Promise<string>;

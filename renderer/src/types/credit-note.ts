@@ -64,6 +64,10 @@ export interface CreditNotesResponse {
   reason: "CORRECTION" | "ANNULMENT";
   status: string;
   notes: string;
+  subtotal?: number | string;
+  taxAmount?: number | string;
+  discountAmount?: number | string;
+  total?: number | string;
   userId: string;
   createdAt: string;
   updatedAt: string;

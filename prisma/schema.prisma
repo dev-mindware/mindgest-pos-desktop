@@ -58,6 +58,18 @@ model Settings {
   serieComunicadaAGT       Boolean @default(false) // Prontidão para comunicação prévia de séries à AGT
   backupMasterId           String? // ID do terminal Backup Master designado
   backupMasterIp           String? // IP do terminal Backup Master designado
+
+  // Auditoria e Integridade
+  lastConfirmedCheckpointHash String?
+}
+
+model FiscalKeyHistory {
+  id         String   @id @default(cuid())
+  publicKey  String
+  createdAt  DateTime
+  rotatedAt  DateTime @default(now())
+  rotatedBy  String?
+  reason     String?
 }
 
 // ==========================================

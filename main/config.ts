@@ -12,10 +12,14 @@ function resolveCloudApiUrl(): string {
 
   // 2. Procurar arquivos .env em ordem de prioridade
   const possiblePaths = [
+    path.join(__dirname, "..", ".env.development.local"),
+    path.join(__dirname, "..", ".env.development"),
     path.join(__dirname, "..", ".env.production.local"),
     path.join(__dirname, "..", ".env.staging"),
     path.join(__dirname, "..", ".env.production"),
     path.join(__dirname, "..", ".env"),
+    path.join(process.cwd(), ".env.development.local"),
+    path.join(process.cwd(), ".env.development"),
     path.join(process.cwd(), ".env.staging"),
     path.join(process.cwd(), ".env.production"),
     path.join(process.cwd(), ".env"),

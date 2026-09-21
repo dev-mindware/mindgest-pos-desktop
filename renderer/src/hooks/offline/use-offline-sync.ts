@@ -66,14 +66,16 @@ export function useOfflineSync() {
   }, [isOnline, queue.length, isSyncing, sync, token]);
 
   useEffect(() => {
-    if (!user?.id || !isOnline) return;
+    if (!user?.id) return;
 
+    // Check immediately and then every 5 seconds so pending counts update promptly
+    initialize(user.id);
     const intervalId = window.setInterval(() => {
       initialize(user.id);
-    }, 30000);
+    }, 5000);
 
     return () => window.clearInterval(intervalId);
-  }, [user?.id, initialize, isOnline]);
+  }, [user?.id, initialize]);
 
   return { isSyncing, sync, pendingCount: queue.length };
 }

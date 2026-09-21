@@ -15,16 +15,9 @@ import { formatCurrency, formatDateTime } from "@/utils";
 import { useDebounce } from "use-debounce";
 import { DocumentStatusBadge, InvoiceFiltersTSX } from "../common";
 import { useInvoiceActions, useInvoiceFilters } from "@/hooks/invoice";
+import { useAuth } from "@/hooks/auth";
 import { useRouter } from "next/navigation";
 import { CloneInvoiceModal } from "../modals/clone-invoice-modal";
-import { useAuth } from "@/hooks/auth/use-auth";
-import { useState } from "react";
-import {
-  ManagerAuthModal,
-  MODAL_MANAGER_AUTH_ID,
-} from "@/components/client/pos";
-import { useModal } from "@/stores/modal/use-modal-store";
-
 export function InvoiceReceiptList({ storeId }: { storeId?: string }) {
   const router = useRouter();
   const { user } = useAuth();
@@ -32,9 +25,6 @@ export function InvoiceReceiptList({ storeId }: { storeId?: string }) {
   const [debounceSearch] = useDebounce(search, 200);
   const { filters, page, setPage } = useInvoiceFilters("invoice-receipt");
   const { handlerDetailsInvoice, handlerCloneInvoice } = useInvoiceActions();
-  const { openModal } = useModal();
-
-  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const {
     data: invoicesReceipts,
     total,
@@ -89,15 +79,7 @@ export function InvoiceReceiptList({ storeId }: { storeId?: string }) {
             {
               label: "Emitir Nota",
               onClick: (item) => {
-                const isCashier = user?.role === "CASHIER";
-                const route = `/pos/movements/notes/${item.id}?invoiceType=invoice-receipt`;
-
-                if (isCashier) {
-                  setPendingRoute(route);
-                  openModal(MODAL_MANAGER_AUTH_ID);
-                } else {
-                  router.push(route);
-                }
+                router.push(`/pos/movements/notes?noteId=${item.id}&invoiceType=invoice-receipt`);
               },
               icon: "StickyNote",
               variant: "default",
@@ -164,11 +146,6 @@ export function InvoiceReceiptList({ storeId }: { storeId?: string }) {
       )}
       <InvoicePreviewDrawer type="invoice-receipt" />
       <CloneInvoiceModal />
-      <ManagerAuthModal
-        onAuthenticated={() => {
-          if (pendingRoute) router.push(pendingRoute);
-        }}
-      />
     </div>
   );
 }

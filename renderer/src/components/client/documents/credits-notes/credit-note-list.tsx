@@ -58,8 +58,8 @@ export function CreditNotesList({ storeId }: { storeId?: string }) {
       key: "total",
       header: "Valor",
       render: (_, item) => (
-        <span className="text-destructive">
-          {formatCurrency(item.invoice.total)}
+        <span className="text-destructive font-medium">
+          {formatCurrency(item.total != null ? Number(item.total) : Number(item.invoice?.total || 0))}
         </span>
       ),
     },

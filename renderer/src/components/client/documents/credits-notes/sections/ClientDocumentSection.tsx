@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import type { UseFormRegister } from "react-hook-form";
 import type { CreditNoteFormData } from "@/schemas";
 import type { Client } from "@/types/clients";
-import { Button, Icon, Input } from "@/components";
+import { Icon, Input } from "@/components";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CONSUMIDOR_FINAL_CLIENT } from "@/utils/credit-notes";
 
@@ -27,28 +26,18 @@ export function ClientDocumentSection({
   const c: any = client ?? CONSUMIDOR_FINAL_CLIENT;
   return (
     <section className="rounded-lg border bg-card p-5 shadow-sm">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold">Cliente do documento</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            A nota de crédito mantém o cliente associado ao documento original.
-          </p>
-        </div>
-        <Button asChild type="button" variant="outline" size="sm" className="gap-2">
-          <Link href="/clients">
-            <Icon name="Users" size={16} />
-            Ir para clientes
-          </Link>
-        </Button>
+      <div className="mb-5">
+        <h2 className="text-base font-semibold">Cliente do documento de origem</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          A nota de crédito está estritamente vinculada ao cliente da fatura original e não permite alteração de titular.
+        </p>
       </div>
 
-      <Alert className="mb-5 border-primary/20 bg-primary/5">
-        <Icon name="Info" className="h-4 w-4 text-primary" />
-        <AlertTitle>Alteração dos dados do cliente</AlertTitle>
-        <AlertDescription>
-          Para alterar o nome, NIF, telefone ou endereço, aceda à página de
-          clientes e edite o respectivo registo. Depois, volte a emitir a nota
-          de crédito.
+      <Alert className="mb-5 border-blue-500/20 bg-blue-500/5 text-blue-900 dark:text-blue-200">
+        <Icon name="ShieldCheck" className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <AlertTitle className="font-semibold">Imutabilidade Fiscal do Cliente</AlertTitle>
+        <AlertDescription className="text-xs text-muted-foreground">
+          Por conformidade com a regulamentação fiscal da AGT (art. 8.º do D.P. 71/25), uma nota de crédito é um documento retificativo que herda e preserva integralmente a identidade fiscal do destinatário do documento original.
         </AlertDescription>
       </Alert>
 
@@ -60,11 +49,36 @@ export function ClientDocumentSection({
       <input type="hidden" {...register("invoiceBody.client.address")} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Input label="Nome" value={c.name || "Consumidor Final"} readOnly />
-        <Input label="NIF" value={c.taxNumber || "Não informado"} readOnly />
-        <Input label="Email" value={c.email || "Não informado"} readOnly />
-        <Input label="Telefone" value={c.phone || "Não informado"} readOnly />
-        <Input label="Endereço" value={c.address || "Não informado"} readOnly />
+        <Input
+          label="Nome"
+          value={c.name || "Consumidor Final"}
+          disabled
+          className="bg-muted/60 cursor-not-allowed select-none opacity-80"
+        />
+        <Input
+          label="NIF"
+          value={c.taxNumber || "Não informado"}
+          disabled
+          className="bg-muted/60 cursor-not-allowed select-none opacity-80"
+        />
+        <Input
+          label="Email"
+          value={c.email || "Não informado"}
+          disabled
+          className="bg-muted/60 cursor-not-allowed select-none opacity-80"
+        />
+        <Input
+          label="Telefone"
+          value={c.phone || "Não informado"}
+          disabled
+          className="bg-muted/60 cursor-not-allowed select-none opacity-80"
+        />
+        <Input
+          label="Endereço"
+          value={c.address || "Não informado"}
+          disabled
+          className="bg-muted/60 cursor-not-allowed select-none opacity-80"
+        />
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -86,3 +100,4 @@ export function ClientDocumentSection({
     </section>
   );
 }
+

@@ -59,6 +59,8 @@ export function useCreateCreditNote() {
     onSuccess: () => {
       SucessMessage("Nota de crédito criada com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["invoice-normal"] });
+      queryClient.invalidateQueries({ queryKey: ["invoice-receipt"] });
+      queryClient.invalidateQueries({ queryKey: ["credit-notes"] });
     },
   });
 }
@@ -81,6 +83,8 @@ export function useAnnulationNote() {
     onSuccess: () => {
       SucessMessage("Documento anulado com sucesso.");
       queryClient.invalidateQueries({ queryKey: ["invoice-normal"] });
+      queryClient.invalidateQueries({ queryKey: ["invoice-receipt"] });
+      queryClient.invalidateQueries({ queryKey: ["credit-notes"] });
     },
   });
 }

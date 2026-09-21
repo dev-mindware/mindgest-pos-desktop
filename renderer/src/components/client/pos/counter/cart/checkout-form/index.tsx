@@ -1,12 +1,14 @@
 "use client";
 
-import { Button } from "@/components";
+import { useState } from "react";
+import { Button, Icon } from "@/components";
 import { ErrorMessage } from "@/utils";
 import { useCartCheckout, CartItem } from "@/hooks";
 import { PaymentSummary } from "./payment-summary";
 import { CustomerSelection } from "./customer-selection";
 import { PaymentMethods } from "./payment-methods";
 import { PrintSaleDialog } from "./print-sale-dialog";
+import { CheckoutInvoicePreviewDrawer } from "./checkout-preview-drawer";
 
 interface CartCheckoutFormProps {
     cartItems: CartItem[];
@@ -21,6 +23,8 @@ export function CartCheckoutForm({
     type = "invoice",
     cashSessionId,
 }: CartCheckoutFormProps) {
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
     const {
         form: { handleSubmit },
         paymentMethod,
@@ -62,6 +66,13 @@ export function CartCheckoutForm({
         ErrorMessage("Verifique os campos obrigatórios.");
     };
 
+    const currentClientData = selectedClient || (newCustomerName ? {
+        name: newCustomerName,
+        taxNumber: newCustomerTaxNumber,
+        phone: newCustomerPhone,
+        address: newCustomerAddress,
+    } : null);
+
     return (
         <>
             <div
@@ -102,15 +113,44 @@ export function CartCheckoutForm({
                     change={change}
                 />
 
-                <Button
-                    className="w-full"
-                    onClick={handleSubmit(handleCheckout, handleValidationError)}
-                    disabled={isPending}
-                    data-tour="pos-submit"
-                >
-                    {isPending ? "A processar..." : "Confirmar pagamento"}
-                </Button>
+                <div className="pt-2">
+                    <Button
+                        type="button"
+                        className="w-full shadow-md font-semibold"
+                        onClick={() => {
+                            if (!cartItems || cartItems.length === 0) {
+                                ErrorMessage("Adicione pelo menos um item ao carrinho para emitir a fatura.");
+                                return;
+                            }
+                            handleSubmit(
+                                () => setIsPreviewOpen(true),
+                                handleValidationError
+                            )();
+                        }}
+                        disabled={isPending}
+                        data-tour="pos-submit"
+                    >
+                        {isPending ? "A processar..." : "Confirmar pagamento"}
+                    </Button>
+                </div>
             </div>
+
+            <CheckoutInvoicePreviewDrawer
+                open={isPreviewOpen}
+                onOpenChange={setIsPreviewOpen}
+                cartItems={cartItems}
+                totals={totals}
+                paymentMethod={paymentMethod}
+                cashGiven={cashGiven}
+                change={change}
+                client={currentClientData}
+                type={type}
+                onConfirm={() => {
+                    setIsPreviewOpen(false);
+                    handleSubmit(handleCheckout, handleValidationError)();
+                }}
+                isPending={isPending}
+            />
 
             <PrintSaleDialog
                 document={printDocument}

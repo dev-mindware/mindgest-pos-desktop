@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useCartCheckout, CartItem } from "@/hooks";
 import { 
   Drawer, 
@@ -15,6 +16,7 @@ import { CustomerSelection } from "../counter/cart/checkout-form/customer-select
 import { PaymentMethods } from "../counter/cart/checkout-form/payment-methods";
 import { ErrorMessage } from "@/utils";
 import { PrintSaleDialog } from "../counter/cart/checkout-form/print-sale-dialog";
+import { CheckoutInvoicePreviewDrawer } from "../counter/cart/checkout-form/checkout-preview-drawer";
 
 interface MobileCheckoutDrawerProps {
   open: boolean;
@@ -33,6 +35,8 @@ export function MobileCheckoutDrawer({
   type = "invoice",
   cashSessionId
 }: MobileCheckoutDrawerProps) {
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
   const {
     form: { handleSubmit },
     paymentMethod,
@@ -77,15 +81,32 @@ export function MobileCheckoutDrawer({
     ErrorMessage("Verifique os campos obrigatórios.");
   };
 
+  const currentClientData = selectedClient || (newCustomerName ? {
+    name: newCustomerName,
+    taxNumber: newCustomerTaxNumber,
+    phone: newCustomerPhone,
+    address: newCustomerAddress,
+  } : null);
+
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
-            <DrawerTitle>Finalizar transacção</DrawerTitle>
+        <DrawerContent className="max-h-[90vh] flex flex-col">
+          <DrawerHeader className="border-b px-4 py-3 flex-shrink-0 flex items-center justify-between">
+            <DrawerTitle className="text-base font-bold">
+              {type === "invoice" ? "Finalizar Pagamento" : "Finalizar Proforma"}
+            </DrawerTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 -mr-2"
+              onClick={() => onOpenChange(false)}
+            >
+              <Icon name="X" className="h-4 w-4" />
+            </Button>
           </DrawerHeader>
           
-          <div className="px-4 overflow-y-auto pb-4 space-y-6" data-tour="pos-checkout">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             <PaymentSummary
                 subtotal={totals.subtotal}
                 taxAmount={totals.taxAmount}
@@ -121,10 +142,20 @@ export function MobileCheckoutDrawer({
             />
           </div>
 
-          <DrawerFooter className="pt-0">
+          <DrawerFooter className="pt-2 border-t">
             <Button
-                className="w-full h-12 text-base font-bold"
-                onClick={handleSubmit(handleCheckout, handleValidationError)}
+                type="button"
+                className="w-full h-12 text-base font-bold shadow-md"
+                onClick={() => {
+                  if (!cartItems || cartItems.length === 0) {
+                    ErrorMessage("Adicione pelo menos um item ao carrinho para emitir a fatura.");
+                    return;
+                  }
+                  handleSubmit(
+                    () => setIsPreviewOpen(true),
+                    handleValidationError
+                  )();
+                }}
                 disabled={isPending}
                 data-tour="pos-submit"
             >
@@ -133,6 +164,23 @@ export function MobileCheckoutDrawer({
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      <CheckoutInvoicePreviewDrawer
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        cartItems={cartItems}
+        totals={totals}
+        paymentMethod={paymentMethod}
+        cashGiven={cashGiven}
+        change={change}
+        client={currentClientData}
+        type={type}
+        onConfirm={() => {
+          setIsPreviewOpen(false);
+          handleSubmit(handleCheckout, handleValidationError)();
+        }}
+        isPending={isPending}
+      />
 
       <PrintSaleDialog
         document={printDocument}

@@ -16,6 +16,7 @@ import { SafeVault } from "./storage-key";
 import crypto from "crypto";
 import { spawn, ChildProcess } from "child_process";
 import fs from "fs";
+import { broadcastToRenderers } from "./utils/broadcast";
 
 // Definir nome da aplicação e AppUserModelId para notificações nativas do Windows com logótipo Mindgest
 app.name = "Mindgest POS";
@@ -593,6 +594,12 @@ ipcMain.handle("sync:create-invoice", async (_, { invoiceData, storeId, userId, 
       }
     });
 
+    const pendingCount = await prisma.syncOutbox.count({
+      where: { status: { in: ["PENDING", "PENDING_DEPENDENCIES"] } }
+    }).catch(() => 0);
+
+    broadcastToRenderers("sync:outbox-changed", { pendingCount });
+
     // Retorna a resposta completa e assinada para a UI (para exibição e impressão imediata)
     return {
       data: {
@@ -628,6 +635,12 @@ ipcMain.handle("sync:create-proforma", async (_, { proformaData, storeId, userId
         storeId
       }
     });
+
+    const pendingCount = await prisma.syncOutbox.count({
+      where: { status: { in: ["PENDING", "PENDING_DEPENDENCIES"] } }
+    }).catch(() => 0);
+
+    broadcastToRenderers("sync:outbox-changed", { pendingCount });
 
     return {
       data: {
@@ -1161,6 +1174,31 @@ function killPythonSubprocess() {
 app.on("ready", async () => {
   console.log("Main process READY EVENT triggered");
   await testPrismaConnection();
+
+  // Executar migração one-shot de encriptação de payloads se ainda não executada
+  try {
+    database.runPayloadEncryptionMigration();
+  } catch (migErr) {
+    console.warn("⚠️ [Database] Falha na migração de encriptação:", migErr);
+  }
+
+  // Verificação de integridade da cadeia de auditoria no arranque (offline)
+  try {
+    const auditChainCheck = database.verifyAuditChain();
+    if (!auditChainCheck.valid) {
+      console.error(`🚨 [Security] Integridade da cadeia de auditoria corrompida! Quebra detetada no ID ${auditChainCheck.brokenAt}`);
+      const mainWindow = getMainWindow();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("security:audit-chain-broken", {
+          brokenAt: auditChainCheck.brokenAt,
+          lastRowHash: auditChainCheck.lastRowHash
+        });
+      }
+    }
+    database.createCheckpointIfDue();
+  } catch (auditErr) {
+    console.warn("⚠️ [Security] Erro na verificação da cadeia de auditoria no arranque:", auditErr);
+  }
 
   // Sanitização segura no arranque: soft disable de serviços para o POS (preserva FKs de vendas históricas)
   try {

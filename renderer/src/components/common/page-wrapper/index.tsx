@@ -15,9 +15,9 @@ import {
 import { useQueryState } from "nuqs";
 import { Icon, Input, Avatar, AvatarFallback, AvatarImage } from "@/components";
 import { useAuth } from "@/hooks/auth";
-import { useNetworkStatus } from "@/hooks/common/use-network-status";
 import { useOfflineStore } from "@/stores/offline";
 import { OnboardingTourButton } from "@/components/common/onboarding-tour-button";
+import { OfflineSyncBadge } from "@/components/common/offline-sync-badge";
 import type { OnboardingTourId } from "@/constants/onboarding-tours";
 
 type Props = {
@@ -40,8 +40,7 @@ export function PageWrapper({
   onboardingTourId,
 }: Props) {
   const { user } = useAuth();
-  const { isOnline } = useNetworkStatus();
-  const { queue, initialize } = useOfflineStore();
+  const { initialize } = useOfflineStore();
 
   useEffect(() => {
     if (user?.id) {
@@ -97,19 +96,8 @@ export function PageWrapper({
 
         {/* DESKTOP ACTIONS: Inline Row (Hidden on Mobile) */}
         <div className="hidden md:flex items-center mr-4 space-x-3">
-          {/* Connectivity & Offline Sync Status Indicator */}
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-muted/40 border border-border/60 shadow-sm shrink-0">
-            <div className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'}`} />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              {isOnline ? 'Online' : 'Offline'}
-            </span>
-            {queue.length > 0 && (
-              <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
-                <Icon name="RefreshCw" size={10} className="animate-spin" />
-                {queue.length} pendente{queue.length > 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
+          {/* Unified Connectivity & Offline Sync Status Indicator */}
+          <OfflineSyncBadge />
 
           <TutorialsModal />
           {onboardingTourId && <OnboardingTourButton tourId={onboardingTourId} />}
@@ -145,8 +133,8 @@ export function PageWrapper({
 
         {/* MOBILE ACTIONS: Grouped Dropdown Menu (Hidden on Desktop) */}
         <div className="flex md:hidden items-center mr-3 gap-2">
-          {/* Mobile Connectivity dot */}
-          <div className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-red-500'}`} title={isOnline ? 'Online' : 'Offline'} />
+          {/* Mobile Status Badge */}
+          <OfflineSyncBadge />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -164,16 +152,6 @@ export function PageWrapper({
               className="w-64 p-2 rounded-2xl shadow-xl border-border/80 bg-card/95 backdrop-blur-xl space-y-1 z-50"
               sideOffset={8}
             >
-              <div className="flex items-center justify-between px-2.5 py-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Estado
-                </span>
-                <span className="text-xs font-bold flex items-center gap-1.5">
-                  <div className={`h-2 w-2 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                  {isOnline ? 'Online' : 'Offline'}
-                  {queue.length > 0 && ` (${queue.length} pendentes)`}
-                </span>
-              </div>
               <DropdownMenuSeparator className="my-1" />
 
               <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-muted/60 transition-colors">

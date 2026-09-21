@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useRef } from "react";
+import React, { createContext, useContext, useEffect, useRef, useCallback } from "react";
 import { useNetworkStatus } from "@/hooks/common/use-network-status";
 import { useAuth } from "@/hooks/auth";
 import { currentStoreStore } from "@/stores";
@@ -8,6 +8,8 @@ import { useOfflineStore } from "@/stores/offline/offline-store";
 
 interface SyncContextType {
   isSyncing: boolean;
+  pendingCount: number;
+  triggerManualSync: () => Promise<void>;
 }
 
 const SyncContext = createContext<SyncContextType | undefined>(undefined);
@@ -17,47 +19,49 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { currentStore } = currentStoreStore();
   const token = typeof window !== "undefined" ? localStorage.getItem("session-accessToken") : null;
-  const { queue, setSyncing, isSyncing } = useOfflineStore();
-  const { initialize } = useOfflineStore();
-  const lastSyncRef = useRef<number>(0);
+
+  // Single Source of Truth from useOfflineStore
+  const isSyncing = useOfflineStore((s) => s.isSyncing);
+  const pendingCount = useOfflineStore((s) => s.pendingCount);
+  const initialize = useOfflineStore((s) => s.initialize);
+  const refreshPendingCount = useOfflineStore((s) => s.refreshPendingCount);
+
   const autoSyncStartedRef = useRef(false);
   const lastAutoSyncStoreIdRef = useRef<string | null>(null);
   const startAutoSyncInProgressRef = useRef(false);
 
-  const processSync = async () => {
-    if (autoSyncStartedRef.current || !isOnline || !token || !user?.id || queue.length === 0 || isSyncing) {
-      return;
+  // Initialize store and IPC subscriptions on mount
+  useEffect(() => {
+    if (user?.id) {
+      initialize(user.id);
     }
+  }, [user?.id, initialize]);
 
-    // Debounce: Only try to sync every 30 seconds if queue is not empty
-    const now = Date.now();
-    if (now - lastSyncRef.current < 30000) return;
-    lastSyncRef.current = now;
+  const triggerManualSync = useCallback(async () => {
+    const storeId =
+      user?.storeId ||
+      user?.store?.id ||
+      user?.company?.stores?.[0]?.id ||
+      currentStore?.id;
 
-    console.log("🔄 [SyncWorker] Invocando processamento de outbox...");
-    setSyncing(true);
-    
-    try {
-      if (window.ipc?.sync?.processOutbox) {
-        const result = await window.ipc.sync.processOutbox({
-          token,
-          userId: user.id
-        });
-        
-        if (result && result.processed > 0) {
-          console.log(`✅ [SyncWorker] ${result.processed} documentos sincronizados com sucesso.`);
-          // Refresh queue in store
-          const { initialize } = useOfflineStore.getState();
-          await initialize(user.id);
-        }
-      }
-    } catch (error) {
-      console.error("❌ [SyncWorker] Erro ao processar outbox:", error);
-    } finally {
-      setSyncing(false);
+    if (!token || !user?.id || !storeId || !isOnline) return;
+
+    if (window.ipc?.sync?.triggerSync) {
+      await window.ipc.sync.triggerSync({
+        token,
+        storeId,
+        userId: user.id,
+      });
+    } else if (window.ipc?.sync?.processOutbox) {
+      await window.ipc.sync.processOutbox({
+        token,
+        userId: user.id,
+      });
     }
-  };
+    await refreshPendingCount();
+  }, [user?.id, user?.storeId, user?.store?.id, user?.company?.stores, currentStore?.id, token, isOnline, refreshPendingCount]);
 
+  // Main process Auto-Sync lifecycle
   useEffect(() => {
     const storeId =
       user?.storeId ||
@@ -67,12 +71,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     const startAutoSync = async (requestedStoreId: string) => {
       if (!window.ipc?.sync?.startAutoSync) return;
-      if (!token || !user?.id || !requestedStoreId) {
-        if (!requestedStoreId) {
-          console.warn("[SyncProvider] storeId não disponível para iniciar auto-sync. user company stores:", user?.company?.stores);
-        }
-        return;
-      }
+      if (!token || !user?.id || !requestedStoreId) return;
 
       if (startAutoSyncInProgressRef.current) return;
       startAutoSyncInProgressRef.current = true;
@@ -97,9 +96,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         if (result?.started) {
           autoSyncStartedRef.current = true;
           lastAutoSyncStoreIdRef.current = requestedStoreId;
-          console.log(`✅ [SyncProvider] Auto-sync iniciado com intervalo de ${result.intervalMs}ms para storeId=${requestedStoreId}.`);
+          console.log(`✅ [SyncProvider] Auto-sync em execução para storeId=${requestedStoreId}.`);
 
-          // The start call now returns the first run result as `runResult` (when available).
           const runResult = (result as any).runResult;
           const changed = !!(
             (runResult?.outbox?.processed ?? 0) > 0 ||
@@ -110,9 +108,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
           if (changed) {
             window.dispatchEvent(new Event("local-data-updated"));
-          } else {
-            console.log("[SyncProvider] Auto-sync inicial não trouxe alterações locais (runResult):", runResult);
           }
+          await refreshPendingCount();
         }
       } catch (error) {
         console.error("❌ [SyncProvider] Falha ao iniciar auto-sync:", error);
@@ -142,51 +139,37 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     return () => {
       stopAutoSync();
     };
-  }, [user?.id, user?.storeId, user?.store?.id, user?.company?.stores?.[0]?.id, currentStore?.id, token, isOnline]);
+  }, [user?.id, user?.storeId, user?.store?.id, user?.company?.stores, currentStore?.id, token, isOnline, refreshPendingCount]);
 
+  // Recovery Polling: 10s conditional fallback check when there are pending items or upon regaining focus/network
   useEffect(() => {
-    // Attempt sync when coming back online
-    if (isOnline) {
-      processSync();
-    }
-  }, [isOnline]);
+    if (!user?.id) return;
 
-  // Force a more immediate response to OS-level "online" events
-  useEffect(() => {
-    const handleOnlineEvent = () => {
-      try {
-        if (user?.id) initialize(user.id);
-      } catch (err) {
-        console.warn("[SyncProvider] initialize failed on online event:", err);
-      }
-      processSync();
-    };
-
-    window.addEventListener("online", handleOnlineEvent);
-
-    // also attempt sync when the window regains focus
+    // Fast check on window focus
     const handleVisibility = () => {
-      if (!document.hidden) processSync();
+      if (!document.hidden) {
+        refreshPendingCount();
+      }
     };
     window.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("online", () => refreshPendingCount());
+
+    // 10s recovery polling only when pendingCount > 0 or during sync
+    const interval = setInterval(() => {
+      if (pendingCount > 0 || isSyncing) {
+        refreshPendingCount();
+      }
+    }, 10000);
 
     return () => {
-      window.removeEventListener("online", handleOnlineEvent);
       window.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("online", () => refreshPendingCount());
+      clearInterval(interval);
     };
-  }, [initialize, processSync, user?.id]);
-
-  useEffect(() => {
-    // Check queue periodically if online
-    const interval = setInterval(() => {
-      if (isOnline) processSync();
-    }, 60000); // Every minute
-
-    return () => clearInterval(interval);
-  }, [isOnline, token, user?.id, queue.length]);
+  }, [user?.id, pendingCount, isSyncing, refreshPendingCount]);
 
   return (
-    <SyncContext.Provider value={{ isSyncing }}>
+    <SyncContext.Provider value={{ isSyncing, pendingCount, triggerManualSync }}>
       {children}
     </SyncContext.Provider>
   );
@@ -199,3 +182,4 @@ export const useSync = () => {
   }
   return context;
 };
+

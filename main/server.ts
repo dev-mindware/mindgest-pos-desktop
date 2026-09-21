@@ -505,7 +505,13 @@ function mapLocalInvoiceToResponse(inv: any, outboxStatusMap: Map<string, string
 // 4. Criação de Fatura Atómica Serializada (Delegada ao FiscalInvoicingService)
 async function handleCreateInvoice(req: any, res: any) {
   try {
-    const { invoiceData, storeId, userId, terminalId, terminalName } = req.body;
+    const rawInvoiceData = req.body?.invoiceData || req.body || {};
+    const documentType = req.body?.documentType || rawInvoiceData.documentType || 'FR';
+    const invoiceData = { ...rawInvoiceData, documentType };
+    const storeId = req.body?.storeId || invoiceData.storeId;
+    const userId = req.body?.userId || invoiceData.userId;
+    const terminalId = req.body?.terminalId || req.headers['x-terminal-id'];
+    const terminalName = req.body?.terminalName || req.headers['x-terminal-name'];
     const idempotencyKey = invoiceData?.idempotencyKey || (req.headers['x-idempotency-key'] as string);
 
     const invoiceResponse = await FiscalInvoicingService.processInvoice({
@@ -532,12 +538,20 @@ async function handleCreateInvoice(req: any, res: any) {
 apiRouter.post('/invoice/create', handleCreateInvoice);
 
 apiRouter.post('/invoice/normal', (req, res) => {
-  req.body.invoiceData = { ...req.body.invoiceData, documentType: 'FT' };
+  if (req.body?.invoiceData) {
+    req.body.invoiceData.documentType = 'FT';
+  } else if (req.body) {
+    req.body.documentType = 'FT';
+  }
   return handleCreateInvoice(req, res);
 });
 
 apiRouter.post('/invoice/invoice-receipt', (req, res) => {
-  req.body.invoiceData = { ...req.body.invoiceData, documentType: 'FR' };
+  if (req.body?.invoiceData) {
+    req.body.invoiceData.documentType = 'FR';
+  } else if (req.body) {
+    req.body.documentType = 'FR';
+  }
   return handleCreateInvoice(req, res);
 });
 

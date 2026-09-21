@@ -45,6 +45,22 @@ contextBridge.exposeInMainWorld("ipc", {
     clearSavedCredentials: () =>
       ipcRenderer.invoke("security:clear-saved-credentials"),
   },
+  // Fiscal Keys & Signatures Bridge
+  fiscal: {
+    rotateKeys: (params: { pinGerente?: string; reason?: string; actorId?: string }) =>
+      ipcRenderer.invoke("fiscal:rotate-keys", params),
+    getKeyHistory: () =>
+      ipcRenderer.invoke("fiscal:get-key-history"),
+    getPublicKey: () =>
+      ipcRenderer.invoke("fiscal:get-public-key"),
+    verifyDocumentSignature: (params: { hashBase: string; signature: string; signingDate?: string }) =>
+      ipcRenderer.invoke("fiscal:verify-document-signature", params),
+  },
+  // Encrypted Backup Bridge
+  backup: {
+    exportManual: (params: { pinGerente?: string; destPath?: string; actorId?: string }) =>
+      ipcRenderer.invoke("backup:export-manual", params),
+  },
   // LAN Configuration & Multi-Terminal Telemetry Bridge
   lan: {
     getLocalIp: () => ipcRenderer.invoke("lan:get-local-ip"),
@@ -123,7 +139,23 @@ contextBridge.exposeInMainWorld("ipc", {
     stopAutoSync: () => ipcRenderer.invoke("sync:stop-auto-sync"),
     triggerSync: (params: { token: string, storeId: string, userId: string }) =>
       ipcRenderer.invoke("sync:trigger-sync", params),
-    getSyncStatus: () => ipcRenderer.invoke("sync:get-sync-status")
+    getSyncStatus: () => ipcRenderer.invoke("sync:get-sync-status"),
+
+    // Event Subscriptions with cleanup
+    onStateChanged: (callback: (event: any) => void) => {
+      const handler = (_: any, data: any) => callback(data);
+      ipcRenderer.on("sync:state-changed", handler);
+      return () => {
+        ipcRenderer.removeListener("sync:state-changed", handler);
+      };
+    },
+    onOutboxChanged: (callback: (event: { pendingCount: number }) => void) => {
+      const handler = (_: any, data: { pendingCount: number }) => callback(data);
+      ipcRenderer.on("sync:outbox-changed", handler);
+      return () => {
+        ipcRenderer.removeListener("sync:outbox-changed", handler);
+      };
+    }
   },
   document: {
     generateLocalPdf: (params: { invoiceId: string; layout?: 'a4' | 'thermal' }) =>

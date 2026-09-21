@@ -34,7 +34,9 @@ export function DownloadDocumentButton({
   }
 
   const showThermalOption =
-    documentType === "invoice-receipt" || documentType === "proforma";
+    documentType === "invoice-receipt" ||
+    documentType === "proforma" ||
+    documentType === "credit-note";
 
   // If no thermal option, show simple button with direct download
   if (!showThermalOption) {

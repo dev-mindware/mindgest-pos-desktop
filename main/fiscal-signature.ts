@@ -3,16 +3,18 @@ import * as fs from 'fs';
 import * as path from 'path';
 import QRCode from 'qrcode';
 import { prisma } from './prisma';
-import { getHardwareFingerprint } from './security';
+import { getHardwareFingerprint, validateOfflineLicense, LicenseValidationResult } from './security';
+import { SafeVault } from './storage-key';
+import { database } from './database';
 
 export const DEFAULT_AGT_SOFTWARE_VALIDATION = process.env.AGT_SOFTWARE_VALIDATION_NUMBER || 'FE/241/AGT/2026';
 export const DEFAULT_COMPANY_NIF = process.env.COMPANY_NIF || '999999999';
 
-import { SafeVault } from './storage-key';
-
 export class FiscalSignatureService {
   private static cachedPrivateKey: string | null = null;
   private static cachedPublicKey: string | null = null;
+  private static lastLicenseCheck: { result: LicenseValidationResult; ts: number } | null = null;
+  private static readonly LICENSE_CHECK_TTL_MS = 60 * 1000; // 60 segundos
 
   /**
    * Constrói a string canónica para o cálculo do Hash Fiscal AGT
@@ -47,6 +49,61 @@ export class FiscalSignatureService {
       const err: any = new Error(`Falha Fiscal Crítica ao assinar documento com RSA-SHA1: ${cryptoErr.message}`);
       err.code = 'ERR_FISCAL_SIGNATURE_FAILED';
       throw err;
+    }
+  }
+
+  /**
+   * Valida a assinatura de um documento contra a chave pública adequada (suporta histórico de rotação)
+   */
+  static async verifyDocumentSignature(
+    hashBase: string,
+    signatureBase64: string,
+    signingDate?: Date
+  ): Promise<{ valid: boolean; publicKeyUsed: string }> {
+    try {
+      const publicKey = signingDate
+        ? await this.getPublicKeyForDate(signingDate)
+        : (await this.getOrInitializeKeys()).publicKey;
+
+      if (!publicKey) {
+        return { valid: false, publicKeyUsed: '' };
+      }
+
+      const verifier = crypto.createVerify('RSA-SHA1');
+      verifier.update(hashBase);
+      const valid = verifier.verify(publicKey, signatureBase64, 'base64');
+      return { valid, publicKeyUsed: publicKey };
+    } catch (err) {
+      console.error('❌ [FiscalSignature] Falha ao verificar assinatura:', err);
+      return { valid: false, publicKeyUsed: '' };
+    }
+  }
+
+  /**
+   * Retorna a chave pública válida para a data de emissão especificada (consultando FiscalKeyHistory)
+   */
+  static async getPublicKeyForDate(signingDate: Date): Promise<string> {
+    try {
+      // Procurar no histórico se esta assinatura foi feita numa janela de chave anterior
+      const historyRecord = await prisma.fiscalKeyHistory.findFirst({
+        where: {
+          createdAt: { lte: signingDate },
+          rotatedAt: { gt: signingDate }
+        },
+        orderBy: { rotatedAt: 'asc' }
+      });
+
+      if (historyRecord) {
+        return historyRecord.publicKey;
+      }
+
+      // Se não encontrou no histórico, usar a chave ativa atual
+      const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+      return settings?.publicKey || '';
+    } catch (err) {
+      console.warn('⚠️ [FiscalSignature] Erro ao consultar histórico de chaves para data:', err);
+      const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+      return settings?.publicKey || '';
     }
   }
 
@@ -114,7 +171,6 @@ export class FiscalSignatureService {
     }
 
     const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
-    const hwid = getHardwareFingerprint();
 
     // 1. Tentar ler do Settings criptografado
     if (settings?.encryptedPrivateKey) {
@@ -182,6 +238,8 @@ export class FiscalSignatureService {
     this.cachedPrivateKey = privateKey;
     this.cachedPublicKey = publicKey;
 
+    database.logAuditEvent('INITIAL_KEY_GENERATION', 'SYSTEM', { publicKey });
+
     return {
       privateKey,
       publicKey,
@@ -192,7 +250,78 @@ export class FiscalSignatureService {
   }
 
   /**
-   * Executa o processo completo de assinatura fiscal de uma fatura
+   * Rotação de Chaves RSA com persistência no histórico FiscalKeyHistory
+   */
+  static async rotateKeys(actorId?: string, reason?: string): Promise<{
+    newPublicKey: string;
+    rotatedAt: Date;
+    previousPublicKey?: string;
+  }> {
+    console.log(`🔐 [FiscalSignature] Iniciando rotação de chaves RSA autorizada por ${actorId || 'SYSTEM'}...`);
+
+    const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+    const now = new Date();
+
+    // 1. Guardar a chave pública atual no histórico
+    if (settings?.publicKey) {
+      await prisma.fiscalKeyHistory.create({
+        data: {
+          publicKey: settings.publicKey,
+          createdAt: settings.lastSync || now,
+          rotatedAt: now,
+          rotatedBy: actorId || null,
+          reason: reason || 'Rotação autorizada de chaves fiscais'
+        }
+      });
+    }
+
+    // 2. Gerar novo par RSA 2048-bit
+    const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+
+    const encryptedPrivateKey = SafeVault.encrypt(privateKey);
+
+    // 3. Persistir nova chave em Settings
+    await prisma.settings.upsert({
+      where: { id: 'singleton' },
+      update: {
+        encryptedPrivateKey,
+        publicKey,
+        lastSync: now
+      },
+      create: {
+        id: 'singleton',
+        encryptedPrivateKey,
+        publicKey,
+        lastSync: now
+      }
+    });
+
+    // 4. Atualizar cache em memória
+    this.cachedPrivateKey = privateKey;
+    this.cachedPublicKey = publicKey;
+
+    // 5. Registar evento de rotação no audit_log
+    database.logAuditEvent('KEY_ROTATION', actorId || 'SYSTEM', {
+      previousPublicKey: settings?.publicKey,
+      newPublicKey: publicKey,
+      reason
+    });
+
+    console.log('✅ [FiscalSignature] Rotação de chaves concluída com sucesso.');
+
+    return {
+      newPublicKey: publicKey,
+      rotatedAt: now,
+      previousPublicKey: settings?.publicKey || undefined
+    };
+  }
+
+  /**
+   * Executa o processo completo de assinatura fiscal de uma fatura com verificação redundante de licença
    */
   static async signInvoice(params: {
     docNo: string;
@@ -212,6 +341,22 @@ export class FiscalSignatureService {
     systemEntryDate: Date;
     swValidationNumber: string;
   }> {
+    // 1. Verificação redundante de licença com cache TTL de 60 segundos
+    const now = Date.now();
+    let licenseResult: LicenseValidationResult;
+    if (this.lastLicenseCheck && (now - this.lastLicenseCheck.ts) < this.LICENSE_CHECK_TTL_MS) {
+      licenseResult = this.lastLicenseCheck.result;
+    } else {
+      licenseResult = await validateOfflineLicense();
+      this.lastLicenseCheck = { result: licenseResult, ts: now };
+    }
+
+    if (!licenseResult.valid) {
+      const err: any = new Error(`Falha Fiscal Crítica: Emissão bloqueada por licença offline inválida (${licenseResult.reason || 'Não autorizada'}).`);
+      err.code = 'ERR_LICENSE_INVALID';
+      throw err;
+    }
+
     const keys = await this.getOrInitializeKeys();
     const swValidationNumber = params.swValidationNumber || keys.swValidationNumber || DEFAULT_AGT_SOFTWARE_VALIDATION;
     const companyNif = params.companyNif || keys.companyNif || DEFAULT_COMPANY_NIF;

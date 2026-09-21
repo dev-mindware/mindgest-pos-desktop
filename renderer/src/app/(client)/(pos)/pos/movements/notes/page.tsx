@@ -7,9 +7,10 @@ import { Suspense } from "react";
 function CreditNotesContent() {
     const searchParams = useSearchParams();
     const noteId = searchParams.get("noteId") || "";
+    const invoiceType = (searchParams.get("invoiceType") as "invoice-receipt" | "invoice-normal") || undefined;
 
     return (
-        <CreditNotes invoiceId={noteId} />
+        <CreditNotes invoiceId={noteId} invoiceType={invoiceType} />
     );
 }
 

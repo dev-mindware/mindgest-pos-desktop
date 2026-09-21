@@ -62,7 +62,10 @@ export const taxNumberSchema = z
   .toUpperCase()
   .nonempty("Campo obrigatório")
   .refine(
-    (value) => /^\d{9}[A-Z]{2}\d{3}$/.test(value) || /^\d{10}$/.test(value),
+    (value) =>
+      /^\d{9}$/.test(value) ||          // pessoa singular (9 dígitos)
+      /^\d{10}$/.test(value) ||          // pessoa colectiva (10 dígitos)
+      /^\d{9}[A-Z]{2}\d{3}$/.test(value), // formato empresarial completo
     "NIF inválido. Introduza o NIF de uma pessoa singular ou colectiva.",
   );
 

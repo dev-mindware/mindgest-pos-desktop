@@ -118,7 +118,7 @@ export function InvoiceList({ storeId }: { storeId?: string }) {
                 {
                   label: "Emitir Nota",
                   onClick: (item: InvoiceResponse) => {
-                    router.push(`/pos/movements/notes/${item.id}?invoiceType=invoice-normal`);
+                    router.push(`/pos/movements/notes?noteId=${item.id}&invoiceType=invoice-normal`);
                   },
                   icon: "StickyNote",
                   variant: "default",
