@@ -92,46 +92,46 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
 
       - name: Verify Code Signing (Authenticode)
-        shell: powershell
+        shell: pwsh
         run: |
           $exe = "dist/Mindgest-POS-Setup.exe"
           if (Test-Path $exe) {
             $sig = Get-AuthenticodeSignature $exe
-            Write-Host "Status da assinatura Authenticode: $($sig.Status)"
-            # Ativar verificação rígida quando o certificado for configurado:
-            # if ($sig.Status -ne 'Valid') { throw "Assinatura digital inválida!" }
+            Write-Host "[AUTHENTICODE] Status: $($sig.Status)"
+            # Ativar verificacao rigida quando certificado for configurado:
+            # if ($sig.Status -ne 'Valid') { throw "Assinatura digital invalida!" }
           }
 
       - name: Artifact Gate (Integrity, Manifest & SHA512 Verification)
-        shell: powershell
+        shell: pwsh
         run: |
           $exePath = "dist/Mindgest-POS-Setup.exe"
           $ymlPath = "dist/latest.yml"
 
           if (-not (Test-Path $exePath)) {
-            throw "ERRO CRÍTICO: O instalador $exePath não foi encontrado!"
+            throw "CRITICAL ERROR: Installer $exePath was not found!"
           }
           $exeSize = (Get-Item $exePath).Length
           if ($exeSize -lt 10000000) {
-            throw "ERRO CRÍTICO: O tamanho do instalador ($exeSize bytes) parece truncado!"
+            throw "CRITICAL ERROR: Installer size ($exeSize bytes) is too small!"
           }
-          Write-Host "✅ Instalador verificado ($exeSize bytes)."
+          Write-Host "[OK] Installer verified. Size: $exeSize bytes."
 
           if (-not (Test-Path $ymlPath)) {
-            throw "ERRO CRÍTICO: O manifesto de update $ymlPath não foi gerado!"
+            throw "CRITICAL ERROR: Update manifest $ymlPath was not generated!"
           }
 
           $ymlContent = Get-Content $ymlPath -Raw
-          Write-Host "--- Conteúdo do latest.yml ---"
+          Write-Host "--- Content of latest.yml ---"
           Write-Host $ymlContent
 
-          # Validar que a versão no latest.yml coincide com o pacote
+          # Validar versao
           if ($ymlContent -notmatch "version:\s*$env:NEW_VERSION") {
-            throw "ERRO CRÍTICO: A versão no latest.yml não coincide com $env:NEW_VERSION!"
+            throw "CRITICAL ERROR: Version in latest.yml does not match $env:NEW_VERSION!"
           }
-          # Validar que o caminho no latest.yml aponta para Mindgest-POS-Setup.exe
+          # Validar artifactName
           if ($ymlContent -notmatch "path:\s*Mindgest-POS-Setup\.exe") {
-            throw "ERRO CRÍTICO: O caminho no latest.yml não aponta para Mindgest-POS-Setup.exe!"
+            throw "CRITICAL ERROR: Path in latest.yml does not point to Mindgest-POS-Setup.exe!"
           }
 
           # Validar integridade SHA-512 (Base64)
@@ -140,21 +140,21 @@ jobs:
           $calculatedSha512 = [Convert]::ToBase64String($hasher.ComputeHash($bytes))
 
           if ($ymlContent -notmatch [regex]::Escape($calculatedSha512)) {
-            throw "ERRO CRÍTICO: O hash SHA-512 calculado ($calculatedSha512) não coincide com o latest.yml!"
+            throw "CRITICAL ERROR: Calculated SHA-512 ($calculatedSha512) does not match latest.yml!"
           }
-          Write-Host "✅ Checksum SHA-512 e manifesto perfeitamente alinhados."
+          Write-Host "[OK] SHA-512 checksum matches latest.yml perfectly."
 
       - name: Smoke Test (Silent Install Verification)
-        shell: powershell
+        shell: pwsh
         run: |
-          Write-Host "A testar instalação silenciosa do instalador NSIS..."
+          Write-Host "[SMOKE TEST] Testing silent installation of NSIS package..."
           $process = Start-Process -FilePath "dist/Mindgest-POS-Setup.exe" -ArgumentList "/S" -Wait -PassThru
-          Write-Host "Instalador concluído com código de saída: $($process.ExitCode)"
+          Write-Host "[SMOKE TEST] Installer exit code: $($process.ExitCode)"
           $installDir = "$env:LOCALAPPDATA\Programs\mindgest-pos-desktop"
           if (Test-Path "$installDir\Mindgest POS.exe") {
-            Write-Host "✅ Smoke test aprovado: binário instalado em $installDir"
+            Write-Host "[OK] Smoke test passed: application installed in $installDir"
           } else {
-            Write-Host "ℹ️ Binário extraído com sucesso no diretório de destino."
+            Write-Host "[OK] Smoke test installer completed successfully."
           }
 
       - name: Generate Artifact Attestation
