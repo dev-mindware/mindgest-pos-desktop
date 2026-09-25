@@ -12,7 +12,7 @@ on:
         type: string
 
 concurrency:
-  group: release-pos-tag-${{ github.ref_name }}
+  group: release-pos-tag-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -151,7 +151,7 @@ jobs:
             throw "Smoke test falhou: instalador terminou com exit code $($process.ExitCode)."
           }
 
-          $installDir = "$env:LOCALAPPDATA\Programs\mindgest-pos-desktop"
+          $installDir = "$env:LOCALAPPDATA\Programs\Mindgest POS"
           if (-not (Test-Path "$installDir\Mindgest POS.exe")) {
             throw "Smoke test falhou: executável não encontrado em $installDir."
           }
