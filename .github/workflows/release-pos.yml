@@ -2,30 +2,25 @@ name: Release Mindgest POS
 
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
-      release_type:
-        description: 'Tipo de incremento de versão (semântico)'
+      tag:
+        description: 'Tag da release existente (ex.: v1.0.1)'
         required: true
-        default: 'patch'
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
+        type: string
 
 concurrency:
-  group: release-pos-main
+  group: release-pos-tag-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   validate:
     name: Quality Gate
     uses: ./.github/workflows/reusable-validate.yml
+    permissions:
+      contents: read
 
   build-and-release:
     name: Build, Verify & Publish POS (Windows)
@@ -37,17 +32,33 @@ jobs:
       attestations: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout release tag
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configure Git user
+      - name: Resolve and verify release version
         shell: bash
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          TAG_NAME="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          EXPECTED_VERSION="${TAG_NAME#v}"
+
+          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag inválida: $TAG_NAME. Esperado vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+
+          if [[ "$PACKAGE_VERSION" != "$EXPECTED_VERSION" ]]; then
+            echo "::error::package.json ($PACKAGE_VERSION) não corresponde à tag $TAG_NAME."
+            exit 1
+          fi
+
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
+          echo "NEW_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
+          echo "Release validada: $TAG_NAME ($PACKAGE_VERSION)"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -63,24 +74,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Calculate version & prevent duplicates
-        shell: bash
-        run: |
-          RELEASE_TYPE="${{ inputs.release_type || 'patch' }}"
-          npm version "$RELEASE_TYPE" --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          TAG_NAME="v$NEW_VERSION"
-
-          if git rev-parse "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
-            echo "::error::A versão/tag $TAG_NAME já existe no repositório! Abortando execução."
-            exit 1
-          fi
-
-          echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
-          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
-          echo "Versão preparada para compilação: $NEW_VERSION ($TAG_NAME)"
-
-      - name: Build Windows Installer (Local Packaging)
+      - name: Build Windows Installer
         run: pnpm exec nextron build --win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -94,8 +88,10 @@ jobs:
           if (-not (Test-Path $exe)) {
             throw "Installer não encontrado para verificação de assinatura."
           }
+
           $sig = Get-AuthenticodeSignature $exe
           Write-Host "[AUTHENTICODE] Status: $($sig.Status)"
+
           if ($env:CSC_LINK -and $sig.Status -ne 'Valid') {
             throw "Assinatura digital inválida: $($sig.Status)"
           }
@@ -108,12 +104,19 @@ jobs:
           $exePath = "dist/Mindgest-POS-Setup.exe"
           $ymlPath = "dist/latest.yml"
 
-          if (-not (Test-Path $exePath)) { throw "CRITICAL ERROR: Installer $exePath was not found!" }
+          if (-not (Test-Path $exePath)) {
+            throw "CRITICAL ERROR: Installer $exePath was not found!"
+          }
+
           $exeSize = (Get-Item $exePath).Length
-          if ($exeSize -lt 10000000) { throw "CRITICAL ERROR: Installer size ($exeSize bytes) is too small!" }
+          if ($exeSize -lt 10000000) {
+            throw "CRITICAL ERROR: Installer size ($exeSize bytes) is too small!"
+          }
           Write-Host "[OK] Installer verified. Size: $exeSize bytes."
 
-          if (-not (Test-Path $ymlPath)) { throw "CRITICAL ERROR: Update manifest $ymlPath was not generated!" }
+          if (-not (Test-Path $ymlPath)) {
+            throw "CRITICAL ERROR: Update manifest $ymlPath was not generated!"
+          }
 
           $ymlContent = Get-Content $ymlPath -Raw
           Write-Host "--- Content of latest.yml ---"
@@ -122,6 +125,7 @@ jobs:
           if ($ymlContent -notmatch "version:\s*$env:NEW_VERSION") {
             throw "CRITICAL ERROR: Version in latest.yml does not match $env:NEW_VERSION!"
           }
+
           if ($ymlContent -notmatch "path:\s*Mindgest-POS-Setup\.exe") {
             throw "CRITICAL ERROR: Path in latest.yml does not point to Mindgest-POS-Setup.exe!"
           }
@@ -129,9 +133,11 @@ jobs:
           $bytes = [System.IO.File]::ReadAllBytes($exePath)
           $hasher = [System.Security.Cryptography.SHA512]::Create()
           $calculatedSha512 = [Convert]::ToBase64String($hasher.ComputeHash($bytes))
+
           if ($ymlContent -notmatch [regex]::Escape($calculatedSha512)) {
             throw "CRITICAL ERROR: Calculated SHA-512 does not match latest.yml!"
           }
+
           Write-Host "[OK] SHA-512 checksum matches latest.yml perfectly."
 
       - name: Smoke Test (Silent Install Verification)
@@ -140,40 +146,33 @@ jobs:
           Write-Host "[SMOKE TEST] Testing silent installation of NSIS package..."
           $process = Start-Process -FilePath "dist/Mindgest-POS-Setup.exe" -ArgumentList "/S" -Wait -PassThru
           Write-Host "[SMOKE TEST] Installer exit code: $($process.ExitCode)"
+
           if ($process.ExitCode -ne 0) {
             throw "Smoke test falhou: instalador terminou com exit code $($process.ExitCode)."
           }
+
           $installDir = "$env:LOCALAPPDATA\Programs\mindgest-pos-desktop"
-          if (Test-Path "$installDir\Mindgest POS.exe") {
-            Write-Host "[OK] Smoke test passed: application installed in $installDir"
-          } else {
-            Write-Host "[WARNING] Installer completed but executable was not found at the expected path."
+          if (-not (Test-Path "$installDir\Mindgest POS.exe")) {
+            throw "Smoke test falhou: executável não encontrado em $installDir."
           }
+
+          Write-Host "[OK] Smoke test passed: application installed in $installDir"
 
       - name: Generate Artifact Attestation
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: 'dist/Mindgest-POS-Setup.exe'
 
-      - name: Commit version bump and push tag
-        shell: bash
-        run: |
-          echo "Artefacto validado e atestado. A comitar e enviar tag $TAG_NAME..."
-          git add package.json pnpm-lock.yaml
-          if git diff --cached --quiet; then
-            echo "::error::Nenhuma alteração de versão foi encontrada para commit."
-            exit 1
-          fi
-          git commit -m "chore(release): bump version to $NEW_VERSION [skip ci]"
-          git tag "$TAG_NAME"
-          git push origin main
-          git push origin "$TAG_NAME"
-
       - name: Create GitHub Release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "::error::A GitHub Release para $TAG_NAME já existe."
+            exit 1
+          fi
+
           echo "A criar Release $TAG_NAME..."
           gh release create "$TAG_NAME" dist/Mindgest-POS-Setup.exe dist/latest.yml \
             --title "Mindgest POS $TAG_NAME" \
