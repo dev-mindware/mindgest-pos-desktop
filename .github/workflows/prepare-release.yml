@@ -1,0 +1,71 @@
+name: Prepare Mindgest POS Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão já presente no package.json (ex.: 1.0.1)'
+        required: true
+        type: string
+
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Create release tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate version
+        shell: bash
+        run: |
+          VERSION="${{ inputs.version }}"
+          TAG_NAME="v$VERSION"
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Versão inválida: $VERSION. Esperado MAJOR.MINOR.PATCH."
+            exit 1
+          fi
+
+          if [[ "$PACKAGE_VERSION" != "$VERSION" ]]; then
+            echo "::error::package.json está em $PACKAGE_VERSION, mas foi solicitada a versão $VERSION."
+            echo "Faça o bump da versão através de uma Pull Request antes de preparar a release."
+            exit 1
+          fi
+
+          if git rev-parse "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+            echo "::error::A tag $TAG_NAME já existe."
+            exit 1
+          fi
+
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
+          echo "Versão validada: $VERSION"
+
+      - name: Create annotated release tag
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG_NAME" -m "Mindgest POS $TAG_NAME"
+          git push origin "$TAG_NAME"
+          echo "Tag $TAG_NAME criada."
+
+      - name: Start release workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run release-pos.yml --ref main -f tag="$TAG_NAME"
+          echo "Release workflow iniciado para $TAG_NAME."
