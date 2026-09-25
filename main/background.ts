@@ -1,6 +1,7 @@
 import path from "path";
 import { app, BrowserWindow, ipcMain, shell, Menu, Notification } from "electron";
 import { autoUpdater } from "electron-updater";
+import log from "electron-log";
 import serve from "electron-serve";
 import { database } from "./database";
 import { getHardwareFingerprint, validateMonotonicClock, validateOfflineLicense } from "./security";
@@ -888,35 +889,70 @@ function sendUpdateEvent(channel: string, payload?: any) {
 }
 
 const isUpdateEnabled = isProd;
+let isUpdateDownloaded = false;
+let downloadedUpdateInfo: any = null;
+
+// Configurar logger estruturado para o electron-updater
+log.transports.file.level = "info";
+autoUpdater.logger = log;
+
+/**
+ * Verifica se existe uma sessão de caixa aberta no SQLite local.
+ * Essencial para impedir que uma atualização automática interrompa uma venda em curso no balcão.
+ */
+async function hasActiveCashSession(): Promise<boolean> {
+  try {
+    const activeSession = await prisma.cashSession.findFirst({
+      where: { status: "OPEN" },
+      select: { id: true, openingDate: true },
+    });
+    return !!activeSession;
+  } catch (err: any) {
+    log.error("❌ [Updater] Erro ao verificar sessão de caixa ativa:", err?.message || err);
+    // Em caso de falha de leitura na base de dados, bloqueia preventivamente
+    return true;
+  }
+}
 
 if (isUpdateEnabled) {
-  autoUpdater.autoDownload = false;
+  autoUpdater.autoDownload = true;
   autoUpdater.allowPrerelease = false;
+  // Não forçar auto-instalação imediata no encerramento abrupto para proteger sessões de venda abertas
+  autoUpdater.autoInstallOnAppQuit = false;
 
   autoUpdater.on("error", (error: Error | null) => {
-    console.error("❌ [Updater] error:", error);
+    log.error("❌ [Updater] Erro no processo de atualização:", error);
     sendUpdateEvent("update:error", {
       message: error?.message || "Erro desconhecido ao verificar atualizações.",
     });
   });
 
+  autoUpdater.on("checking-for-update", () => {
+    log.info("🔍 [Updater] A verificar disponibilidade de atualizações no GitHub Releases...");
+    sendUpdateEvent("update:checking");
+  });
+
   autoUpdater.on("update-available", (info: any) => {
-    console.log("✅ [Updater] update available:", info);
+    log.info("✅ [Updater] Nova versão encontrada:", info?.version || info);
     sendUpdateEvent("update:available", info);
   });
 
   autoUpdater.on("update-not-available", (info: any) => {
-    console.log("ℹ️ [Updater] update not available:", info);
+    log.info("ℹ️ [Updater] Mindgest POS está atualizado. Versão atual é a mais recente:", info?.version || info);
     sendUpdateEvent("update:not-available", info);
   });
 
   autoUpdater.on("download-progress", (progress: any) => {
+    log.info(`⏬ [Updater] Transferência em progresso: ${Math.round(progress?.percent || 0)}% (${progress?.transferred}/${progress?.total})`);
     sendUpdateEvent("update:download-progress", progress);
   });
 
   autoUpdater.on("update-downloaded", (info: any) => {
-    console.log("✅ [Updater] update downloaded:", info);
+    isUpdateDownloaded = true;
+    downloadedUpdateInfo = info;
+    log.info("📦 [Updater] Atualização transferida com sucesso. Fica pendente para aplicação segura:", info?.version || info);
     sendUpdateEvent("update:downloaded", info);
+    // ATENÇÃO: NÃO chamamos quitAndInstall() de imediato para não cortar vendas no balcão.
   });
 }
 
@@ -926,10 +962,11 @@ ipcMain.handle("update:check-for-updates", async () => {
   }
 
   try {
-    const result = await autoUpdater.checkForUpdates();
+    log.info("🔍 [Updater] Verificação manual solicitada pelo utilizador.");
+    const result = await autoUpdater.checkForUpdatesAndNotify();
     return { success: true, result };
   } catch (error: any) {
-    console.error("❌ [Updater] check-for-updates failed:", error?.message || error);
+    log.error("❌ [Updater] check-for-updates falhou:", error?.message || error);
     return { success: false, message: error?.message || "Falha ao verificar atualizações." };
   }
 });
@@ -940,10 +977,11 @@ ipcMain.handle("update:download-update", async () => {
   }
 
   try {
+    log.info("⏬ [Updater] Download manual disparado.");
     const result = await autoUpdater.downloadUpdate();
     return { success: true, result };
   } catch (error: any) {
-    console.error("❌ [Updater] download-update failed:", error?.message || error);
+    log.error("❌ [Updater] download-update falhou:", error?.message || error);
     return { success: false, message: error?.message || "Falha ao descarregar atualização." };
   }
 });
@@ -953,13 +991,42 @@ ipcMain.handle("update:install-update", async () => {
     return { success: false, message: "Atualizações só funcionam em produção." };
   }
 
+  if (!isUpdateDownloaded) {
+    return { success: false, message: "Nenhuma atualização descarregada pronta para instalar." };
+  }
+
+  const activeCashSession = await hasActiveCashSession();
+  if (activeCashSession) {
+    log.warn("⛔ [Updater] Instalação adiada: sessão de caixa ativa detectada.");
+    return {
+      success: false,
+      blockedByCashSession: true,
+      message: "Existe uma sessão de caixa aberta. Feche a sessão de caixa antes de reiniciar para instalar a atualização.",
+    };
+  }
+
   try {
-    autoUpdater.quitAndInstall(true, true);
+    log.info("🚀 [Updater] Nenhuma sessão de caixa aberta. A encerrar serviços auxiliares e aplicar atualização...");
+    killPythonSubprocess();
+    SidecarManager.stop();
+    setImmediate(() => {
+      autoUpdater.quitAndInstall(false, true);
+    });
     return { success: true };
   } catch (error: any) {
-    console.error("❌ [Updater] install-update failed:", error?.message || error);
+    log.error("❌ [Updater] install-update falhou:", error?.message || error);
     return { success: false, message: error?.message || "Falha ao instalar atualização." };
   }
+});
+
+ipcMain.handle("update:get-status", async () => {
+  const hasCashSession = await hasActiveCashSession();
+  return {
+    isUpdateDownloaded,
+    updateInfo: downloadedUpdateInfo,
+    hasActiveCashSession: hasCashSession,
+    isUpdateEnabled,
+  };
 });
 
 ipcMain.handle("app:get-version", () => {
@@ -1087,9 +1154,12 @@ async function createWindow() {
     console.log("Window loaded successfully");
 
     if (isUpdateEnabled) {
-      autoUpdater.checkForUpdates().catch((error: any) => {
-        console.error("❌ [Updater] initial check failed:", error);
-      });
+      setTimeout(() => {
+        log.info("🔄 [Updater] A executar checkForUpdatesAndNotify() no arranque da aplicação...");
+        autoUpdater.checkForUpdatesAndNotify().catch((error: any) => {
+          log.error("❌ [Updater] Falha no checkForUpdatesAndNotify inicial:", error?.message || error);
+        });
+      }, 5000);
     }
   } catch (err) {
     console.error("CRITICAL: Failed to load URL:", err);

@@ -186,7 +186,11 @@ Quando uma tag `v*` é feita push:
 - Ver o workflow `Release` em execução
 - Verificar assets publicados: [Releases](https://github.com/dev-mindware/mindgest-pos-desktop/releases)
 
-Para mais detalhes, consulte [GITHUB_WORKFLOW.md](GITHUB_WORKFLOW.md).
+Para mais detalhes sobre distribuição automática, link estável de download e auto-update seguro em balcão, consulte [docs/releases.md](docs/releases.md).
+
+### 🌐 Link de Download Estável para a Landing Page
+- **Windows (Instalador NSIS)**: `https://github.com/dev-mindware/mindgest-pos-desktop/releases/latest/download/Mindgest-POS-Setup.exe`
+*(Consulte [docs/releases.md](docs/releases.md) para detalhes sobre distribuição pública caso o repositório seja privado).*
 
 ---
 

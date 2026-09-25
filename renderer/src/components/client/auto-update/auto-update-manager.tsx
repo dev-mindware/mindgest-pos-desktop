@@ -31,7 +31,15 @@ export function AutoUpdateManager() {
   const installUpdate = useCallback(async () => {
     if (!updateApiRef.current) return;
     try {
-      await updateApiRef.current.installUpdate();
+      const res = await updateApiRef.current.installUpdate();
+      if (res && !res.success) {
+        if (res.blockedByCashSession) {
+          toast.warning(res.message, { duration: 8000 });
+        } else {
+          toast.error(res.message || "Falha ao instalar a atualização.");
+        }
+        return;
+      }
     } catch (error) {
       console.error("[AutoUpdate] installUpdate failed", error);
       toast.error("Falha ao instalar a atualização.");
@@ -219,9 +227,18 @@ export function AutoUpdateSection() {
 
   const installUpdate = async () => {
     if (!hasIpc || !updateApiRef.current) return;
-    setStatus("Instalando atualização...");
+    setStatus("A instalar atualização...");
     try {
-      await updateApiRef.current.installUpdate();
+      const res = await updateApiRef.current.installUpdate();
+      if (res && !res.success) {
+        setStatus(res.message || "Falha ao instalar a atualização.");
+        if (res.blockedByCashSession) {
+          toast.warning(res.message, { duration: 8000 });
+        } else {
+          toast.error(res.message || "Falha ao instalar a atualização.");
+        }
+        return;
+      }
     } catch (error) {
       console.error("[AutoUpdateSection] installUpdate failed", error);
       setStatus("Falha ao instalar a atualização.");

@@ -1,0 +1,77 @@
+name: Release Mindgest POS
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+
+concurrency:
+  group: release-pos
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    name: Build, Release & Version POS (Windows)
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git user
+        shell: bash
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare next patch version (local only)
+        id: version
+        shell: bash
+        run: |
+          npm version patch --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          TAG_NAME="v$NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
+          echo "Versão local preparada para compilação: $NEW_VERSION ($TAG_NAME)"
+
+      - name: Build & Publish Release with electron-builder
+        run: pnpm exec nextron build --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Code Signing Certificates
+          # TODO: O instalador ainda não está assinado digitalmente.
+          # Configurar os secrets CSC_LINK e CSC_KEY_PASSWORD no repositório para ativação automática da assinatura de código (EV/OV).
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      - name: Commit version bump and push tag (only on build success)
+        shell: bash
+        run: |
+          echo "Compilação e publicação da release $TAG_NAME concluídas com sucesso!"
+          git add package.json
+          git commit -m "chore(release): bump version to $NEW_VERSION [skip ci]"
+          git tag "$TAG_NAME"
+          git push origin main
+          git push origin "$TAG_NAME"

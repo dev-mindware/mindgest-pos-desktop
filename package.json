@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nextron --startup-delay 30000 --electron-options=\"--no-sandbox\"",
     "build": "nextron build --win",
+    "build:publish": "nextron build --win --publish always",
     "build:staging": "powershell -Command \"$env:NEXT_PUBLIC_API_URL='https://test.mindgest.mindware-vps.cloud/api'; Remove-Item -Recurse -Force app/dev, app, dist -ErrorAction SilentlyContinue; Copy-Item -Path .env.staging -Destination .env.production.local -Force; Copy-Item -Path renderer/.env.staging -Destination renderer/.env.production.local -Force; try { node node_modules/nextron/bin/nextron.cjs build --win } finally { Remove-Item .env.production.local, renderer/.env.production.local -ErrorAction SilentlyContinue }\"",
     "build:all": "nextron build",
     "prisma:studio": "powershell -Command \"$env:DATABASE_URL='file:' + $env:APPDATA + '/mindgest-pos-desktop/dev.db'; npx prisma studio\"",
@@ -49,6 +50,7 @@
     "cors": "^2.8.6",
     "date-fns": "^4.1.0",
     "driver.js": "^1.8.0",
+    "electron-log": "^5.4.4",
     "electron-serve": "1.3.0",
     "electron-updater": "^6.8.3",
     "emblor": "^1.4.8",
@@ -178,7 +180,7 @@
       "icon": "resources/icon.ico",
       "legalTrademarks": "Mindware",
       "requestedExecutionLevel": "asInvoker",
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "Mindgest-POS-Setup.${ext}"
     },
     "nsis": {
       "oneClick": false,
