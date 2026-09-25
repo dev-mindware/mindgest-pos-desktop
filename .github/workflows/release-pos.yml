@@ -61,7 +61,7 @@ jobs:
           echo "Release validada: $TAG_NAME ($PACKAGE_VERSION)"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11.22.0
 
