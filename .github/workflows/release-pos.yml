@@ -159,7 +159,7 @@ jobs:
           Write-Host "[OK] Smoke test passed: application installed in $installDir"
 
       - name: Generate Artifact Attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: 'dist/Mindgest-POS-Setup.exe'
 
