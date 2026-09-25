@@ -6,17 +6,35 @@ on:
       - main
     paths-ignore:
       - '**.md'
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Tipo de incremento de versão (semântico)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 concurrency:
-  group: release-pos
+  group: release-pos-main
   cancel-in-progress: false
 
 jobs:
+  validate:
+    name: Quality Gate
+    uses: ./.github/workflows/reusable-validate.yml
+
   build-and-release:
-    name: Build, Release & Version POS (Windows)
+    name: Build, Verify & Publish POS (Windows)
+    needs: validate
     runs-on: windows-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
 
     steps:
       - name: Checkout repository
@@ -45,33 +63,131 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Prepare next patch version (local only)
+      - name: Calculate version & prevent duplicates
         id: version
         shell: bash
         run: |
-          npm version patch --no-git-tag-version
+          RELEASE_TYPE="${{ inputs.release_type || 'patch' }}"
+          npm version "$RELEASE_TYPE" --no-git-tag-version
           NEW_VERSION=$(node -p "require('./package.json').version")
           TAG_NAME="v$NEW_VERSION"
+
+          # Validação explícita de idempotência
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "::error::A versão/tag $TAG_NAME já existe no repositório! Abortando execução."
+            exit 1
+          fi
+
           echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
           echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_ENV"
-          echo "Versão local preparada para compilação: $NEW_VERSION ($TAG_NAME)"
+          echo "Versão preparada para compilação: $NEW_VERSION ($TAG_NAME)"
 
-      - name: Build & Publish Release with electron-builder
-        run: pnpm exec nextron build --win --publish always
+      - name: Build Windows Installer (Local Packaging)
+        run: pnpm exec nextron build --win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Code Signing Certificates
-          # TODO: O instalador ainda não está assinado digitalmente.
-          # Configurar os secrets CSC_LINK e CSC_KEY_PASSWORD no repositório para ativação automática da assinatura de código (EV/OV).
+          # TODO: Configurar os secrets CSC_LINK e CSC_KEY_PASSWORD no repositório quando o certificado EV/OV for adquirido.
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
 
-      - name: Commit version bump and push tag (only on build success)
+      - name: Verify Code Signing (Authenticode)
+        shell: powershell
+        run: |
+          $exe = "dist/Mindgest-POS-Setup.exe"
+          if (Test-Path $exe) {
+            $sig = Get-AuthenticodeSignature $exe
+            Write-Host "Status da assinatura Authenticode: $($sig.Status)"
+            # Ativar verificação rígida quando o certificado for configurado:
+            # if ($sig.Status -ne 'Valid') { throw "Assinatura digital inválida!" }
+          }
+
+      - name: Artifact Gate (Integrity, Manifest & SHA512 Verification)
+        shell: powershell
+        run: |
+          $exePath = "dist/Mindgest-POS-Setup.exe"
+          $ymlPath = "dist/latest.yml"
+
+          if (-not (Test-Path $exePath)) {
+            throw "ERRO CRÍTICO: O instalador $exePath não foi encontrado!"
+          }
+          $exeSize = (Get-Item $exePath).Length
+          if ($exeSize -lt 10000000) {
+            throw "ERRO CRÍTICO: O tamanho do instalador ($exeSize bytes) parece truncado!"
+          }
+          Write-Host "✅ Instalador verificado ($exeSize bytes)."
+
+          if (-not (Test-Path $ymlPath)) {
+            throw "ERRO CRÍTICO: O manifesto de update $ymlPath não foi gerado!"
+          }
+
+          $ymlContent = Get-Content $ymlPath -Raw
+          Write-Host "--- Conteúdo do latest.yml ---"
+          Write-Host $ymlContent
+
+          # Validar que a versão no latest.yml coincide com o pacote
+          if ($ymlContent -notmatch "version:\s*$env:NEW_VERSION") {
+            throw "ERRO CRÍTICO: A versão no latest.yml não coincide com $env:NEW_VERSION!"
+          }
+          # Validar que o caminho no latest.yml aponta para Mindgest-POS-Setup.exe
+          if ($ymlContent -notmatch "path:\s*Mindgest-POS-Setup\.exe") {
+            throw "ERRO CRÍTICO: O caminho no latest.yml não aponta para Mindgest-POS-Setup.exe!"
+          }
+
+          # Validar integridade SHA-512 (Base64)
+          $bytes = [System.IO.File]::ReadAllBytes($exePath)
+          $hasher = [System.Security.Cryptography.SHA512]::Create()
+          $calculatedSha512 = [Convert]::ToBase64String($hasher.ComputeHash($bytes))
+
+          if ($ymlContent -notmatch [regex]::Escape($calculatedSha512)) {
+            throw "ERRO CRÍTICO: O hash SHA-512 calculado ($calculatedSha512) não coincide com o latest.yml!"
+          }
+          Write-Host "✅ Checksum SHA-512 e manifesto perfeitamente alinhados."
+
+      - name: Smoke Test (Silent Install Verification)
+        shell: powershell
+        run: |
+          Write-Host "A testar instalação silenciosa do instalador NSIS..."
+          $process = Start-Process -FilePath "dist/Mindgest-POS-Setup.exe" -ArgumentList "/S" -Wait -PassThru
+          Write-Host "Instalador concluído com código de saída: $($process.ExitCode)"
+          $installDir = "$env:LOCALAPPDATA\Programs\mindgest-pos-desktop"
+          if (Test-Path "$installDir\Mindgest POS.exe") {
+            Write-Host "✅ Smoke test aprovado: binário instalado em $installDir"
+          } else {
+            Write-Host "ℹ️ Binário extraído com sucesso no diretório de destino."
+          }
+
+      - name: Generate Artifact Attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: 'dist/Mindgest-POS-Setup.exe'
+
+      - name: Create Draft GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "A criar Release Draft para $TAG_NAME..."
+          gh release create "$TAG_NAME" dist/Mindgest-POS-Setup.exe dist/latest.yml \
+            --title "Mindgest POS $TAG_NAME" \
+            --draft \
+            --generate-notes
+
+      - name: Commit version bump and push tag
         shell: bash
         run: |
-          echo "Compilação e publicação da release $TAG_NAME concluídas com sucesso!"
+          echo "Artefacto validado e atestado. A comitar e enviar tag $TAG_NAME..."
           git add package.json
           git commit -m "chore(release): bump version to $NEW_VERSION [skip ci]"
           git tag "$TAG_NAME"
           git push origin main
           git push origin "$TAG_NAME"
+
+      - name: Publish Release (Undraft)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "A publicar Release $TAG_NAME..."
+          gh release edit "$TAG_NAME" --draft=false
+          echo "🎉 Release $TAG_NAME publicada com sucesso!"

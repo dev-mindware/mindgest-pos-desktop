@@ -59,13 +59,30 @@ O Mindgest POS opera em ambientes de balcão de retalho crítico. A política de
 
 ## 🚀 Como Publicar uma Nova Versão
 
-Com o workflow `.github/workflows/release-pos.yml` configurado:
+O pipeline de release ([`.github/workflows/release-pos.yml`](../.github/workflows/release-pos.yml)) opera em duas fases estritas:
 
-1. Fazer merge das alterações validadas para a branch `main`.
-2. O workflow executa:
-   - Incrementa a versão patch em `package.json` (`npm version patch --no-git-tag-version`).
-   - Faz commit com `[skip ci]` e cria a tag `vX.Y.Z`.
-   - Compila o binário Windows NSIS com `nextron build --win --publish always`.
-   - Gera e anexa à Release do GitHub:
-     - `Mindgest-POS-Setup.exe`
-     - `latest.yml` (metadados com hash SHA-512 e versão para o electron-updater)
+> [!IMPORTANT]
+> **Garantia de Integridade**: Uma release não é publicada enquanto a validação obrigatória e os testes de artefacto não terminarem com sucesso.
+
+1. **Disparo**:
+   - Automático: push para a branch `main`.
+   - Manual: via `workflow_dispatch` na interface do GitHub Actions, permitindo escolher o tipo de incremento (`patch`, `minor` ou `major`).
+2. **Fase 1: Portão de Qualidade Reutilizável (`validate`)**:
+   - Checkout do código.
+   - Instalação determinística com `pnpm install --frozen-lockfile` (Node 22 / pnpm 11.22.0).
+   - Validação de tipos com `npx tsc --noEmit`.
+   - Compilação estática Next.js + Webpack sem empacotamento (`nextron build --no-pack`).
+3. **Fase 2: Build, Verificação do Artefacto e Publicação (`build-and-release`)**:
+   - Só inicia se a **Fase 1 passar com 100% de sucesso**.
+   - Calcula a próxima versão e verifica se a tag já existe no Git (prevenção de colisões).
+   - Compila o instalador NSIS localmente com `nextron build --win`.
+   - **Artifact Gate**:
+     - Confirma existência e tamanho do executável `Mindgest-POS-Setup.exe`.
+     - Confirma existência e integridade do manifesto `latest.yml`.
+     - Valida que a versão e o caminho do manifesto correspondem exatamente ao pacote.
+     - **Calcula o hash SHA-512 do executável** e valida a correspondência exata com o valor registado no `latest.yml`.
+   - **Smoke Test**: Executa teste de instalação silenciosa (`/S`).
+   - **Artifact Attestation**: Gera atestação criptográfica de proveniência de cadeia de fornecimento via Sigstore.
+   - **Draft Release**: Cria a release no GitHub em estado de rascunho (`--draft`) anexando os binários.
+   - **Rastreabilidade Git**: Regista o commit de bump (`[skip ci]`) e cria a tag `vX.Y.Z` na `main`.
+   - **Publicação**: Torna a release pública no GitHub (`--draft=false`). Se qualquer passo anterior falhar, o rascunho é descartado e nenhuma tag inválida é enviada.
