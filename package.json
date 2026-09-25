@@ -1,6 +1,6 @@
 {
   "name": "mindgest-pos-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "packageManager": "pnpm@11.22.0",
   "description": "Mindgest POS - Sistema Corporativo de Ponto de Venda e Faturação Eletrónica",
   "main": "app/main.js",
