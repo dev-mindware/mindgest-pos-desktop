@@ -1,0 +1,69 @@
+name: Test Build (Staging)
+
+# Compila o instalador Windows apontando para a API de staging e guarda-o como
+# artefacto do workflow. Não cria tag, não cria release e não publica nada.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-build:
+    name: Build Windows installer (staging API)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    env:
+      NEXT_PUBLIC_API_URL: https://test.mindgest.mindware-vps.cloud/api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.22.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Use staging environment files
+        shell: bash
+        run: |
+          cp .env.staging .env.production.local
+          cp renderer/.env.staging renderer/.env.production.local
+
+      - name: Build Windows installer (no publish)
+        run: pnpm exec nextron build --win --publish never
+
+      - name: Verify installer targets the staging API
+        shell: bash
+        run: |
+          test -f dist/Mindgest-POS-Setup.exe
+          size=$(stat -c %s dist/Mindgest-POS-Setup.exe)
+          echo "Installer size: $size bytes"
+          [ "$size" -gt 10000000 ]
+          if grep -rIl "mindgest.mindware-vps.cloud/api" app 2>/dev/null | head -1 | grep -q .; then
+            echo "Build contains an API URL reference."
+          fi
+          if grep -rIh "test.mindgest.mindware-vps.cloud" app 2>/dev/null | head -1 | grep -q .; then
+            echo "[OK] staging API URL found in the build output."
+          else
+            echo "::error::Staging API URL not found in the build output."
+            exit 1
+          fi
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mindgest-POS-Setup-staging
+          path: dist/Mindgest-POS-Setup.exe
+          retention-days: 14
+          if-no-files-found: error
