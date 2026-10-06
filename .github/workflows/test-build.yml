@@ -55,15 +55,20 @@ jobs:
           size=$(stat -c %s dist/Mindgest-POS-Setup.exe)
           echo "Installer size: $size bytes"
           [ "$size" -gt 10000000 ]
-          if grep -rIl "mindgest.mindware-vps.cloud/api" app 2>/dev/null | head -1 | grep -q .; then
-            echo "Build contains an API URL reference."
-          fi
-          if grep -rIh "test.mindgest.mindware-vps.cloud" app 2>/dev/null | head -1 | grep -q .; then
-            echo "[OK] staging API URL found in the build output."
-          else
+
+          urls=$(grep -rIoh "https://[a-z.]*mindgest\.mindware-vps\.cloud/api" app | sort | uniq -c || true)
+          echo "API URLs found in the build output:"
+          echo "$urls"
+
+          if ! echo "$urls" | grep -q "test\.mindgest\.mindware-vps\.cloud"; then
             echo "::error::Staging API URL not found in the build output."
             exit 1
           fi
+          if echo "$urls" | grep -q "https://mindgest\.mindware-vps\.cloud"; then
+            echo "::error::Production API URL found in the build output."
+            exit 1
+          fi
+          echo "[OK] Build targets the staging API only."
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
