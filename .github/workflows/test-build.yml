@@ -5,6 +5,11 @@ name: Test Build (Staging)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - claude/gracious-knuth-ix98vx
+    paths:
+      - '.github/workflows/test-build.yml'
 
 jobs:
   test-build:
